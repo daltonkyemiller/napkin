@@ -19,3 +19,7 @@ export const STROKE_COLORS = [
 export const STROKE_WIDTHS = [1, 2, 3, 5, 8, 12];
 
 export const FONT_SIZES = [12, 16, 20, 24, 32, 48, 64];
+
+export const DEFAULT_HIGHLIGHTER_COLOR = "#eab308";
+export const DEFAULT_HIGHLIGHTER_WIDTH = 20;
+export const DEFAULT_HIGHLIGHTER_OPACITY = 0.4;

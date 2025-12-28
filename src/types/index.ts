@@ -1,6 +1,6 @@
 export interface BaseAnnotation {
   id: string;
-  type: "circle" | "rectangle" | "arrow" | "text" | "freehand";
+  type: "circle" | "rectangle" | "arrow" | "text" | "freehand" | "highlighter";
   x: number;
   y: number;
   rotation?: number;
@@ -55,12 +55,22 @@ export interface FreehandAnnotation extends BaseAnnotation {
   tension?: number;
 }
 
+export interface HighlighterAnnotation extends BaseAnnotation {
+  type: "highlighter";
+  points: number[];
+  stroke: string;
+  strokeWidth: number;
+  opacity: number;
+  tension?: number;
+}
+
 export type Annotation =
   | CircleAnnotation
   | RectangleAnnotation
   | ArrowAnnotation
   | TextAnnotation
-  | FreehandAnnotation;
+  | FreehandAnnotation
+  | HighlighterAnnotation;
 
 export type AnnotationType = Annotation["type"];
 
