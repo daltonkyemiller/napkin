@@ -132,6 +132,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
         const pos = stageRef.current?.getPointerPosition();
         if (!pos) return;
 
+        clearSelection();
         isDrawingRef.current = true;
         setIsDrawing(true);
 
