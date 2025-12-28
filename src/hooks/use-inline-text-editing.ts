@@ -1,13 +1,12 @@
 import { useCallback } from "react";
 import type Konva from "konva";
 import { useAnnotationStore } from "@/stores/annotation-store";
-
 import { useCanvasStore } from "@/stores/canvas-store";
 import type { TextAnnotation } from "@/types";
 
 export function useInlineTextEditing(stageRef: React.RefObject<Konva.Stage | null>) {
-  const { updateAnnotation } = useAnnotationStore();
-  const { selectedIds } = useCanvasStore();
+  const { updateAnnotation, deleteAnnotations } = useAnnotationStore();
+  const { selectedIds, clearSelection } = useCanvasStore();
 
   const startInlineEdit = useCallback(
     (textAnnotation: TextAnnotation) => {
@@ -87,12 +86,21 @@ export function useInlineTextEditing(stageRef: React.RefObject<Konva.Stage | nul
       }
 
       function saveAndClose() {
-        const newText = textarea.value;
-        updateAnnotation(textAnnotation.id, { text: newText });
+        const newText = textarea.value.trim();
+        if (newText === "") {
+          deleteAnnotations([textAnnotation.id]);
+          clearSelection();
+        } else {
+          updateAnnotation(textAnnotation.id, { text: newText });
+        }
         removeTextarea();
       }
 
       function cancelEdit() {
+        if (textAnnotation.text === "") {
+          deleteAnnotations([textAnnotation.id]);
+          clearSelection();
+        }
         removeTextarea();
       }
 
@@ -132,7 +140,7 @@ export function useInlineTextEditing(stageRef: React.RefObject<Konva.Stage | nul
         window.addEventListener("touchstart", handleOutsideClick);
       }, 100);
     },
-    [stageRef, updateAnnotation, selectedIds],
+    [stageRef, updateAnnotation, deleteAnnotations, clearSelection, selectedIds],
   );
 
   return { startInlineEdit };
