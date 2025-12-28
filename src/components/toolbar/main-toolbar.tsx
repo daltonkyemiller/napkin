@@ -1,4 +1,12 @@
+import Color from "color";
 import { Button } from "@/components/ui/button";
+import {
+  ColorPicker,
+  ColorPickerSelection,
+  ColorPickerHue,
+  ColorPickerAlpha,
+} from "@/components/ui/color-picker";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCanvasStore } from "@/stores/canvas-store";
@@ -9,6 +17,7 @@ import {
   ArrowRight,
   Type,
   Pencil,
+  Highlighter,
   MousePointer2,
   Undo,
   Redo,
@@ -16,6 +25,7 @@ import {
   Trash2,
   Upload,
   ALargeSmall,
+  Palette,
 } from "lucide-react";
 import { STROKE_COLORS } from "@/constants";
 import type { Tool, TextAnnotation } from "@/types";
@@ -144,11 +154,14 @@ export function MainToolbar({ onUploadClick, onDownload }: MainToolbarProps) {
         <ToggleGroupItem value="freehand" title="Freehand">
           <Pencil className="h-4 w-4" />
         </ToggleGroupItem>
+        <ToggleGroupItem value="highlighter" title="Highlighter">
+          <Highlighter className="h-4 w-4" />
+        </ToggleGroupItem>
       </ToggleGroup>
 
       <div className="h-6 w-px bg-border" />
 
-      <div className="flex gap-1">
+      <div className="flex items-center gap-1">
         {STROKE_COLORS.map((color) => (
           <button
             type="button"
@@ -161,6 +174,39 @@ export function MainToolbar({ onUploadClick, onDownload }: MainToolbarProps) {
             title={`Color: ${color}`}
           />
         ))}
+        <Popover>
+          <PopoverTrigger
+            className={`flex h-6 w-6 items-center justify-center rounded-full border-2 transition-transform hover:scale-110 ${
+              !STROKE_COLORS.includes(strokeColor)
+                ? "border-ring ring-2 ring-ring/50"
+                : "border-muted-foreground/30"
+            }`}
+            style={{
+              background: !STROKE_COLORS.includes(strokeColor)
+                ? strokeColor
+                : "conic-gradient(red, yellow, lime, aqua, blue, magenta, red)",
+            }}
+            title="Custom color"
+          >
+            {STROKE_COLORS.includes(strokeColor) && (
+              <Palette className="h-3 w-3 text-white drop-shadow-md" />
+            )}
+          </PopoverTrigger>
+          <PopoverContent className="w-64">
+            <ColorPicker
+              value={strokeColor}
+              onChange={(rgba) => {
+                const [r, g, b] = rgba as [number, number, number, number];
+                const hex = Color.rgb(r, g, b).hex();
+                handleStrokeColorChange(hex);
+              }}
+            >
+              <ColorPickerSelection className="h-32 rounded-md" />
+              <ColorPickerHue />
+              <ColorPickerAlpha />
+            </ColorPicker>
+          </PopoverContent>
+        </Popover>
       </div>
 
       <div className="h-6 w-px bg-border" />
