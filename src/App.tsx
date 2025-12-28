@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
+import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import {
@@ -17,7 +19,9 @@ export default function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<AnnotationCanvasHandle>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [outputFilename, setOutputFilename] = useState<string | null>(null);
 
   const {
     imageUrl,
@@ -31,6 +35,41 @@ export default function App() {
   const { annotations, deleteAnnotations, clearAnnotations, updateAnnotation } =
     useAnnotationStore();
   const temporal = useAnnotationStore.temporal;
+
+  useEffect(() => {
+    async function loadFromCli() {
+      try {
+        const initialImage = await invoke<string | null>("get_initial_image");
+        if (initialImage) {
+          const img = new window.Image();
+          img.onload = () => {
+            setImageInStore(initialImage, img.width, img.height);
+            setIsLoading(false);
+          };
+          img.onerror = () => {
+            setIsLoading(false);
+          };
+          img.src = initialImage;
+        } else {
+          setIsLoading(false);
+        }
+
+        const outputPath = await invoke<string | null>("get_output_filename");
+        if (outputPath) {
+          setOutputFilename(outputPath);
+        }
+
+        const fullscreen = await invoke<boolean>("get_fullscreen");
+        if (fullscreen) {
+          getCurrentWindow().setFullscreen(true);
+        }
+      } catch (e) {
+        console.error("Failed to load CLI args:", e);
+        setIsLoading(false);
+      }
+    }
+    loadFromCli();
+  }, [setImageInStore]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -119,10 +158,14 @@ export default function App() {
     const dataURL = canvasRef.current?.exportImage();
     if (!dataURL) return;
 
-    const filePath = await save({
-      defaultPath: `annotated-image-${Date.now()}.png`,
-      filters: [{ name: "PNG Image", extensions: ["png"] }],
-    });
+    let filePath: string | null = outputFilename;
+
+    if (!filePath) {
+      filePath = await save({
+        defaultPath: `annotated-image-${Date.now()}.png`,
+        filters: [{ name: "PNG Image", extensions: ["png"] }],
+      });
+    }
 
     if (!filePath) return;
 
@@ -130,7 +173,7 @@ export default function App() {
     const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
 
     await writeFile(filePath, binaryData);
-  }, []);
+  }, [outputFilename]);
 
   useHotkeys(
     "delete, backspace",
@@ -170,6 +213,7 @@ export default function App() {
   useHotkeys("a", () => setActiveTool("arrow"));
   useHotkeys("t", () => setActiveTool("text"));
   useHotkeys("p", () => setActiveTool("freehand"));
+  useHotkeys("m", () => setActiveTool("highlighter"));
 
   const moveSelected = useCallback(
     (dx: number, dy: number) => {
@@ -213,7 +257,9 @@ export default function App() {
 
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
 
-      {!image ? (
+      {isLoading ? (
+        <div className="flex h-full items-center justify-center" />
+      ) : !image ? (
         <div className="flex h-full flex-col items-center justify-center gap-6">
           <div className="flex flex-col items-center gap-2 text-muted-foreground">
             <ImageIcon className="h-16 w-16" />
