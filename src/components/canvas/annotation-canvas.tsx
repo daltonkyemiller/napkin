@@ -19,8 +19,7 @@ import type {
   HighlighterAnnotation,
 } from "@/types";
 
-const ROUGHNESS = 1;
-const BOWING = 1;
+
 
 interface AnnotationCanvasProps {
   image: HTMLImageElement;
@@ -708,9 +707,9 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
 
       switch (annotation.type) {
         case "circle": {
-          if (annotation.sketchy) {
+          if (annotation.sketchiness) {
             const isBeingTransformed = isTransformingAnnotation && selectedIds.includes(annotation.id);
-            const cacheKey = `${annotation.radius}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.fill}`;
+            const cacheKey = `${annotation.radius}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.fill}-${annotation.sketchiness}`;
             const diameter = annotation.radius * 2;
             return (
               <Shape
@@ -740,8 +739,8 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                         strokeWidth: annotation.strokeWidth,
                         fill: annotation.fill ?? undefined,
                         fillStyle: annotation.fill ? "solid" : undefined,
-                        roughness: ROUGHNESS,
-                        bowing: BOWING,
+                        roughness: annotation.sketchiness,
+                        bowing: annotation.sketchiness,
                       }),
                     );
                     drawRoughDrawable(ctx._context, drawable);
@@ -770,9 +769,9 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           );
         }
         case "rectangle": {
-          if (annotation.sketchy) {
+          if (annotation.sketchiness) {
             const isBeingTransformed = isTransformingAnnotation && selectedIds.includes(annotation.id);
-            const cacheKey = `${annotation.width}-${annotation.height}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.fill}`;
+            const cacheKey = `${annotation.width}-${annotation.height}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.fill}-${annotation.sketchiness}`;
             return (
               <Shape
                 key={annotation.id}
@@ -799,8 +798,8 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                         strokeWidth: annotation.strokeWidth,
                         fill: annotation.fill ?? undefined,
                         fillStyle: annotation.fill ? "solid" : undefined,
-                        roughness: ROUGHNESS,
-                        bowing: BOWING,
+                        roughness: annotation.sketchiness,
+                        bowing: annotation.sketchiness,
                       }),
                     );
                     drawRoughDrawable(ctx._context, drawable);
@@ -839,8 +838,8 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           const pointerWidth = basePointerWidth + annotation.strokeWidth;
           const isBeingTransformed = isTransformingAnnotation && selectedIds.includes(annotation.id);
 
-          if (annotation.sketchy && !isBeingTransformed) {
-            const cacheKey = `${startX}-${startY}-${endX}-${endY}-${bend}-${annotation.stroke}-${annotation.strokeWidth}`;
+          if (annotation.sketchiness && !isBeingTransformed) {
+            const cacheKey = `${startX}-${startY}-${endX}-${endY}-${bend}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.sketchiness}`;
             
             if (bend !== 0) {
               const midX = (startX + endX) / 2;
@@ -869,8 +868,8 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                       gen.path(`M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}`, {
                         stroke: annotation.stroke,
                         strokeWidth: annotation.strokeWidth,
-                        roughness: ROUGHNESS,
-                        bowing: BOWING,
+                        roughness: annotation.sketchiness,
+                        bowing: annotation.sketchiness,
                       }),
                     );
                     drawRoughDrawable(ctx._context, drawable);
@@ -913,8 +912,8 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                     gen.line(startX, startY, endX, endY, {
                       stroke: annotation.stroke,
                       strokeWidth: annotation.strokeWidth,
-                      roughness: ROUGHNESS,
-                      bowing: BOWING,
+                      roughness: annotation.sketchiness,
+                      bowing: annotation.sketchiness,
                     }),
                   );
                   drawRoughDrawable(ctx._context, drawable);
@@ -1126,7 +1125,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               <Transformer
                 ref={transformerRef}
                 rotateEnabled={true}
-                rotateAnchorOffset={20}
+                rotateAnchorOffset={30}
                 anchorSize={10}
                 borderStroke="#4F46E5"
                 borderStrokeWidth={2}

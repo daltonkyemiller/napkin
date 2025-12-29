@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { motion, type MotionProps } from "motion/react";
-import { Toggle } from "@/components/ui/toggle";
+import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { useCanvasStore } from "@/stores/canvas-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
@@ -35,23 +35,25 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
 
   const hasBlendableSelection = selectedBlendableAnnotations.length > 0;
 
-  const selectedSketchyAnnotations = annotations.filter(
+  const selectedSketchableAnnotations = annotations.filter(
     (a) =>
       selectedIds.includes(a.id) &&
       (a.type === "circle" || a.type === "rectangle" || a.type === "arrow"),
   );
-  const hasSketchySelection = selectedSketchyAnnotations.length > 0;
-  const allSketchy =
-    hasSketchySelection && selectedSketchyAnnotations.every((a) => "sketchy" in a && a.sketchy);
+  const hasSketchableSelection = selectedSketchableAnnotations.length > 0;
+
+  const currentSketchiness = hasSketchableSelection
+    ? (selectedSketchableAnnotations[0] as { sketchiness?: number }).sketchiness ?? 0
+    : 0;
 
   const currentBlendMode = hasBlendableSelection
     ? (selectedBlendableAnnotations[0] as { blendMode?: BlendMode }).blendMode ?? "source-over"
     : "source-over";
 
-  const handleSketchyToggle = () => {
-    const newSketchy = !allSketchy;
-    for (const annotation of selectedSketchyAnnotations) {
-      updateAnnotation(annotation.id, { sketchy: newSketchy });
+  const handleSketchinessChange = (value: number | readonly number[]) => {
+    const sketchiness = Array.isArray(value) ? value[0] : value;
+    for (const annotation of selectedSketchableAnnotations) {
+      updateAnnotation(annotation.id, { sketchiness: sketchiness === 0 ? undefined : sketchiness });
     }
   };
 
@@ -159,18 +161,23 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
       ref={toolbarRef}
       {...motionProps}
       style={{ position: "absolute", zIndex: 50 }}
-      className="flex items-center gap-2 rounded-lg border bg-background p-2 shadow-lg"
+      className="flex items-center gap-3 rounded-lg border bg-background px-3 py-2 shadow-lg"
     >
-      {hasSketchySelection && (
-        <Toggle
-          pressed={allSketchy}
-          onPressedChange={handleSketchyToggle}
-          title="Sketchy style"
-          size="sm"
-        >
-          <IconPenOutlineDuo18 />
-          <span className="text-xs">Sketchy</span>
-        </Toggle>
+      {hasSketchableSelection && (
+        <div className="flex items-center gap-2">
+          <IconPenOutlineDuo18 className="size-4 text-muted-foreground" />
+          <Slider
+            className="w-20"
+            value={[currentSketchiness]}
+            onValueChange={handleSketchinessChange}
+            min={0}
+            max={3}
+            step={0.5}
+          />
+          <span className="w-6 text-xs tabular-nums text-muted-foreground">
+            {currentSketchiness.toFixed(1)}
+          </span>
+        </div>
       )}
 
       <Select value={currentBlendMode} onValueChange={handleBlendModeChange}>
