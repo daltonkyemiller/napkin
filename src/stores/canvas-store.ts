@@ -1,6 +1,13 @@
 import { create } from "zustand";
 import type { Tool } from "@/types";
 
+export interface OcrSelection {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 interface CanvasStore {
   width: number;
   height: number;
@@ -16,6 +23,7 @@ interface CanvasStore {
   fontSize: number;
   isDrawing: boolean;
   editingTextId: string | null;
+  ocrSelection: OcrSelection | null;
 
   setCanvasSize: (width: number, height: number) => void;
   setImage: (url: string, width: number, height: number) => void;
@@ -31,6 +39,7 @@ interface CanvasStore {
   setFontSize: (size: number) => void;
   setIsDrawing: (isDrawing: boolean) => void;
   setEditingTextId: (id: string | null) => void;
+  setOcrSelection: (selection: OcrSelection | null) => void;
 }
 
 export const useCanvasStore = create<CanvasStore>((set, get) => ({
@@ -48,6 +57,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   fontSize: 24,
   isDrawing: false,
   editingTextId: null,
+  ocrSelection: null,
 
   setCanvasSize: (width, height) => set({ width, height }),
 
@@ -100,4 +110,5 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   setFontSize: (fontSize) => set({ fontSize }),
   setIsDrawing: (isDrawing) => set({ isDrawing }),
   setEditingTextId: (editingTextId) => set({ editingTextId }),
+  setOcrSelection: (ocrSelection) => set({ ocrSelection }),
 }));

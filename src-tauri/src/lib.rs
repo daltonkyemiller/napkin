@@ -1,6 +1,7 @@
 use base64::{engine::general_purpose::STANDARD, Engine};
 use clap::Parser;
 use image::ImageFormat;
+use rusty_tesseract::{Args as TesseractArgs, Image as TesseractImage};
 use std::io::{Cursor, Read};
 use std::sync::Mutex;
 use tauri::State;
@@ -71,6 +72,34 @@ fn get_fullscreen(state: State<AppState>) -> bool {
     *state.fullscreen.lock().unwrap()
 }
 
+#[tauri::command]
+fn perform_ocr(image_data: String) -> Result<String, String> {
+    let base64_data = image_data
+        .strip_prefix("data:image/png;base64,")
+        .or_else(|| image_data.strip_prefix("data:image/jpeg;base64,"))
+        .unwrap_or(&image_data);
+
+    let image_bytes = STANDARD
+        .decode(base64_data)
+        .map_err(|e| format!("Failed to decode base64: {}", e))?;
+
+    let dynamic_img = image::load_from_memory(&image_bytes)
+        .map_err(|e| format!("Failed to load image: {}", e))?;
+
+    let tesseract_image = TesseractImage::from_dynamic_image(&dynamic_img)
+        .map_err(|e| format!("Failed to create tesseract image: {}", e))?;
+
+    let args = TesseractArgs {
+        lang: "eng".to_string(),
+        ..Default::default()
+    };
+
+    let text = rusty_tesseract::image_to_string(&tesseract_image, &args)
+        .map_err(|e| format!("OCR failed: {}", e))?;
+
+    Ok(text.trim().to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let args = Args::parse();
@@ -107,7 +136,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_initial_image,
             get_output_filename,
-            get_fullscreen
+            get_fullscreen,
+            perform_ocr
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

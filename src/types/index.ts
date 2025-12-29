@@ -74,7 +74,7 @@ export type Annotation =
 
 export type AnnotationType = Annotation["type"];
 
-export type Tool = "select" | AnnotationType;
+export type Tool = "select" | "ocr" | AnnotationType;
 
 export interface CanvasState {
   width: number;
