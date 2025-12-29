@@ -4,6 +4,7 @@ import {
 } from "@/components/canvas/annotation-canvas";
 import { OcrResultDialog } from "@/components/ocr/ocr-result-dialog";
 import { SettingsDialog } from "@/components/settings/settings-dialog";
+import { FloatingElementToolbar } from "@/components/toolbar/floating-element-toolbar";
 import { MainToolbar } from "@/components/toolbar/main-toolbar";
 import { Button } from "@/components/ui/button";
 import { useAnnotationStore } from "@/stores/annotation-store";
@@ -21,6 +22,7 @@ import { Toaster } from "sonner";
 export default function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<AnnotationCanvasHandle>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -335,12 +337,13 @@ export default function App() {
       ) : (
         <div className="flex h-full flex-col">
           <MainToolbar onUploadClick={handleUploadClick} onDownload={handleDownload} />
-          <div className="flex-1 overflow-hidden">
+          <div ref={canvasContainerRef} className="relative flex-1 overflow-hidden">
             <AnnotationCanvas
               ref={canvasRef}
               image={image}
               onOcrRegionSelected={handleOcrRegionSelected}
             />
+            <FloatingElementToolbar containerRef={canvasContainerRef} />
           </div>
         </div>
       )}
