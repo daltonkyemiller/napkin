@@ -7,7 +7,7 @@ import {
   ColorPickerAlpha,
 } from "@/components/ui/color-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCanvasStore } from "@/stores/canvas-store";
@@ -261,7 +261,7 @@ export function MainToolbar({ onUploadClick, onDownload }: MainToolbarProps) {
           </Toggle>
           <Select value={currentBlendMode} onValueChange={handleBlendModeChange}>
             <SelectTrigger className="h-8 w-28 text-xs">
-              <SelectValue />
+              <span>{BLEND_MODES.find((m) => m.value === currentBlendMode)?.label}</span>
             </SelectTrigger>
             <SelectContent>
               {BLEND_MODES.map((mode) => (
