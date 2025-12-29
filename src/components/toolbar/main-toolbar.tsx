@@ -11,24 +11,25 @@ import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCanvasStore } from "@/stores/canvas-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
-import {
-  Circle,
-  Square,
-  ArrowRight,
-  Type,
-  Pencil,
-  Highlighter,
-  MousePointer2,
-  Undo,
-  Redo,
-  Download,
-  Trash2,
-  Upload,
-  ALargeSmall,
-  Palette,
-} from "lucide-react";
+
 import { STROKE_COLORS } from "@/constants";
-import type { Tool, TextAnnotation } from "@/types";
+import type { Tool } from "@/types";
+import {
+  IconArrowRightOutlineDuo18,
+  IconCursorDefaultOutlineDuo18,
+  IconDownload3OutlineDuo18,
+  IconPalette2OutlineDuo18,
+  IconPenOutlineDuo18,
+  IconRedoOutlineDuo18,
+  IconScanTextOutlineDuo18,
+  IconShapeCircleOutlineDuo18,
+  IconShapeSquareOutlineDuo18,
+  IconTextHighlight3OutlineDuo18,
+  IconTrash2OutlineDuo18,
+  IconTypographyOutlineDuo18,
+  IconUndoOutlineDuo18,
+  IconUpload3OutlineDuo18,
+} from "nucleo-ui-outline-duo-18";
 
 interface MainToolbarProps {
   onUploadClick: () => void;
@@ -94,36 +95,14 @@ export function MainToolbar({ onUploadClick, onDownload }: MainToolbarProps) {
     }
   };
 
-  const selectedTextAnnotations = selectedIds
-    .map((id) => annotations.find((a) => a.id === id))
-    .filter((a): a is TextAnnotation => a?.type === "text");
-
-  const hasSelectedText = selectedTextAnnotations.length > 0;
-  const selectedTextHasStroke = selectedTextAnnotations.some(
-    (a) => a.stroke && a.strokeWidth && a.strokeWidth > 0,
-  );
-
-  const handleToggleTextStroke = () => {
-    for (const annotation of selectedTextAnnotations) {
-      if (annotation.stroke && annotation.strokeWidth && annotation.strokeWidth > 0) {
-        updateAnnotation(annotation.id, { stroke: null, strokeWidth: 0 });
-      } else {
-        updateAnnotation(annotation.id, {
-          stroke: strokeColor,
-          strokeWidth: Math.max(1, strokeWidth / 4),
-        });
-      }
-    }
-  };
-
   return (
     <div className="flex shrink-0 items-center justify-center gap-4 border-b bg-background p-3">
       <div className="flex gap-1">
-        <Button variant="ghost" size="sm" onClick={handleUndo} disabled={!canUndo} title="Undo">
-          <Undo className="h-4 w-4" />
+        <Button variant="ghost" size="icon" onClick={handleUndo} disabled={!canUndo} title="Undo">
+          <IconUndoOutlineDuo18 />
         </Button>
-        <Button variant="ghost" size="sm" onClick={handleRedo} disabled={!canRedo} title="Redo">
-          <Redo className="h-4 w-4" />
+        <Button variant="ghost" size="icon" onClick={handleRedo} disabled={!canRedo} title="Redo">
+          <IconRedoOutlineDuo18 />
         </Button>
       </div>
 
@@ -137,25 +116,28 @@ export function MainToolbar({ onUploadClick, onDownload }: MainToolbarProps) {
         }}
       >
         <ToggleGroupItem value="select" title="Select">
-          <MousePointer2 className="h-4 w-4" />
+          <IconCursorDefaultOutlineDuo18 />
         </ToggleGroupItem>
         <ToggleGroupItem value="circle" title="Circle">
-          <Circle className="h-4 w-4" />
+          <IconShapeCircleOutlineDuo18 />
         </ToggleGroupItem>
         <ToggleGroupItem value="rectangle" title="Rectangle">
-          <Square className="h-4 w-4" />
+          <IconShapeSquareOutlineDuo18 />
         </ToggleGroupItem>
         <ToggleGroupItem value="arrow" title="Arrow">
-          <ArrowRight className="h-4 w-4" />
+          <IconArrowRightOutlineDuo18 />
         </ToggleGroupItem>
         <ToggleGroupItem value="text" title="Text">
-          <Type className="h-4 w-4" />
+          <IconTypographyOutlineDuo18 />
         </ToggleGroupItem>
         <ToggleGroupItem value="freehand" title="Freehand">
-          <Pencil className="h-4 w-4" />
+          <IconPenOutlineDuo18 />
         </ToggleGroupItem>
         <ToggleGroupItem value="highlighter" title="Highlighter">
-          <Highlighter className="h-4 w-4" />
+          <IconTextHighlight3OutlineDuo18 />
+        </ToggleGroupItem>
+        <ToggleGroupItem value="ocr" title="OCR Text Recognition">
+          <IconScanTextOutlineDuo18 />
         </ToggleGroupItem>
       </ToggleGroup>
 
@@ -179,17 +161,17 @@ export function MainToolbar({ onUploadClick, onDownload }: MainToolbarProps) {
             className={`flex h-6 w-6 items-center justify-center rounded-full border-2 transition-transform hover:scale-110 ${
               !STROKE_COLORS.includes(strokeColor)
                 ? "border-ring ring-2 ring-ring/50"
-                : "border-muted-foreground/30"
+                : "border-muted-foreground/30 bg-muted"
             }`}
-            style={{
-              background: !STROKE_COLORS.includes(strokeColor)
-                ? strokeColor
-                : "conic-gradient(red, yellow, lime, aqua, blue, magenta, red)",
-            }}
+            style={
+              !STROKE_COLORS.includes(strokeColor)
+                ? { backgroundColor: strokeColor }
+                : undefined
+            }
             title="Custom color"
           >
             {STROKE_COLORS.includes(strokeColor) && (
-              <Palette className="h-3 w-3 text-white drop-shadow-md" />
+              <IconPalette2OutlineDuo18 className="text-muted-foreground" />
             )}
           </PopoverTrigger>
           <PopoverContent className="w-64">
@@ -211,8 +193,9 @@ export function MainToolbar({ onUploadClick, onDownload }: MainToolbarProps) {
 
       <div className="h-6 w-px bg-border" />
 
-      <div className="flex w-24 items-center gap-2">
+      <div className="flex w-28 items-center gap-2">
         <Slider
+          className="flex-1"
           value={[strokeWidth]}
           onValueChange={(value) => {
             const newValue = Array.isArray(value) ? value[0] : value;
@@ -222,31 +205,17 @@ export function MainToolbar({ onUploadClick, onDownload }: MainToolbarProps) {
           max={20}
           step={1}
         />
-        <span className="w-6 text-xs text-muted-foreground">{strokeWidth}px</span>
+        <span className="w-8 text-xs tabular-nums text-muted-foreground">{strokeWidth}px</span>
       </div>
-
-      {hasSelectedText && (
-        <>
-          <div className="h-6 w-px bg-border" />
-          <Button
-            variant={selectedTextHasStroke ? "secondary" : "ghost"}
-            size="sm"
-            onClick={handleToggleTextStroke}
-            title={selectedTextHasStroke ? "Remove text outline" : "Add text outline"}
-          >
-            <ALargeSmall className="h-4 w-4" />
-          </Button>
-        </>
-      )}
 
       <div className="h-6 w-px bg-border" />
 
       <div className="flex gap-1">
         <Button variant="ghost" size="sm" onClick={onUploadClick} title="Upload Image">
-          <Upload className="h-4 w-4" />
+          <IconUpload3OutlineDuo18 />
         </Button>
         <Button variant="ghost" size="sm" onClick={onDownload} title="Download">
-          <Download className="h-4 w-4" />
+          <IconDownload3OutlineDuo18 />
         </Button>
         <Button
           variant="ghost"
@@ -255,7 +224,7 @@ export function MainToolbar({ onUploadClick, onDownload }: MainToolbarProps) {
           disabled={selectedIds.length === 0}
           title="Delete Selected"
         >
-          <Trash2 className="h-4 w-4" />
+          <IconTrash2OutlineDuo18 />
         </Button>
         <Button variant="destructive" size="sm" onClick={handleClear} title="Clear All">
           Clear

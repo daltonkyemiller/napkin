@@ -1,19 +1,22 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useHotkeys } from "react-hotkeys-hook";
-import { invoke } from "@tauri-apps/api/core";
-import { getCurrentWindow } from "@tauri-apps/api/window";
-import { save } from "@tauri-apps/plugin-dialog";
-import { writeFile } from "@tauri-apps/plugin-fs";
 import {
   AnnotationCanvas,
   type AnnotationCanvasHandle,
 } from "@/components/canvas/annotation-canvas";
-import { MainToolbar } from "@/components/toolbar/main-toolbar";
+import { OcrResultDialog } from "@/components/ocr/ocr-result-dialog";
 import { SettingsDialog } from "@/components/settings/settings-dialog";
-import { useCanvasStore } from "@/stores/canvas-store";
-import { useAnnotationStore } from "@/stores/annotation-store";
+import { MainToolbar } from "@/components/toolbar/main-toolbar";
 import { Button } from "@/components/ui/button";
-import { Upload, ImageIcon } from "lucide-react";
+import { useAnnotationStore } from "@/stores/annotation-store";
+import { useCanvasStore } from "@/stores/canvas-store";
+import type { TextAnnotation } from "@/types";
+import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { save } from "@tauri-apps/plugin-dialog";
+import { writeFile } from "@tauri-apps/plugin-fs";
+import { IconImageOutlineDuo18, IconUpload3OutlineDuo18 } from "nucleo-ui-outline-duo-18";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useHotkeys } from "react-hotkeys-hook";
+import { Toaster } from "sonner";
 
 export default function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -22,6 +25,13 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [outputFilename, setOutputFilename] = useState<string | null>(null);
+  const [ocrDialogOpen, setOcrDialogOpen] = useState(false);
+  const [ocrText, setOcrText] = useState<string | null>(null);
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrError, setOcrError] = useState<string | null>(null);
+  const [ocrSelectionPosition, setOcrSelectionPosition] = useState<{ x: number; y: number } | null>(
+    null,
+  );
 
   const {
     imageUrl,
@@ -32,9 +42,10 @@ export default function App() {
     activeTool,
   } = useCanvasStore();
 
-  const { annotations, deleteAnnotations, clearAnnotations, updateAnnotation } =
+  const { annotations, deleteAnnotations, clearAnnotations, updateAnnotation, addAnnotation } =
     useAnnotationStore();
   const temporal = useAnnotationStore.temporal;
+  const { strokeColor, fontSize } = useCanvasStore();
 
   useEffect(() => {
     async function loadFromCli() {
@@ -239,6 +250,46 @@ export default function App() {
   useHotkeys("shift+right, shift+l", () => moveSelected(10, 0), { preventDefault: true });
 
   useHotkeys("mod+comma", () => setSettingsOpen(true), { preventDefault: true });
+  useHotkeys("o", () => setActiveTool("ocr"));
+
+  const handleOcrRegionSelected = useCallback(async (imageData: string, x: number, y: number) => {
+    setOcrDialogOpen(true);
+    setOcrLoading(true);
+    setOcrError(null);
+    setOcrText(null);
+    setOcrSelectionPosition({ x, y });
+
+    try {
+      const text = await invoke<string>("perform_ocr", { imageData });
+      setOcrText(text);
+    } catch (e) {
+      setOcrError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setOcrLoading(false);
+    }
+  }, []);
+
+  const handleCreateTextAnnotation = useCallback(
+    (text: string) => {
+      if (!ocrSelectionPosition) return;
+
+      const textAnnotation: TextAnnotation = {
+        id: `annotation_${Date.now()}`,
+        type: "text",
+        x: ocrSelectionPosition.x,
+        y: ocrSelectionPosition.y,
+        text,
+        fontSize,
+        fontFamily: "Arial",
+        fill: strokeColor,
+        stroke: null,
+        strokeWidth: 0,
+      };
+      addAnnotation(textAnnotation);
+      setActiveTool("select");
+    },
+    [ocrSelectionPosition, fontSize, strokeColor, addAnnotation, setActiveTool],
+  );
 
   return (
     <div
@@ -256,18 +307,27 @@ export default function App() {
       />
 
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <OcrResultDialog
+        open={ocrDialogOpen}
+        onOpenChange={setOcrDialogOpen}
+        text={ocrText}
+        isLoading={ocrLoading}
+        error={ocrError}
+        onCreateTextAnnotation={handleCreateTextAnnotation}
+        selectionPosition={ocrSelectionPosition}
+      />
 
       {isLoading ? (
         <div className="flex h-full items-center justify-center" />
       ) : !image ? (
         <div className="flex h-full flex-col items-center justify-center gap-6">
           <div className="flex flex-col items-center gap-2 text-muted-foreground">
-            <ImageIcon className="h-16 w-16" />
+            <IconImageOutlineDuo18 className="size-24" />
             <h1 className="text-2xl font-semibold text-foreground">Image Annotator</h1>
             <p className="text-sm">Upload an image to start annotating</p>
           </div>
           <Button onClick={handleUploadClick} size="lg">
-            <Upload className="mr-2 h-5 w-5" />
+            <IconUpload3OutlineDuo18 />
             Select Image
           </Button>
           <p className="text-xs text-muted-foreground">Or drag and drop an image anywhere</p>
@@ -276,10 +336,15 @@ export default function App() {
         <div className="flex h-full flex-col">
           <MainToolbar onUploadClick={handleUploadClick} onDownload={handleDownload} />
           <div className="flex-1 overflow-hidden">
-            <AnnotationCanvas ref={canvasRef} image={image} />
+            <AnnotationCanvas
+              ref={canvasRef}
+              image={image}
+              onOcrRegionSelected={handleOcrRegionSelected}
+            />
           </div>
         </div>
       )}
+      <Toaster position="top-right" richColors />
     </div>
   );
 }
