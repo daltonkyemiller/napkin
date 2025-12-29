@@ -50,6 +50,17 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
     ? (selectedBlendableAnnotations[0] as { blendMode?: BlendMode }).blendMode ?? "source-over"
     : "source-over";
 
+  const currentStrokeWidth = hasBlendableSelection
+    ? (selectedBlendableAnnotations[0] as { strokeWidth: number }).strokeWidth
+    : 3;
+
+  const handleStrokeWidthChange = (value: number | readonly number[]) => {
+    const strokeWidth = Array.isArray(value) ? value[0] : value;
+    for (const annotation of selectedBlendableAnnotations) {
+      updateAnnotation(annotation.id, { strokeWidth });
+    }
+  };
+
   const handleSketchinessChange = (value: number | readonly number[]) => {
     const sketchiness = Array.isArray(value) ? value[0] : value;
     for (const annotation of selectedSketchableAnnotations) {
@@ -163,11 +174,26 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
       style={{ position: "absolute", zIndex: 50 }}
       className="flex items-center gap-3 rounded-lg border bg-background px-3 py-2 shadow-lg"
     >
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">Stroke</span>
+        <Slider
+          className="w-16"
+          value={[currentStrokeWidth]}
+          onValueChange={handleStrokeWidthChange}
+          min={1}
+          max={20}
+          step={1}
+        />
+        <span className="w-6 text-xs tabular-nums text-muted-foreground">
+          {currentStrokeWidth}px
+        </span>
+      </div>
+
       {hasSketchableSelection && (
         <div className="flex items-center gap-2">
           <IconPenOutlineDuo18 className="size-4 text-muted-foreground" />
           <Slider
-            className="w-20"
+            className="w-16"
             value={[currentSketchiness]}
             onValueChange={handleSketchinessChange}
             min={0}
