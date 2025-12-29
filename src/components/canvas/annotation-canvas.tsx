@@ -1,4 +1,4 @@
-import { useEffect, useRef, forwardRef, useImperativeHandle, useState } from "react";
+import { useEffect, useRef, forwardRef, useImperativeHandle, useState, useMemo } from "react";
 import { Stage, Layer, Image, Transformer, Rect, Circle, Arrow, Text, Line } from "react-konva";
 import type Konva from "konva";
 import { useCanvasStore } from "@/stores/canvas-store";
@@ -32,8 +32,10 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
     const isDrawingRef = useRef(false);
     const currentAnnotationRef = useRef<string | null>(null);
     const preDrawHistoryLengthRef = useRef<number>(0);
+    const drawStartPosRef = useRef<{ x: number; y: number } | null>(null);
     const [ocrSelectionStart, setOcrSelectionStart] = useState<{ x: number; y: number } | null>(null);
     const [ocrSelectionRect, setOcrSelectionRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+    const [isTransformingAnnotation, setIsTransformingAnnotation] = useState(false);
 
     const {
       width,
@@ -147,6 +149,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
         clearSelection();
         isDrawingRef.current = true;
         setIsDrawing(true);
+        drawStartPosRef.current = pos;
 
         const id = `annotation_${Date.now()}`;
         currentAnnotationRef.current = id;
@@ -241,7 +244,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       }
     };
 
-    const handleStageMouseMove = (_e: Konva.KonvaEventObject<MouseEvent>) => {
+    const handleStageMouseMove = (e: Konva.KonvaEventObject<MouseEvent>) => {
       if (activeTool === "ocr" && ocrSelectionStart) {
         const pos = stageRef.current?.getPointerPosition();
         if (!pos) return;
@@ -262,6 +265,9 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       const annotation = annotations.find((a) => a.id === currentAnnotationRef.current);
       if (!annotation) return;
 
+      const shiftKey = e.evt.shiftKey;
+      const altKey = e.evt.altKey;
+
       switch (annotation.type) {
         case "circle": {
           const dx = pos.x - annotation.x;
@@ -271,10 +277,33 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           break;
         }
         case "rectangle": {
-          updateAnnotation(annotation.id, {
-            width: pos.x - annotation.x,
-            height: pos.y - annotation.y,
-          });
+          const startPos = drawStartPosRef.current;
+          if (!startPos) break;
+
+          let dx = pos.x - startPos.x;
+          let dy = pos.y - startPos.y;
+
+          if (shiftKey) {
+            const maxDim = Math.max(Math.abs(dx), Math.abs(dy));
+            dx = maxDim * Math.sign(dx || 1);
+            dy = maxDim * Math.sign(dy || 1);
+          }
+
+          if (altKey) {
+            updateAnnotation(annotation.id, {
+              x: startPos.x - dx,
+              y: startPos.y - dy,
+              width: dx * 2,
+              height: dy * 2,
+            });
+          } else {
+            updateAnnotation(annotation.id, {
+              x: startPos.x,
+              y: startPos.y,
+              width: dx,
+              height: dy,
+            });
+          }
           break;
         }
         case "arrow": {
@@ -370,6 +399,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       isDrawingRef.current = false;
       setIsDrawing(false);
       currentAnnotationRef.current = null;
+      drawStartPosRef.current = null;
     };
 
     const handleAnnotationClick = (
@@ -396,6 +426,14 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       }
     };
 
+    const handleDragStart = () => {
+      setIsTransformingAnnotation(true);
+    };
+
+    const handleTransformStart = () => {
+      setIsTransformingAnnotation(true);
+    };
+
     const handleTransformEnd = (e: Konva.KonvaEventObject<Event>) => {
       const node = e.target;
       const id = node.id();
@@ -409,6 +447,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
         scaleX: node.scaleX(),
         scaleY: node.scaleY(),
       });
+      setIsTransformingAnnotation(false);
     };
 
     const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
@@ -417,6 +456,104 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
         x: node.x(),
         y: node.y(),
       });
+      setIsTransformingAnnotation(false);
+    };
+
+    const selectedRectangle = useMemo(() => {
+      if (selectedIds.length !== 1) return null;
+      const annotation = annotations.find((a) => a.id === selectedIds[0]);
+      if (annotation?.type !== "rectangle") return null;
+      return annotation as RectangleAnnotation;
+    }, [selectedIds, annotations]);
+
+    const rotatePoint = (x: number, y: number, angleDeg: number) => {
+      const radians = (angleDeg * Math.PI) / 180;
+      const cos = Math.cos(radians);
+      const sin = Math.sin(radians);
+      return {
+        x: x * cos - y * sin,
+        y: x * sin + y * cos,
+      };
+    };
+
+    const CORNER_RADIUS_HANDLE_OFFSET = 16;
+
+    const getCornerRadiusHandlePosition = (rect: RectangleAnnotation) => {
+      const cornerRadius = rect.cornerRadius ?? 0;
+      const scaleX = rect.scaleX ?? 1;
+      const scaleY = rect.scaleY ?? 1;
+      const rotation = rect.rotation ?? 0;
+      const signX = Math.sign(rect.width) || 1;
+      const signY = Math.sign(rect.height) || 1;
+      
+      const offset = cornerRadius + CORNER_RADIUS_HANDLE_OFFSET;
+      const scaledX = offset * scaleX * signX;
+      const scaledY = offset * scaleY * signY;
+      
+      const rotated = rotatePoint(scaledX, scaledY, rotation);
+      
+      return {
+        x: rect.x + rotated.x,
+        y: rect.y + rotated.y,
+      };
+    };
+
+    const cornerRadiusDragBoundFunc = (pos: { x: number; y: number }) => {
+      if (!selectedRectangle) return pos;
+      
+      const rotation = selectedRectangle.rotation ?? 0;
+      const scaleX = selectedRectangle.scaleX ?? 1;
+      const scaleY = selectedRectangle.scaleY ?? 1;
+      const signX = Math.sign(selectedRectangle.width) || 1;
+      const signY = Math.sign(selectedRectangle.height) || 1;
+      
+      const dx = pos.x - selectedRectangle.x;
+      const dy = pos.y - selectedRectangle.y;
+      
+      const unrotated = rotatePoint(dx, dy, -rotation);
+      const localX = (unrotated.x / scaleX) * signX;
+      const localY = (unrotated.y / scaleY) * signY;
+      
+      const maxRadius = Math.min(
+        Math.abs(selectedRectangle.width),
+        Math.abs(selectedRectangle.height)
+      ) / 2;
+      
+      const diagonalPos = (localX + localY) / 2;
+      const minOffset = CORNER_RADIUS_HANDLE_OFFSET;
+      const maxOffset = maxRadius + CORNER_RADIUS_HANDLE_OFFSET;
+      const clampedOffset = Math.max(minOffset, Math.min(diagonalPos, maxOffset));
+      
+      const rotated = rotatePoint(clampedOffset * scaleX * signX, clampedOffset * scaleY * signY, rotation);
+      
+      return {
+        x: selectedRectangle.x + rotated.x,
+        y: selectedRectangle.y + rotated.y,
+      };
+    };
+
+    const handleCornerRadiusDrag = (e: Konva.KonvaEventObject<DragEvent>) => {
+      if (!selectedRectangle) return;
+      
+      const node = e.target;
+      const rotation = selectedRectangle.rotation ?? 0;
+      const scaleX = selectedRectangle.scaleX ?? 1;
+      const signX = Math.sign(selectedRectangle.width) || 1;
+      
+      const dx = node.x() - selectedRectangle.x;
+      const dy = node.y() - selectedRectangle.y;
+      
+      const unrotated = rotatePoint(dx, dy, -rotation);
+      const localOffset = (unrotated.x / scaleX) * signX;
+      const localRadius = localOffset - CORNER_RADIUS_HANDLE_OFFSET;
+      
+      const maxRadius = Math.min(
+        Math.abs(selectedRectangle.width),
+        Math.abs(selectedRectangle.height)
+      ) / 2;
+      const clampedRadius = Math.max(0, Math.min(localRadius, maxRadius));
+      
+      updateAnnotation(selectedRectangle.id, { cornerRadius: Math.round(clampedRadius) });
     };
 
     const renderAnnotation = (annotation: Annotation) => {
@@ -429,7 +566,9 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
         scaleY: annotation.scaleY ?? 1,
         draggable: activeTool === "select",
         onClick: (e: Konva.KonvaEventObject<MouseEvent>) => handleAnnotationClick(e, annotation),
+        onDragStart: handleDragStart,
         onDragEnd: handleDragEnd,
+        onTransformStart: handleTransformStart,
         onTransformEnd: handleTransformEnd,
       };
 
@@ -558,6 +697,23 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                 fill="rgba(59, 130, 246, 0.1)"
               />
             )}
+            {selectedRectangle && activeTool === "select" && !isTransformingAnnotation && (() => {
+              const pos = getCornerRadiusHandlePosition(selectedRectangle);
+              return (
+                <Circle
+                  x={pos.x}
+                  y={pos.y}
+                  radius={6}
+                  fill="#4F46E5"
+                  stroke="#fff"
+                  strokeWidth={2}
+                  draggable
+                  dragBoundFunc={cornerRadiusDragBoundFunc}
+                  onDragMove={handleCornerRadiusDrag}
+                  hitStrokeWidth={10}
+                />
+              );
+            })()}
           </Layer>
         </Stage>
       </div>
