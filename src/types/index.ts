@@ -33,6 +33,7 @@ export interface ArrowAnnotation extends BaseAnnotation {
   strokeWidth: number;
   pointerLength?: number;
   pointerWidth?: number;
+  bend?: number;
 }
 
 export interface TextAnnotation extends BaseAnnotation {
