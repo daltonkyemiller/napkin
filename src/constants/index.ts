@@ -2,7 +2,19 @@ export const DEFAULT_STROKE_COLOR = "#ef4444";
 export const DEFAULT_FILL_COLOR = null;
 export const DEFAULT_STROKE_WIDTH = 3;
 export const DEFAULT_FONT_SIZE = 24;
-export const DEFAULT_FONT_FAMILY = "Arial";
+export const DEFAULT_FONT_FAMILY = "Shantell Sans Variable";
+
+export const FONT_FAMILIES = [
+  "Shantell Sans Variable",
+  "Inter Variable",
+  "Arial",
+  "Helvetica",
+  "Georgia",
+  "Times New Roman",
+  "Courier New",
+  "Verdana",
+  "Comic Sans MS",
+];
 
 export const STROKE_COLORS = [
   "#ef4444",

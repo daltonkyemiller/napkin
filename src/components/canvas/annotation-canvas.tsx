@@ -9,6 +9,7 @@ import { useAnnotationStore } from "@/stores/annotation-store";
 import { useInlineTextEditing } from "@/hooks/use-inline-text-editing";
 import { simplifyPath, closePathIfNearStart } from "@/lib/path-smoothing";
 import { drawRoughDrawable } from "@/lib/rough-draw";
+import { DEFAULT_FONT_FAMILY } from "@/constants";
 import type {
   Annotation,
   CircleAnnotation,
@@ -230,7 +231,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               type: "text",
               text: "",
               fontSize,
-              fontFamily: "Arial",
+              fontFamily: DEFAULT_FONT_FAMILY,
               fill: strokeColor,
               stroke: null,
               strokeWidth: 0,

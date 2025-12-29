@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import type Konva from "konva";
+import { DEFAULT_FONT_FAMILY } from "@/constants";
 import { useAnnotationStore } from "@/stores/annotation-store";
 import { useCanvasStore } from "@/stores/canvas-store";
 import type { TextAnnotation } from "@/types";
@@ -49,7 +50,7 @@ export function useInlineTextEditing(stageRef: React.RefObject<Konva.Stage | nul
       textarea.style.outline = "none";
       textarea.style.resize = "none";
       textarea.style.lineHeight = String(textNode.lineHeight() || 1);
-      textarea.style.fontFamily = textNode.fontFamily() || "Arial";
+      textarea.style.fontFamily = textNode.fontFamily() || DEFAULT_FONT_FAMILY;
       textarea.style.transformOrigin = "left top";
       textarea.style.textAlign = textNode.align() || "left";
       textarea.style.color = textNode.fill()?.toString() || "#000000";

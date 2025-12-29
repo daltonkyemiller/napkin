@@ -7,6 +7,7 @@ import { SettingsDialog } from "@/components/settings/settings-dialog";
 import { FloatingElementToolbar } from "@/components/toolbar/floating-element-toolbar";
 import { MainToolbar } from "@/components/toolbar/main-toolbar";
 import { Button } from "@/components/ui/button";
+import { DEFAULT_FONT_FAMILY } from "@/constants";
 import { useAnnotationStore } from "@/stores/annotation-store";
 import { useCanvasStore } from "@/stores/canvas-store";
 import type { TextAnnotation } from "@/types";
@@ -282,7 +283,7 @@ export default function App() {
         y: ocrSelectionPosition.y,
         text,
         fontSize,
-        fontFamily: "Arial",
+        fontFamily: DEFAULT_FONT_FAMILY,
         fill: strokeColor,
         stroke: null,
         strokeWidth: 0,

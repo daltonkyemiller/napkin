@@ -4,8 +4,8 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { useCanvasStore } from "@/stores/canvas-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
-import { IconPenOutlineDuo18 } from "nucleo-ui-outline-duo-18";
-import type { BlendMode } from "@/types";
+import { FONT_FAMILIES } from "@/constants";
+import type { BlendMode, TextAnnotation } from "@/types";
 
 const BLEND_MODES: { value: BlendMode; label: string }[] = [
   { value: "source-over", label: "Normal" },
@@ -23,40 +23,69 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ left: 0, top: 0 });
   const [isVisible, setIsVisible] = useState(false);
+  const [systemFonts, setSystemFonts] = useState<string[]>([]);
 
   const { selectedIds } = useCanvasStore();
   const { annotations, updateAnnotation } = useAnnotationStore();
 
-  const selectedBlendableAnnotations = annotations.filter(
+  useEffect(() => {
+    async function loadSystemFonts() {
+      if ("queryLocalFonts" in window) {
+        try {
+          const fonts = await (window as Window & { queryLocalFonts: () => Promise<FontData[]> }).queryLocalFonts();
+          const uniqueFamilies = [...new Set(fonts.map((f) => f.family))].sort();
+          setSystemFonts(uniqueFamilies);
+        } catch {
+        }
+      }
+    }
+    loadSystemFonts();
+  }, []);
+
+  const allFonts = [...new Set([...FONT_FAMILIES, ...systemFonts])];
+
+  const selectedShapeAnnotations = annotations.filter(
     (a) =>
       selectedIds.includes(a.id) &&
       (a.type === "circle" || a.type === "rectangle" || a.type === "arrow" || a.type === "freehand"),
   );
 
-  const hasBlendableSelection = selectedBlendableAnnotations.length > 0;
+  const selectedTextAnnotations = annotations.filter(
+    (a) => selectedIds.includes(a.id) && a.type === "text",
+  ) as TextAnnotation[];
 
   const selectedSketchableAnnotations = annotations.filter(
     (a) =>
       selectedIds.includes(a.id) &&
       (a.type === "circle" || a.type === "rectangle" || a.type === "arrow"),
   );
+
+  const hasShapeSelection = selectedShapeAnnotations.length > 0;
+  const hasTextSelection = selectedTextAnnotations.length > 0;
   const hasSketchableSelection = selectedSketchableAnnotations.length > 0;
+  const hasAnySelection = hasShapeSelection || hasTextSelection;
 
   const currentSketchiness = hasSketchableSelection
     ? (selectedSketchableAnnotations[0] as { sketchiness?: number }).sketchiness ?? 1.5
     : 1.5;
 
-  const currentBlendMode = hasBlendableSelection
-    ? (selectedBlendableAnnotations[0] as { blendMode?: BlendMode }).blendMode ?? "source-over"
+  const currentBlendMode = hasShapeSelection
+    ? (selectedShapeAnnotations[0] as { blendMode?: BlendMode }).blendMode ?? "source-over"
     : "source-over";
 
-  const currentStrokeWidth = hasBlendableSelection
-    ? (selectedBlendableAnnotations[0] as { strokeWidth: number }).strokeWidth
+  const currentStrokeWidth = hasShapeSelection
+    ? (selectedShapeAnnotations[0] as { strokeWidth: number }).strokeWidth
     : 3;
+
+  const currentFontFamily = hasTextSelection
+    ? selectedTextAnnotations[0].fontFamily
+    : FONT_FAMILIES[0];
+
+  const currentFontSize = hasTextSelection ? selectedTextAnnotations[0].fontSize : 24;
 
   const handleStrokeWidthChange = (value: number | readonly number[]) => {
     const strokeWidth = Array.isArray(value) ? value[0] : value;
-    for (const annotation of selectedBlendableAnnotations) {
+    for (const annotation of selectedShapeAnnotations) {
       updateAnnotation(annotation.id, { strokeWidth });
     }
   };
@@ -70,13 +99,27 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
 
   const handleBlendModeChange = (mode: BlendMode | null) => {
     if (!mode) return;
-    for (const annotation of selectedBlendableAnnotations) {
+    for (const annotation of selectedShapeAnnotations) {
       updateAnnotation(annotation.id, { blendMode: mode });
     }
   };
 
+  const handleFontFamilyChange = (fontFamily: string | null) => {
+    if (!fontFamily) return;
+    for (const annotation of selectedTextAnnotations) {
+      updateAnnotation(annotation.id, { fontFamily });
+    }
+  };
+
+  const handleFontSizeChange = (value: number | readonly number[]) => {
+    const fontSize = Array.isArray(value) ? value[0] : value;
+    for (const annotation of selectedTextAnnotations) {
+      updateAnnotation(annotation.id, { fontSize });
+    }
+  };
+
   const updatePosition = useCallback(() => {
-    if (!hasBlendableSelection || !containerRef.current || !toolbarRef.current) {
+    if (!hasAnySelection || !containerRef.current || !toolbarRef.current) {
       setIsVisible(false);
       return;
     }
@@ -86,7 +129,9 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
     let maxX = -Infinity;
     let maxY = -Infinity;
 
-    for (const annotation of selectedBlendableAnnotations) {
+    const allSelected = [...selectedShapeAnnotations, ...selectedTextAnnotations];
+
+    for (const annotation of allSelected) {
       if (annotation.type === "circle") {
         minX = Math.min(minX, annotation.x - annotation.radius);
         minY = Math.min(minY, annotation.y - annotation.radius);
@@ -107,6 +152,11 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
           maxX = Math.max(maxX, px);
           maxY = Math.max(maxY, py);
         }
+      } else if (annotation.type === "text") {
+        minX = Math.min(minX, annotation.x);
+        minY = Math.min(minY, annotation.y);
+        maxX = Math.max(maxX, annotation.x + (annotation.width ?? 100));
+        maxY = Math.max(maxY, annotation.y + annotation.fontSize);
       }
     }
 
@@ -136,7 +186,7 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
 
     setPosition({ left, top });
     setIsVisible(true);
-  }, [hasBlendableSelection, selectedBlendableAnnotations, containerRef]);
+  }, [hasAnySelection, selectedShapeAnnotations, selectedTextAnnotations, containerRef]);
 
   useEffect(() => {
     updatePosition();
@@ -165,59 +215,102 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
     },
   };
 
-  if (!hasBlendableSelection) return null;
+  if (!hasAnySelection) return null;
 
   return (
     <motion.div
       ref={toolbarRef}
       {...motionProps}
       style={{ position: "absolute", zIndex: 50 }}
-      className="flex items-center gap-3 rounded-lg border bg-background px-3 py-2 shadow-lg"
+      className="flex items-center gap-4 rounded-lg border bg-background px-3 py-2 shadow-lg"
     >
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">Stroke</span>
-        <Slider
-          className="w-16"
-          value={[currentStrokeWidth]}
-          onValueChange={handleStrokeWidthChange}
-          min={1}
-          max={20}
-          step={1}
-        />
-        <span className="w-6 text-xs tabular-nums text-muted-foreground">
-          {currentStrokeWidth}px
-        </span>
-      </div>
+      {hasShapeSelection && (
+        <>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Stroke</span>
+            <Slider
+              className="w-16"
+              value={[currentStrokeWidth]}
+              onValueChange={handleStrokeWidthChange}
+              min={1}
+              max={20}
+              step={1}
+            />
+            <span className="w-6 text-xs tabular-nums text-muted-foreground">
+              {currentStrokeWidth}px
+            </span>
+          </div>
 
-      {hasSketchableSelection && (
-        <div className="flex items-center gap-2">
-          <IconPenOutlineDuo18 className="size-4 text-muted-foreground" />
-          <Slider
-            className="w-16"
-            value={[currentSketchiness]}
-            onValueChange={handleSketchinessChange}
-            min={0}
-            max={3}
-            step={0.5}
-          />
-          <span className="w-6 text-xs tabular-nums text-muted-foreground">
-            {currentSketchiness.toFixed(1)}
-          </span>
-        </div>
+          {hasSketchableSelection && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Sketch</span>
+              <Slider
+                className="w-16"
+                value={[currentSketchiness]}
+                onValueChange={handleSketchinessChange}
+                min={0}
+                max={3}
+                step={0.5}
+              />
+              <span className="w-6 text-xs tabular-nums text-muted-foreground">
+                {currentSketchiness.toFixed(1)}
+              </span>
+            </div>
+          )}
+
+          <Select value={currentBlendMode} onValueChange={handleBlendModeChange}>
+            <SelectTrigger className="h-8 w-28 text-xs">
+              <span>{BLEND_MODES.find((m) => m.value === currentBlendMode)?.label}</span>
+            </SelectTrigger>
+            <SelectContent>
+              {BLEND_MODES.map((mode) => (
+                <SelectItem key={mode.value} value={mode.value}>
+                  {mode.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </>
       )}
 
-      <Select value={currentBlendMode} onValueChange={handleBlendModeChange}>
-        <SelectTrigger className="h-8 w-28 text-xs">
-          <span>{BLEND_MODES.find((m) => m.value === currentBlendMode)?.label}</span>
-        </SelectTrigger>
-        <SelectContent>
-          {BLEND_MODES.map((mode) => (
-            <SelectItem key={mode.value} value={mode.value}>
-              {mode.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {hasTextSelection && (
+        <>
+          <Select value={currentFontFamily} onValueChange={handleFontFamilyChange}>
+            <SelectTrigger className="h-8 w-40 text-xs">
+              <span style={{ fontFamily: currentFontFamily }}>{currentFontFamily}</span>
+            </SelectTrigger>
+            <SelectContent className="max-h-64">
+              {allFonts.map((font) => (
+                <SelectItem key={font} value={font} style={{ fontFamily: font }}>
+                  {font}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Size</span>
+            <Slider
+              className="w-16"
+              value={[currentFontSize]}
+              onValueChange={handleFontSizeChange}
+              min={8}
+              max={128}
+              step={1}
+            />
+            <span className="w-6 text-xs tabular-nums text-muted-foreground">
+              {currentFontSize}
+            </span>
+          </div>
+        </>
+      )}
     </motion.div>
   );
+}
+
+interface FontData {
+  family: string;
+  fullName: string;
+  postscriptName: string;
+  style: string;
 }
