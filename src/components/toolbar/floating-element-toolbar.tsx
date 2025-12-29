@@ -106,7 +106,7 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
     const toolbarRect = toolbarRef.current.getBoundingClientRect();
     const toolbarHeight = toolbarRect.height || 44;
     const toolbarWidth = toolbarRect.width || 200;
-    const gap = 12;
+    const gap = 56;
     const padding = 8;
 
     const centerX = (minX + maxX) / 2;
