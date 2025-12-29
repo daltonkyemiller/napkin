@@ -774,7 +774,8 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
         case "rectangle": {
           if (annotation.sketchiness) {
             const isBeingTransformed = isTransformingAnnotation && selectedIds.includes(annotation.id);
-            const cacheKey = `${annotation.width}-${annotation.height}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.fill}-${annotation.sketchiness}`;
+            const r = annotation.cornerRadius ?? 0;
+            const cacheKey = `${annotation.width}-${annotation.height}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.fill}-${annotation.sketchiness}-${r}`;
             return (
               <Shape
                 key={annotation.id}
@@ -786,7 +787,11 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                 sceneFunc={(ctx) => {
                   if (isBeingTransformed) {
                     ctx.beginPath();
-                    ctx.rect(0, 0, annotation.width, annotation.height);
+                    if (r > 0) {
+                      ctx.roundRect(0, 0, annotation.width, annotation.height, r);
+                    } else {
+                      ctx.rect(0, 0, annotation.width, annotation.height);
+                    }
                     ctx.strokeStyle = annotation.stroke;
                     ctx.lineWidth = annotation.strokeWidth;
                     if (annotation.fill) {
@@ -795,22 +800,40 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                     }
                     ctx.stroke();
                   } else {
-                    const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) =>
-                      gen.rectangle(0, 0, annotation.width, annotation.height, {
+                    const w = annotation.width;
+                    const h = annotation.height;
+                    const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) => {
+                      if (r > 0) {
+                        const clampedR = Math.min(r, w / 2, h / 2);
+                        const path = `M ${clampedR},0 L ${w - clampedR},0 Q ${w},0 ${w},${clampedR} L ${w},${h - clampedR} Q ${w},${h} ${w - clampedR},${h} L ${clampedR},${h} Q 0,${h} 0,${h - clampedR} L 0,${clampedR} Q 0,0 ${clampedR},0 Z`;
+                        return gen.path(path, {
+                          stroke: annotation.stroke,
+                          strokeWidth: annotation.strokeWidth,
+                          fill: annotation.fill ?? undefined,
+                          fillStyle: annotation.fill ? "solid" : undefined,
+                          roughness: annotation.sketchiness,
+                          bowing: annotation.sketchiness,
+                        });
+                      }
+                      return gen.rectangle(0, 0, w, h, {
                         stroke: annotation.stroke,
                         strokeWidth: annotation.strokeWidth,
                         fill: annotation.fill ?? undefined,
                         fillStyle: annotation.fill ? "solid" : undefined,
                         roughness: annotation.sketchiness,
                         bowing: annotation.sketchiness,
-                      }),
-                    );
+                      });
+                    });
                     drawRoughDrawable(ctx._context, drawable);
                   }
                 }}
                 hitFunc={(ctx, shape) => {
                   ctx.beginPath();
-                  ctx.rect(0, 0, annotation.width, annotation.height);
+                  if (r > 0) {
+                    ctx.roundRect(0, 0, annotation.width, annotation.height, r);
+                  } else {
+                    ctx.rect(0, 0, annotation.width, annotation.height);
+                  }
                   ctx.closePath();
                   ctx.fillStrokeShape(shape);
                 }}
