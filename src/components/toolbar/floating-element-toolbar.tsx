@@ -43,8 +43,8 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
   const hasSketchableSelection = selectedSketchableAnnotations.length > 0;
 
   const currentSketchiness = hasSketchableSelection
-    ? (selectedSketchableAnnotations[0] as { sketchiness?: number }).sketchiness ?? 0
-    : 0;
+    ? (selectedSketchableAnnotations[0] as { sketchiness?: number }).sketchiness ?? 1.5
+    : 1.5;
 
   const currentBlendMode = hasBlendableSelection
     ? (selectedBlendableAnnotations[0] as { blendMode?: BlendMode }).blendMode ?? "source-over"
