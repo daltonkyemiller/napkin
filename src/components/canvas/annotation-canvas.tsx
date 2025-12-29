@@ -1,10 +1,14 @@
-import { useEffect, useRef, forwardRef, useImperativeHandle, useState, useMemo } from "react";
+import { useEffect, useRef, forwardRef, useImperativeHandle, useState, useMemo, useCallback } from "react";
 import { Stage, Layer, Image, Transformer, Rect, Circle, Text, Line, Shape } from "react-konva";
 import type Konva from "konva";
+import rough from "roughjs";
+import type { RoughGenerator } from "roughjs/bin/generator";
+import type { Drawable } from "roughjs/bin/core";
 import { useCanvasStore } from "@/stores/canvas-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
 import { useInlineTextEditing } from "@/hooks/use-inline-text-editing";
 import { simplifyPath, closePathIfNearStart } from "@/lib/path-smoothing";
+import { drawRoughDrawable } from "@/lib/rough-draw";
 import type {
   Annotation,
   CircleAnnotation,
@@ -14,6 +18,9 @@ import type {
   FreehandAnnotation,
   HighlighterAnnotation,
 } from "@/types";
+
+const ROUGHNESS = 1;
+const BOWING = 1;
 
 interface AnnotationCanvasProps {
   image: HTMLImageElement;
@@ -56,6 +63,22 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
 
     const { annotations, addAnnotation, updateAnnotation } = useAnnotationStore();
     const { startInlineEdit } = useInlineTextEditing(stageRef);
+
+    const roughGenerator = useMemo(() => rough.generator(), []);
+    const roughDrawablesRef = useRef<Map<string, { key: string; drawable: Drawable }>>(new Map());
+
+    const getRoughDrawable = useCallback(
+      (id: string, cacheKey: string, createDrawable: (gen: RoughGenerator) => Drawable): Drawable => {
+        const cached = roughDrawablesRef.current.get(id);
+        if (cached && cached.key === cacheKey) {
+          return cached.drawable;
+        }
+        const drawable = createDrawable(roughGenerator);
+        roughDrawablesRef.current.set(id, { key: cacheKey, drawable });
+        return drawable;
+      },
+      [roughGenerator],
+    );
 
     const imageScale = Math.min(width / image.width, height / image.height, 1);
     const scaledWidth = image.width * imageScale;
@@ -457,6 +480,19 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
         });
         node.scaleX(1);
         node.scaleY(1);
+      } else if (annotation.type === "circle") {
+        const circle = annotation as CircleAnnotation;
+        const avgScale = (Math.abs(scaleX) + Math.abs(scaleY)) / 2;
+        updateAnnotation(id, {
+          x: node.x(),
+          y: node.y(),
+          rotation: node.rotation(),
+          radius: circle.radius * avgScale,
+          scaleX: 1,
+          scaleY: 1,
+        });
+        node.scaleX(1);
+        node.scaleY(1);
       } else {
         updateAnnotation(id, {
           x: node.x(),
@@ -671,7 +707,54 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       };
 
       switch (annotation.type) {
-        case "circle":
+        case "circle": {
+          if (annotation.sketchy) {
+            const isBeingTransformed = isTransformingAnnotation && selectedIds.includes(annotation.id);
+            const cacheKey = `${annotation.radius}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.fill}`;
+            const diameter = annotation.radius * 2;
+            return (
+              <Shape
+                key={annotation.id}
+                {...commonProps}
+                width={diameter}
+                height={diameter}
+                offsetX={annotation.radius}
+                offsetY={annotation.radius}
+                strokeScaleEnabled={false}
+                sceneFunc={(ctx) => {
+                  if (isBeingTransformed) {
+                    ctx.beginPath();
+                    ctx.arc(annotation.radius, annotation.radius, annotation.radius, 0, Math.PI * 2);
+                    ctx.strokeStyle = annotation.stroke;
+                    ctx.lineWidth = annotation.strokeWidth;
+                    if (annotation.fill) {
+                      ctx.fillStyle = annotation.fill;
+                      ctx.fill();
+                    }
+                    ctx.stroke();
+                  } else {
+                    const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) =>
+                      gen.ellipse(annotation.radius, annotation.radius, diameter, diameter, {
+                        stroke: annotation.stroke,
+                        strokeWidth: annotation.strokeWidth,
+                        fill: annotation.fill ?? undefined,
+                        fillStyle: annotation.fill ? "solid" : undefined,
+                        roughness: ROUGHNESS,
+                        bowing: BOWING,
+                      }),
+                    );
+                    drawRoughDrawable(ctx._context, drawable);
+                  }
+                }}
+                hitFunc={(ctx, shape) => {
+                  ctx.beginPath();
+                  ctx.arc(annotation.radius, annotation.radius, annotation.radius, 0, Math.PI * 2);
+                  ctx.closePath();
+                  ctx.fillStrokeShape(shape);
+                }}
+              />
+            );
+          }
           return (
             <Circle
               key={annotation.id}
@@ -683,7 +766,52 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               fill={annotation.fill ?? undefined}
             />
           );
-        case "rectangle":
+        }
+        case "rectangle": {
+          if (annotation.sketchy) {
+            const isBeingTransformed = isTransformingAnnotation && selectedIds.includes(annotation.id);
+            const cacheKey = `${annotation.width}-${annotation.height}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.fill}`;
+            return (
+              <Shape
+                key={annotation.id}
+                {...commonProps}
+                width={annotation.width}
+                height={annotation.height}
+                strokeScaleEnabled={false}
+                sceneFunc={(ctx) => {
+                  if (isBeingTransformed) {
+                    ctx.beginPath();
+                    ctx.rect(0, 0, annotation.width, annotation.height);
+                    ctx.strokeStyle = annotation.stroke;
+                    ctx.lineWidth = annotation.strokeWidth;
+                    if (annotation.fill) {
+                      ctx.fillStyle = annotation.fill;
+                      ctx.fill();
+                    }
+                    ctx.stroke();
+                  } else {
+                    const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) =>
+                      gen.rectangle(0, 0, annotation.width, annotation.height, {
+                        stroke: annotation.stroke,
+                        strokeWidth: annotation.strokeWidth,
+                        fill: annotation.fill ?? undefined,
+                        fillStyle: annotation.fill ? "solid" : undefined,
+                        roughness: ROUGHNESS,
+                        bowing: BOWING,
+                      }),
+                    );
+                    drawRoughDrawable(ctx._context, drawable);
+                  }
+                }}
+                hitFunc={(ctx, shape) => {
+                  ctx.beginPath();
+                  ctx.rect(0, 0, annotation.width, annotation.height);
+                  ctx.closePath();
+                  ctx.fillStrokeShape(shape);
+                }}
+              />
+            );
+          }
           return (
             <Rect
               key={annotation.id}
@@ -697,6 +825,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               cornerRadius={annotation.cornerRadius}
             />
           );
+        }
         case "arrow": {
           const [startX, startY, endX, endY] = annotation.points;
           const bend = annotation.bend ?? 0;
@@ -704,6 +833,109 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           const basePointerWidth = annotation.pointerWidth ?? 10;
           const pointerLength = basePointerLength + annotation.strokeWidth;
           const pointerWidth = basePointerWidth + annotation.strokeWidth;
+          const isBeingTransformed = isTransformingAnnotation && selectedIds.includes(annotation.id);
+
+          if (annotation.sketchy && !isBeingTransformed) {
+            const cacheKey = `${startX}-${startY}-${endX}-${endY}-${bend}-${annotation.stroke}-${annotation.strokeWidth}`;
+            
+            if (bend !== 0) {
+              const midX = (startX + endX) / 2;
+              const midY = (startY + endY) / 2;
+              const dx = endX - startX;
+              const dy = endY - startY;
+              const length = Math.sqrt(dx * dx + dy * dy) || 1;
+              const perpX = -dy / length;
+              const perpY = dx / length;
+              const ctrlX = midX + perpX * bend;
+              const ctrlY = midY + perpY * bend;
+              
+              const tangentX = endX - ctrlX;
+              const tangentY = endY - ctrlY;
+              const angle = Math.atan2(tangentY, tangentX);
+              
+              return (
+                <Shape
+                  key={annotation.id}
+                  {...commonProps}
+                  stroke={annotation.stroke}
+                  strokeWidth={Math.max(annotation.strokeWidth, 15)}
+                  sceneFunc={(ctx) => {
+                    const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) =>
+                      gen.path(`M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}`, {
+                        stroke: annotation.stroke,
+                        strokeWidth: annotation.strokeWidth,
+                        roughness: ROUGHNESS,
+                        bowing: BOWING,
+                      }),
+                    );
+                    drawRoughDrawable(ctx._context, drawable);
+                    
+                    ctx.save();
+                    ctx.translate(endX, endY);
+                    ctx.rotate(angle);
+                    ctx.beginPath();
+                    ctx.moveTo(-pointerLength, -pointerWidth / 2);
+                    ctx.lineTo(0, 0);
+                    ctx.lineTo(-pointerLength, pointerWidth / 2);
+                    ctx.strokeStyle = annotation.stroke;
+                    ctx.lineWidth = annotation.strokeWidth;
+                    ctx.lineCap = "round";
+                    ctx.lineJoin = "round";
+                    ctx.stroke();
+                    ctx.restore();
+                  }}
+                  hitFunc={(ctx, shape) => {
+                    ctx.beginPath();
+                    ctx.moveTo(startX, startY);
+                    ctx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+                    ctx.fillStrokeShape(shape);
+                  }}
+                />
+              );
+            }
+            
+            const straightAngle = Math.atan2(endY - startY, endX - startX);
+            
+            return (
+              <Shape
+                key={annotation.id}
+                {...commonProps}
+                stroke={annotation.stroke}
+                strokeWidth={Math.max(annotation.strokeWidth, 15)}
+                sceneFunc={(ctx) => {
+                  const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) =>
+                    gen.line(startX, startY, endX, endY, {
+                      stroke: annotation.stroke,
+                      strokeWidth: annotation.strokeWidth,
+                      roughness: ROUGHNESS,
+                      bowing: BOWING,
+                    }),
+                  );
+                  drawRoughDrawable(ctx._context, drawable);
+                  
+                  ctx.save();
+                  ctx.translate(endX, endY);
+                  ctx.rotate(straightAngle);
+                  ctx.beginPath();
+                  ctx.moveTo(-pointerLength, -pointerWidth / 2);
+                  ctx.lineTo(0, 0);
+                  ctx.lineTo(-pointerLength, pointerWidth / 2);
+                  ctx.strokeStyle = annotation.stroke;
+                  ctx.lineWidth = annotation.strokeWidth;
+                  ctx.lineCap = "round";
+                  ctx.lineJoin = "round";
+                  ctx.stroke();
+                  ctx.restore();
+                }}
+                hitFunc={(ctx, shape) => {
+                  ctx.beginPath();
+                  ctx.moveTo(startX, startY);
+                  ctx.lineTo(endX, endY);
+                  ctx.fillStrokeShape(shape);
+                }}
+              />
+            );
+          }
 
           if (bend !== 0) {
             const midX = (startX + endX) / 2;

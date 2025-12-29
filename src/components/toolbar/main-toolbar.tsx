@@ -30,6 +30,7 @@ import {
   IconUndoOutlineDuo18,
   IconUpload3OutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
+import { Toggle } from "@/components/ui/toggle";
 
 interface MainToolbarProps {
   onUploadClick: () => void;
@@ -92,6 +93,22 @@ export function MainToolbar({ onUploadClick, onDownload }: MainToolbarProps) {
       for (const id of selectedIds) {
         updateAnnotation(id, { strokeWidth: width });
       }
+    }
+  };
+
+  const selectedSketchyAnnotations = annotations.filter(
+    (a) =>
+      selectedIds.includes(a.id) &&
+      (a.type === "circle" || a.type === "rectangle" || a.type === "arrow"),
+  );
+
+  const hasSketchySelection = selectedSketchyAnnotations.length > 0;
+  const allSketchy = hasSketchySelection && selectedSketchyAnnotations.every((a) => "sketchy" in a && a.sketchy);
+
+  const handleSketchyToggle = () => {
+    const newSketchy = !allSketchy;
+    for (const annotation of selectedSketchyAnnotations) {
+      updateAnnotation(annotation.id, { sketchy: newSketchy });
     }
   };
 
@@ -207,6 +224,21 @@ export function MainToolbar({ onUploadClick, onDownload }: MainToolbarProps) {
         />
         <span className="w-8 text-xs tabular-nums text-muted-foreground">{strokeWidth}px</span>
       </div>
+
+      {hasSketchySelection && (
+        <>
+          <div className="h-6 w-px bg-border" />
+          <Toggle
+            pressed={allSketchy}
+            onPressedChange={handleSketchyToggle}
+            title="Sketchy style"
+            size="sm"
+          >
+            <IconPenOutlineDuo18 />
+            <span className="text-xs">Sketchy</span>
+          </Toggle>
+        </>
+      )}
 
       <div className="h-6 w-px bg-border" />
 

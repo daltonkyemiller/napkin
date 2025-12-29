@@ -14,6 +14,7 @@ export interface CircleAnnotation extends BaseAnnotation {
   stroke: string;
   strokeWidth: number;
   fill?: string | null;
+  sketchy?: boolean;
 }
 
 export interface RectangleAnnotation extends BaseAnnotation {
@@ -24,6 +25,7 @@ export interface RectangleAnnotation extends BaseAnnotation {
   strokeWidth: number;
   fill?: string | null;
   cornerRadius?: number;
+  sketchy?: boolean;
 }
 
 export interface ArrowAnnotation extends BaseAnnotation {
@@ -34,6 +36,7 @@ export interface ArrowAnnotation extends BaseAnnotation {
   pointerLength?: number;
   pointerWidth?: number;
   bend?: number;
+  sketchy?: boolean;
 }
 
 export interface TextAnnotation extends BaseAnnotation {
