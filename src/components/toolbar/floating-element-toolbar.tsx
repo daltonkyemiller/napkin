@@ -2,6 +2,14 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import { motion, type MotionProps } from "motion/react";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxEmpty,
+} from "@/components/ui/combobox";
 import { useCanvasStore } from "@/stores/canvas-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
 import { FONT_FAMILIES } from "@/constants";
@@ -275,18 +283,25 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
 
       {hasTextSelection && (
         <>
-          <Select value={currentFontFamily} onValueChange={handleFontFamilyChange}>
-            <SelectTrigger className="h-8 w-40 text-xs">
-              <span style={{ fontFamily: currentFontFamily }}>{currentFontFamily}</span>
-            </SelectTrigger>
-            <SelectContent className="max-h-64">
-              {allFonts.map((font) => (
-                <SelectItem key={font} value={font} style={{ fontFamily: font }}>
-                  {font}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            value={currentFontFamily}
+            onValueChange={(value) => handleFontFamilyChange(value as string | null)}
+          >
+            <ComboboxInput
+              placeholder="Search fonts..."
+              className="h-8 w-44 text-xs"
+            />
+            <ComboboxContent>
+              <ComboboxList>
+                {allFonts.map((font) => (
+                  <ComboboxItem key={font} value={font} style={{ fontFamily: font }}>
+                    {font}
+                  </ComboboxItem>
+                ))}
+              </ComboboxList>
+              <ComboboxEmpty>No fonts found</ComboboxEmpty>
+            </ComboboxContent>
+          </Combobox>
 
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Size</span>
