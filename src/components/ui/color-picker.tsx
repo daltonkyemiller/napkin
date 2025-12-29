@@ -1,5 +1,4 @@
 import Color from "color";
-import { PipetteIcon } from "lucide-react";
 import { Slider as SliderPrimitive } from "@base-ui/react/slider";
 import {
   type ComponentProps,
@@ -23,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { IconPaintbrushOutlineDuo18 } from "nucleo-ui-outline-duo-18";
 
 interface ColorPickerContextValue {
   hue: number;
@@ -283,7 +283,7 @@ export const ColorPickerEyeDropper = ({ className, ...props }: ColorPickerEyeDro
       type="button"
       {...(props as any)}
     >
-      <PipetteIcon size={16} />
+      <IconPaintbrushOutlineDuo18 />
     </Button>
   );
 };
@@ -344,7 +344,7 @@ export const ColorPickerFormat = ({ className, ...props }: ColorPickerFormatProp
     return (
       <div
         className={cn(
-          "-space-x-px relative flex w-full items-center rounded-md shadow-sm",
+          "relative flex w-full items-center -space-x-px rounded-md shadow-sm",
           className,
         )}
         {...(props as any)}
@@ -368,7 +368,7 @@ export const ColorPickerFormat = ({ className, ...props }: ColorPickerFormatProp
 
     return (
       <div
-        className={cn("-space-x-px flex items-center rounded-md shadow-sm", className)}
+        className={cn("flex items-center -space-x-px rounded-md shadow-sm", className)}
         {...(props as any)}
       >
         {rgb.map((value, index) => (
@@ -416,7 +416,7 @@ export const ColorPickerFormat = ({ className, ...props }: ColorPickerFormatProp
 
     return (
       <div
-        className={cn("-space-x-px flex items-center rounded-md shadow-sm", className)}
+        className={cn("flex items-center -space-x-px rounded-md shadow-sm", className)}
         {...(props as any)}
       >
         {hsl.map((value, index) => (
