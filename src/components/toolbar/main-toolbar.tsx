@@ -7,13 +7,22 @@ import {
   ColorPickerAlpha,
 } from "@/components/ui/color-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCanvasStore } from "@/stores/canvas-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
 
 import { STROKE_COLORS } from "@/constants";
-import type { Tool } from "@/types";
+import type { BlendMode, Tool } from "@/types";
+
+const BLEND_MODES: { value: BlendMode; label: string }[] = [
+  { value: "source-over", label: "Normal" },
+  { value: "multiply", label: "Multiply" },
+  { value: "overlay", label: "Overlay" },
+  { value: "hard-light", label: "Hard Light" },
+  { value: "color-burn", label: "Color Burn" },
+];
 import {
   IconArrowRightOutlineDuo18,
   IconCursorDefaultOutlineDuo18,
@@ -96,19 +105,30 @@ export function MainToolbar({ onUploadClick, onDownload }: MainToolbarProps) {
     }
   };
 
-  const selectedSketchyAnnotations = annotations.filter(
+  const selectedBlendableAnnotations = annotations.filter(
     (a) =>
       selectedIds.includes(a.id) &&
-      (a.type === "circle" || a.type === "rectangle" || a.type === "arrow"),
+      (a.type === "circle" || a.type === "rectangle" || a.type === "arrow" || a.type === "freehand"),
   );
 
-  const hasSketchySelection = selectedSketchyAnnotations.length > 0;
-  const allSketchy = hasSketchySelection && selectedSketchyAnnotations.every((a) => "sketchy" in a && a.sketchy);
+  const hasBlendableSelection = selectedBlendableAnnotations.length > 0;
+  const allSketchy = hasBlendableSelection && selectedBlendableAnnotations.every((a) => "sketchy" in a && a.sketchy);
+  
+  const currentBlendMode = hasBlendableSelection
+    ? (selectedBlendableAnnotations[0] as { blendMode?: BlendMode }).blendMode ?? "source-over"
+    : "source-over";
 
   const handleSketchyToggle = () => {
     const newSketchy = !allSketchy;
-    for (const annotation of selectedSketchyAnnotations) {
+    for (const annotation of selectedBlendableAnnotations) {
       updateAnnotation(annotation.id, { sketchy: newSketchy });
+    }
+  };
+
+  const handleBlendModeChange = (mode: BlendMode | null) => {
+    if (!mode) return;
+    for (const annotation of selectedBlendableAnnotations) {
+      updateAnnotation(annotation.id, { blendMode: mode });
     }
   };
 
@@ -227,7 +247,7 @@ export function MainToolbar({ onUploadClick, onDownload }: MainToolbarProps) {
         <span className="w-8 text-xs tabular-nums text-muted-foreground">{strokeWidth}px</span>
       </div>
 
-      {hasSketchySelection && (
+      {hasBlendableSelection && (
         <>
           <div className="h-6 w-px bg-border" />
           <Toggle
@@ -239,6 +259,18 @@ export function MainToolbar({ onUploadClick, onDownload }: MainToolbarProps) {
             <IconPenOutlineDuo18 />
             <span className="text-xs">Sketchy</span>
           </Toggle>
+          <Select value={currentBlendMode} onValueChange={handleBlendModeChange}>
+            <SelectTrigger className="h-8 w-28 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {BLEND_MODES.map((mode) => (
+                <SelectItem key={mode.value} value={mode.value}>
+                  {mode.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </>
       )}
 

@@ -721,6 +721,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                 offsetX={annotation.radius}
                 offsetY={annotation.radius}
                 strokeScaleEnabled={false}
+                globalCompositeOperation={annotation.blendMode ?? "source-over"}
                 sceneFunc={(ctx) => {
                   if (isBeingTransformed) {
                     ctx.beginPath();
@@ -764,6 +765,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               strokeWidth={annotation.strokeWidth}
               strokeScaleEnabled={false}
               fill={annotation.fill ?? undefined}
+              globalCompositeOperation={annotation.blendMode ?? "source-over"}
             />
           );
         }
@@ -778,6 +780,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                 width={annotation.width}
                 height={annotation.height}
                 strokeScaleEnabled={false}
+                globalCompositeOperation={annotation.blendMode ?? "source-over"}
                 sceneFunc={(ctx) => {
                   if (isBeingTransformed) {
                     ctx.beginPath();
@@ -823,6 +826,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               strokeScaleEnabled={false}
               fill={annotation.fill ?? undefined}
               cornerRadius={annotation.cornerRadius}
+              globalCompositeOperation={annotation.blendMode ?? "source-over"}
             />
           );
         }
@@ -859,6 +863,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                   {...commonProps}
                   stroke={annotation.stroke}
                   strokeWidth={Math.max(annotation.strokeWidth, 15)}
+                  globalCompositeOperation={annotation.blendMode ?? "source-over"}
                   sceneFunc={(ctx) => {
                     const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) =>
                       gen.path(`M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}`, {
@@ -902,6 +907,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                 {...commonProps}
                 stroke={annotation.stroke}
                 strokeWidth={Math.max(annotation.strokeWidth, 15)}
+                globalCompositeOperation={annotation.blendMode ?? "source-over"}
                 sceneFunc={(ctx) => {
                   const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) =>
                     gen.line(startX, startY, endX, endY, {
@@ -965,6 +971,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                 {...commonProps}
                 stroke={annotation.stroke}
                 strokeWidth={Math.max(annotation.strokeWidth, 15)}
+                globalCompositeOperation={annotation.blendMode ?? "source-over"}
                 sceneFunc={(ctx) => {
                   ctx.save();
                   
@@ -1015,6 +1022,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               {...commonProps}
               stroke={annotation.stroke}
               strokeWidth={Math.max(annotation.strokeWidth, 15)}
+              globalCompositeOperation={annotation.blendMode ?? "source-over"}
               sceneFunc={(ctx) => {
                 ctx.save();
                 
@@ -1077,6 +1085,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               tension={annotation.tension}
               lineCap="round"
               lineJoin="round"
+              globalCompositeOperation={annotation.blendMode ?? "source-over"}
             />
           );
         case "highlighter":

@@ -1,3 +1,5 @@
+export type BlendMode = "source-over" | "multiply" | "overlay" | "hard-light" | "color-burn";
+
 export interface BaseAnnotation {
   id: string;
   type: "circle" | "rectangle" | "arrow" | "text" | "freehand" | "highlighter";
@@ -15,6 +17,7 @@ export interface CircleAnnotation extends BaseAnnotation {
   strokeWidth: number;
   fill?: string | null;
   sketchy?: boolean;
+  blendMode?: BlendMode;
 }
 
 export interface RectangleAnnotation extends BaseAnnotation {
@@ -26,6 +29,7 @@ export interface RectangleAnnotation extends BaseAnnotation {
   fill?: string | null;
   cornerRadius?: number;
   sketchy?: boolean;
+  blendMode?: BlendMode;
 }
 
 export interface ArrowAnnotation extends BaseAnnotation {
@@ -37,6 +41,7 @@ export interface ArrowAnnotation extends BaseAnnotation {
   pointerWidth?: number;
   bend?: number;
   sketchy?: boolean;
+  blendMode?: BlendMode;
 }
 
 export interface TextAnnotation extends BaseAnnotation {
@@ -57,6 +62,7 @@ export interface FreehandAnnotation extends BaseAnnotation {
   stroke: string;
   strokeWidth: number;
   tension?: number;
+  blendMode?: BlendMode;
 }
 
 export interface HighlighterAnnotation extends BaseAnnotation {
