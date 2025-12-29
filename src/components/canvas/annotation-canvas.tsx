@@ -1,4 +1,4 @@
-import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
+import { useEffect, useRef, forwardRef, useImperativeHandle, useState } from "react";
 import { Stage, Layer, Image, Transformer, Rect, Circle, Arrow, Text, Line } from "react-konva";
 import type Konva from "konva";
 import { useCanvasStore } from "@/stores/canvas-store";
@@ -12,10 +12,12 @@ import type {
   ArrowAnnotation,
   TextAnnotation,
   FreehandAnnotation,
+  HighlighterAnnotation,
 } from "@/types";
 
 interface AnnotationCanvasProps {
   image: HTMLImageElement;
+  onOcrRegionSelected?: (imageData: string, x: number, y: number, width: number, height: number) => void;
 }
 
 export interface AnnotationCanvasHandle {
@@ -23,13 +25,15 @@ export interface AnnotationCanvasHandle {
 }
 
 export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCanvasProps>(
-  function AnnotationCanvas({ image }, ref) {
+  function AnnotationCanvas({ image, onOcrRegionSelected }, ref) {
     const containerRef = useRef<HTMLDivElement>(null);
     const stageRef = useRef<Konva.Stage>(null);
     const transformerRef = useRef<Konva.Transformer>(null);
     const isDrawingRef = useRef(false);
     const currentAnnotationRef = useRef<string | null>(null);
     const preDrawHistoryLengthRef = useRef<number>(0);
+    const [ocrSelectionStart, setOcrSelectionStart] = useState<{ x: number; y: number } | null>(null);
+    const [ocrSelectionRect, setOcrSelectionRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
 
     const {
       width,
@@ -128,6 +132,14 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
         return;
       }
 
+      if (activeTool === "ocr") {
+        const pos = stageRef.current?.getPointerPosition();
+        if (!pos) return;
+        setOcrSelectionStart(pos);
+        setOcrSelectionRect({ x: pos.x, y: pos.y, width: 0, height: 0 });
+        return;
+      }
+
       if (clickedOnEmpty || clickedOnImage || clickedOnAnnotation) {
         const pos = stageRef.current?.getPointerPosition();
         if (!pos) return;
@@ -208,9 +220,21 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               ...baseProps,
               type: "freehand",
               points: [0, 0],
-              tension: 1,
+              tension: 0.4,
             };
             addAnnotation(freehandAnnotation);
+            break;
+          }
+          case "highlighter": {
+            const highlighterAnnotation: HighlighterAnnotation = {
+              ...baseProps,
+              type: "highlighter",
+              points: [0, 0],
+              strokeWidth: 20,
+              opacity: 0.4,
+              tension: 0.5,
+            };
+            addAnnotation(highlighterAnnotation);
             break;
           }
         }
@@ -218,6 +242,18 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
     };
 
     const handleStageMouseMove = (_e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (activeTool === "ocr" && ocrSelectionStart) {
+        const pos = stageRef.current?.getPointerPosition();
+        if (!pos) return;
+        
+        const x = Math.min(ocrSelectionStart.x, pos.x);
+        const y = Math.min(ocrSelectionStart.y, pos.y);
+        const width = Math.abs(pos.x - ocrSelectionStart.x);
+        const height = Math.abs(pos.y - ocrSelectionStart.y);
+        setOcrSelectionRect({ x, y, width, height });
+        return;
+      }
+
       if (!isDrawingRef.current || !currentAnnotationRef.current) return;
 
       const pos = stageRef.current?.getPointerPosition();
@@ -256,10 +292,56 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           updateAnnotation(annotation.id, { points: newPoints });
           break;
         }
+        case "highlighter": {
+          const newPoints = [
+            ...(annotation as HighlighterAnnotation).points,
+            pos.x - annotation.x,
+            pos.y - annotation.y,
+          ];
+          updateAnnotation(annotation.id, { points: newPoints });
+          break;
+        }
       }
     };
 
     const handleStageMouseUp = () => {
+      if (activeTool === "ocr" && ocrSelectionStart && ocrSelectionRect) {
+        if (ocrSelectionRect.width > 10 && ocrSelectionRect.height > 10 && onOcrRegionSelected) {
+          const tempCanvas = document.createElement("canvas");
+          const ctx = tempCanvas.getContext("2d");
+          if (ctx && stageRef.current) {
+            const scaleX = image.width / scaledWidth;
+            const scaleY = image.height / scaledHeight;
+            
+            const sourceX = (ocrSelectionRect.x - imageX) * scaleX;
+            const sourceY = (ocrSelectionRect.y - imageY) * scaleY;
+            const sourceWidth = ocrSelectionRect.width * scaleX;
+            const sourceHeight = ocrSelectionRect.height * scaleY;
+            
+            tempCanvas.width = sourceWidth;
+            tempCanvas.height = sourceHeight;
+            
+            ctx.drawImage(
+              image,
+              sourceX, sourceY, sourceWidth, sourceHeight,
+              0, 0, sourceWidth, sourceHeight
+            );
+            
+            const imageData = tempCanvas.toDataURL("image/png");
+            onOcrRegionSelected(
+              imageData,
+              ocrSelectionRect.x,
+              ocrSelectionRect.y,
+              ocrSelectionRect.width,
+              ocrSelectionRect.height
+            );
+          }
+        }
+        setOcrSelectionStart(null);
+        setOcrSelectionRect(null);
+        return;
+      }
+
       if (isDrawingRef.current && currentAnnotationRef.current) {
         const annotation = annotations.find((a) => a.id === currentAnnotationRef.current);
         if (annotation) {
@@ -267,6 +349,9 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
             const smoothed = simplifyPath((annotation as FreehandAnnotation).points);
             const { points: finalPoints } = closePathIfNearStart(smoothed);
             updateAnnotation(annotation.id, { points: finalPoints });
+          } else if (annotation.type === "highlighter") {
+            const smoothed = simplifyPath((annotation as HighlighterAnnotation).points);
+            updateAnnotation(annotation.id, { points: smoothed });
           }
 
           const temporal = useAnnotationStore.temporal.getState();
@@ -415,6 +500,21 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               lineJoin="round"
             />
           );
+        case "highlighter":
+          return (
+            <Line
+              key={annotation.id}
+              {...commonProps}
+              points={annotation.points}
+              stroke={annotation.stroke}
+              strokeWidth={annotation.strokeWidth}
+              tension={annotation.tension}
+              opacity={annotation.opacity}
+              lineCap="butt"
+              lineJoin="miter"
+              globalCompositeOperation="multiply"
+            />
+          );
         default:
           return null;
       }
@@ -444,6 +544,18 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                 anchorStroke="#4F46E5"
                 anchorStrokeWidth={2}
                 anchorCornerRadius={2}
+              />
+            )}
+            {ocrSelectionRect && (
+              <Rect
+                x={ocrSelectionRect.x}
+                y={ocrSelectionRect.y}
+                width={ocrSelectionRect.width}
+                height={ocrSelectionRect.height}
+                stroke="#3b82f6"
+                strokeWidth={2}
+                dash={[6, 3]}
+                fill="rgba(59, 130, 246, 0.1)"
               />
             )}
           </Layer>
