@@ -193,6 +193,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               type: "circle",
               radius: 0,
               fill: fillColor,
+              sketchiness: 1.5,
             };
             addAnnotation(circleAnnotation);
             break;
@@ -204,6 +205,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               width: 0,
               height: 0,
               fill: fillColor,
+              sketchiness: 1.5,
             };
             addAnnotation(rectAnnotation);
             break;
@@ -215,6 +217,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               points: [0, 0, 0, 0],
               pointerLength: 15,
               pointerWidth: 15,
+              sketchiness: 1.5,
             };
             addAnnotation(arrowAnnotation);
             break;

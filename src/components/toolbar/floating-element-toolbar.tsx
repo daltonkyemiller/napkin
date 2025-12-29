@@ -53,7 +53,7 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
   const handleSketchinessChange = (value: number | readonly number[]) => {
     const sketchiness = Array.isArray(value) ? value[0] : value;
     for (const annotation of selectedSketchableAnnotations) {
-      updateAnnotation(annotation.id, { sketchiness: sketchiness === 0 ? undefined : sketchiness });
+      updateAnnotation(annotation.id, { sketchiness });
     }
   };
 
