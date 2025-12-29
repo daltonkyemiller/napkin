@@ -1126,6 +1126,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               <Transformer
                 ref={transformerRef}
                 rotateEnabled={true}
+                rotateAnchorOffset={20}
                 anchorSize={10}
                 borderStroke="#4F46E5"
                 borderStrokeWidth={2}
