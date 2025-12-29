@@ -4,26 +4,24 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { useCanvasStore } from "@/stores/canvas-store"
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { useCanvasStore } from "@/stores/canvas-store";
 
 interface SettingsDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
-  const { strokeWidth, setStrokeWidth, fontSize, setFontSize } = useCanvasStore()
+  const { strokeWidth, setStrokeWidth, fontSize, setFontSize } = useCanvasStore();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
-          <DialogDescription>
-            Configure your annotation preferences
-          </DialogDescription>
+          <DialogDescription>Configure your annotation preferences</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4 py-4">
@@ -70,20 +68,16 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Always on Top</span>
-            <span className="text-xs text-muted-foreground">Coming soon</span>
-          </div>
-
-          <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Theme</span>
             <span className="text-xs text-muted-foreground">Coming soon</span>
           </div>
         </div>
 
         <div className="text-xs text-muted-foreground">
-          Press <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono">Ctrl+,</kbd> to open settings
+          Press <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono">Ctrl+,</kbd> to open
+          settings
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
