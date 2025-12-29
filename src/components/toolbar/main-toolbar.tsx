@@ -195,9 +195,11 @@ export function MainToolbar({ onUploadClick, onDownload }: MainToolbarProps) {
             <ColorPicker
               value={strokeColor}
               onChange={(rgba) => {
-                const [r, g, b] = rgba as [number, number, number, number];
-                const hex = Color.rgb(r, g, b).hex();
-                handleStrokeColorChange(hex);
+                const [r, g, b, a] = rgba as [number, number, number, number];
+                const color = a < 1 
+                  ? `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a})`
+                  : Color.rgb(r, g, b).hex();
+                handleStrokeColorChange(color);
               }}
             >
               <ColorPickerSelection className="h-32 rounded-md" />
