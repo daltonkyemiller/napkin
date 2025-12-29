@@ -15,37 +15,59 @@ function pointsToFlat(points: Point[]): number[] {
   return points.flatMap((p) => [p.x, p.y]);
 }
 
-function smoothPoints(points: Point[], iterations = 2): Point[] {
-  if (points.length < 3) return points;
+function chaikinSubdivide(points: Point[], iterations = 2): Point[] {
+  if (points.length < 2) return points;
 
-  let smoothed = [...points];
+  let result = [...points];
 
   for (let iter = 0; iter < iterations; iter++) {
-    const next: Point[] = [smoothed[0]];
+    const next: Point[] = [result[0]];
 
-    for (let i = 1; i < smoothed.length - 1; i++) {
-      const prev = smoothed[i - 1];
-      const curr = smoothed[i];
-      const nextPt = smoothed[i + 1];
+    for (let i = 0; i < result.length - 1; i++) {
+      const p0 = result[i];
+      const p1 = result[i + 1];
 
       next.push({
-        x: curr.x * 0.5 + (prev.x + nextPt.x) * 0.25,
-        y: curr.y * 0.5 + (prev.y + nextPt.y) * 0.25,
+        x: p0.x * 0.75 + p1.x * 0.25,
+        y: p0.y * 0.75 + p1.y * 0.25,
+      });
+      next.push({
+        x: p0.x * 0.25 + p1.x * 0.75,
+        y: p0.y * 0.25 + p1.y * 0.75,
       });
     }
 
-    next.push(smoothed[smoothed.length - 1]);
-    smoothed = next;
+    next.push(result[result.length - 1]);
+    result = next;
   }
 
-  return smoothed;
+  return result;
+}
+
+function reducePoints(points: Point[], minDistance = 2): Point[] {
+  if (points.length < 2) return points;
+
+  const result: Point[] = [points[0]];
+
+  for (let i = 1; i < points.length; i++) {
+    const last = result[result.length - 1];
+    const curr = points[i];
+    const dist = Math.sqrt((curr.x - last.x) ** 2 + (curr.y - last.y) ** 2);
+
+    if (dist >= minDistance || i === points.length - 1) {
+      result.push(curr);
+    }
+  }
+
+  return result;
 }
 
 export function simplifyPath(flatPoints: number[]): number[] {
   if (flatPoints.length < 6) return flatPoints;
 
   const points = flatToPoints(flatPoints);
-  const smoothed = smoothPoints(points, 8);
+  const reduced = reducePoints(points, 3);
+  const smoothed = chaikinSubdivide(reduced, 3);
   return pointsToFlat(smoothed);
 }
 
