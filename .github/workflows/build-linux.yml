@@ -34,7 +34,7 @@ jobs:
             patchelf
 
       - name: Setup Rust
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
