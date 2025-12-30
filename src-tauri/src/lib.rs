@@ -6,7 +6,7 @@ use rusty_tesseract::{Args as TesseractArgs, Image as TesseractImage};
 use std::collections::BTreeSet;
 use std::io::{Cursor, Read};
 use std::sync::Mutex;
-use tauri::State;
+use tauri::{Manager, State};
 
 #[derive(Parser, Debug, Clone)]
 #[command(name = "annotate")]

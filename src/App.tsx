@@ -15,6 +15,8 @@ import type { TextAnnotation } from "@/types";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { save } from "@tauri-apps/plugin-dialog";
+
+const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 import { writeFile } from "@tauri-apps/plugin-fs";
 import { IconImageOutlineDuo18, IconUpload3OutlineDuo18 } from "nucleo-ui-outline-duo-18";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -57,14 +59,13 @@ export default function App() {
   }, [loadTheme, applyTheme]);
 
   useEffect(() => {
-    const unlisten = getCurrentWindow().onThemeChanged(() => {
+    const handler = () => {
       if (mode === "system") {
         applyTheme();
       }
-    });
-    return () => {
-      unlisten.then((fn) => fn());
     };
+    darkModeMediaQuery.addEventListener("change", handler);
+    return () => darkModeMediaQuery.removeEventListener("change", handler);
   }, [mode, applyTheme]);
 
   useEffect(() => {

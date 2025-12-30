@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,16 +31,15 @@ interface ThemeCustomizerDialogProps {
 
 export function ThemeCustomizerDialog({ open, onOpenChange }: ThemeCustomizerDialogProps) {
   const { customCss, setCustomCss, resetCustomCss } = useThemeStore();
-  const [cssValue, setCssValue] = useState(customCss || "");
+  const [cssValue, setCssValue] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const handleOpen = (isOpen: boolean) => {
-    if (isOpen) {
+  useEffect(() => {
+    if (open) {
       setCssValue(customCss || "");
       setError(null);
     }
-    onOpenChange(isOpen);
-  };
+  }, [open, customCss]);
 
   const validateCss = (css: string): boolean => {
     if (!css.trim()) return true;
@@ -80,7 +79,7 @@ export function ThemeCustomizerDialog({ open, onOpenChange }: ThemeCustomizerDia
   };
 
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={handleOpen}>
+    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Backdrop className="bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs fixed inset-0 isolate z-[60] data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0" />
         <DialogPrimitive.Popup className="bg-background ring-foreground/10 fixed top-1/2 left-1/2 z-[60] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-xl p-6 text-sm ring-1 duration-100 data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95">
@@ -113,12 +112,12 @@ export function ThemeCustomizerDialog({ open, onOpenChange }: ThemeCustomizerDia
             <div className="text-muted-foreground text-xs">
               Tip: You can generate themes at{" "}
               <a
-                href="https://ui.shadcn.com/themes"
+                href="https://tweakcn.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-foreground underline underline-offset-2"
               >
-                ui.shadcn.com/themes
+                https://tweakcn.com
               </a>
             </div>
           </div>

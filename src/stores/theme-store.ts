@@ -1,8 +1,9 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 
 export type ThemeMode = "light" | "dark" | "system";
+
+const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
 interface ThemeStore {
   mode: ThemeMode;
@@ -11,7 +12,7 @@ interface ThemeStore {
   setMode: (mode: ThemeMode) => Promise<void>;
   setCustomCss: (css: string | null) => Promise<void>;
   loadTheme: () => Promise<void>;
-  applyTheme: () => Promise<void>;
+  applyTheme: () => void;
   resetCustomCss: () => Promise<void>;
 }
 
@@ -29,12 +30,11 @@ function applyCustomCssToDocument(css: string | null) {
   }
 }
 
-async function applyThemeModeToDocument(mode: ThemeMode) {
-  let effectiveTheme: "light" | "dark" = "light";
+function applyThemeModeToDocument(mode: ThemeMode) {
+  let effectiveTheme: "light" | "dark";
 
   if (mode === "system") {
-    const systemTheme = await getCurrentWindow().theme();
-    effectiveTheme = systemTheme === "dark" ? "dark" : "light";
+    effectiveTheme = darkModeMediaQuery.matches ? "dark" : "light";
   } else {
     effectiveTheme = mode;
   }
@@ -53,7 +53,7 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
 
   setMode: async (mode) => {
     set({ mode });
-    await applyThemeModeToDocument(mode);
+    applyThemeModeToDocument(mode);
     await invoke("save_theme_preference", { preference: mode });
   },
 
@@ -88,9 +88,9 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
     }
   },
 
-  applyTheme: async () => {
+  applyTheme: () => {
     const { mode, customCss } = get();
-    await applyThemeModeToDocument(mode);
+    applyThemeModeToDocument(mode);
     applyCustomCssToDocument(customCss);
   },
 }));
