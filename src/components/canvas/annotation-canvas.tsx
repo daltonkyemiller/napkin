@@ -52,7 +52,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
     const transformerRef = useRef<Konva.Transformer>(null);
     const isDrawingRef = useRef(false);
     const currentAnnotationRef = useRef<string | null>(null);
-    const preDrawHistoryLengthRef = useRef<number>(0);
+    const preDrawAnnotationsRef = useRef<Annotation[]>([]);
     const drawStartPosRef = useRef<{ x: number; y: number } | null>(null);
     const [ocrSelectionStart, setOcrSelectionStart] = useState<{ x: number; y: number } | null>(
       null,
@@ -263,7 +263,10 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           strokeWidth,
         };
 
-        preDrawHistoryLengthRef.current = useAnnotationStore.temporal.getState().pastStates.length;
+        // Save pre-draw state and pause history tracking
+        // This allows us to create a single undo entry for the entire drawing operation
+        preDrawAnnotationsRef.current = [...useAnnotationStore.getState().annotations];
+        useAnnotationStore.temporal.getState().pause();
 
         switch (activeTool) {
           case "circle": {
@@ -504,16 +507,16 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
             updateAnnotation(annotation.id, { points: smoothed });
           }
 
-          const temporal = useAnnotationStore.temporal.getState();
-          const statesAddedDuringDraw =
-            temporal.pastStates.length - preDrawHistoryLengthRef.current;
-          if (statesAddedDuringDraw > 1) {
-            const finalAnnotations = [...useAnnotationStore.getState().annotations];
-            for (let i = 0; i < statesAddedDuringDraw; i++) {
-              temporal.undo();
-            }
-            useAnnotationStore.getState().setAnnotations(finalAnnotations);
-          }
+          const finalAnnotations = [...useAnnotationStore.getState().annotations];
+
+          // Restore pre-draw state while still paused (not tracked)
+          useAnnotationStore.setState({ annotations: preDrawAnnotationsRef.current });
+
+          // Resume tracking - next state change will be recorded
+          useAnnotationStore.temporal.getState().resume();
+
+          // Set final state - creates single history entry: pre-draw → final
+          useAnnotationStore.setState({ annotations: finalAnnotations });
         }
       }
 
