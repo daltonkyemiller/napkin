@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { DEFAULT_FONT_FAMILY } from "@/constants";
 import { useAnnotationStore } from "@/stores/annotation-store";
 import { useCanvasStore } from "@/stores/canvas-store";
+import { useSettingsStore } from "@/stores/settings-store";
 import { useThemeStore } from "@/stores/theme-store";
 import type { TextAnnotation } from "@/types";
 import { invoke } from "@tauri-apps/api/core";
@@ -53,10 +54,12 @@ export default function App() {
   const temporal = useAnnotationStore.temporal;
   const { strokeColor, fontSize } = useCanvasStore();
   const { loadTheme, applyTheme, mode } = useThemeStore();
+  const { loadSettings, defaultSaveLocation } = useSettingsStore();
 
   useEffect(() => {
     loadTheme().then(() => applyTheme());
-  }, [loadTheme, applyTheme]);
+    loadSettings();
+  }, [loadTheme, applyTheme, loadSettings]);
 
   useEffect(() => {
     const handler = () => {
@@ -193,8 +196,12 @@ export default function App() {
     let filePath: string | null = outputFilename;
 
     if (!filePath) {
+      const defaultPath = defaultSaveLocation
+        ? `${defaultSaveLocation}/annotated-image-${Date.now()}.png`
+        : `annotated-image-${Date.now()}.png`;
+
       filePath = await save({
-        defaultPath: `annotated-image-${Date.now()}.png`,
+        defaultPath,
         filters: [{ name: "PNG Image", extensions: ["png"] }],
       });
     }
@@ -205,7 +212,7 @@ export default function App() {
     const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
 
     await writeFile(filePath, binaryData);
-  }, [outputFilename]);
+  }, [outputFilename, defaultSaveLocation]);
 
   useHotkeys(
     "delete, backspace",
@@ -271,6 +278,7 @@ export default function App() {
   useHotkeys("shift+right, shift+l", () => moveSelected(10, 0), { preventDefault: true });
 
   useHotkeys("mod+comma", () => setSettingsOpen(true), { preventDefault: true });
+  useHotkeys("mod+s", () => handleDownload(), { preventDefault: true });
   useHotkeys("o", () => setActiveTool("ocr"));
 
   const handleOcrRegionSelected = useCallback(async (imageData: string, x: number, y: number) => {

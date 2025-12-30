@@ -14,6 +14,7 @@ import type { RoughGenerator } from "roughjs/bin/generator";
 import type { Drawable } from "roughjs/bin/core";
 import { useCanvasStore } from "@/stores/canvas-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
+import { useSettingsStore } from "@/stores/settings-store";
 import { useInlineTextEditing } from "@/hooks/use-inline-text-editing";
 import { simplifyPath } from "@/lib/path-smoothing";
 import { getFreehandStroke } from "@/lib/freehand";
@@ -83,6 +84,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
     } = useCanvasStore();
 
     const { annotations, addAnnotation, updateAnnotation } = useAnnotationStore();
+    const { sketchiness: defaultSketchiness } = useSettingsStore();
     const { startInlineEdit } = useInlineTextEditing(stageRef);
 
     const roughGenerator = useMemo(() => rough.generator(), []);
@@ -270,7 +272,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               type: "circle",
               radius: 0,
               fill: fillColor,
-              sketchiness: 1.5,
+              sketchiness: defaultSketchiness,
             };
             addAnnotation(circleAnnotation);
             break;
@@ -282,7 +284,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               width: 0,
               height: 0,
               fill: fillColor,
-              sketchiness: 1.5,
+              sketchiness: defaultSketchiness,
             };
             addAnnotation(rectAnnotation);
             break;
@@ -294,7 +296,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               points: [0, 0, 0, 0],
               pointerLength: 15,
               pointerWidth: 15,
-              sketchiness: 1.5,
+              sketchiness: defaultSketchiness,
             };
             addAnnotation(arrowAnnotation);
             break;

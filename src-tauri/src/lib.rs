@@ -3,6 +3,7 @@ use clap::Parser;
 use font_kit::source::SystemSource;
 use image::ImageFormat;
 use rusty_tesseract::{Args as TesseractArgs, Image as TesseractImage};
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::io::{Cursor, Read};
 use std::sync::Mutex;
@@ -188,6 +189,54 @@ fn load_theme_preference(app_handle: tauri::AppHandle) -> Result<Option<String>,
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AppSettings {
+    stroke_width: Option<u32>,
+    font_size: Option<u32>,
+    sketchiness: Option<f64>,
+    default_save_location: Option<String>,
+}
+
+#[tauri::command]
+fn save_settings(settings: AppSettings, app_handle: tauri::AppHandle) -> Result<(), String> {
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+
+    std::fs::create_dir_all(&app_data_dir)
+        .map_err(|e| format!("Failed to create app data dir: {}", e))?;
+
+    let settings_path = app_data_dir.join("settings.json");
+    let json = serde_json::to_string_pretty(&settings)
+        .map_err(|e| format!("Failed to serialize settings: {}", e))?;
+    std::fs::write(&settings_path, json)
+        .map_err(|e| format!("Failed to write settings file: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+fn load_settings(app_handle: tauri::AppHandle) -> Result<Option<AppSettings>, String> {
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+
+    let settings_path = app_data_dir.join("settings.json");
+
+    if settings_path.exists() {
+        let json = std::fs::read_to_string(&settings_path)
+            .map_err(|e| format!("Failed to read settings file: {}", e))?;
+        let settings: AppSettings = serde_json::from_str(&json)
+            .map_err(|e| format!("Failed to parse settings: {}", e))?;
+        Ok(Some(settings))
+    } else {
+        Ok(None)
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let args = Args::parse();
@@ -230,7 +279,9 @@ pub fn run() {
             save_theme_css,
             load_theme_css,
             save_theme_preference,
-            load_theme_preference
+            load_theme_preference,
+            save_settings,
+            load_settings
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
