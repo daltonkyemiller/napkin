@@ -7,7 +7,8 @@ import type { Drawable } from "roughjs/bin/core";
 import { useCanvasStore } from "@/stores/canvas-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
 import { useInlineTextEditing } from "@/hooks/use-inline-text-editing";
-import { simplifyPath, closePathIfNearStart } from "@/lib/path-smoothing";
+import { simplifyPath } from "@/lib/path-smoothing";
+import { getFreehandStroke } from "@/lib/freehand";
 import { drawRoughDrawable } from "@/lib/rough-draw";
 import { DEFAULT_FONT_FAMILY } from "@/constants";
 import type {
@@ -59,6 +60,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       clearSelection,
       setIsDrawing,
       setCanvasSize,
+      setActiveTool,
     } = useCanvasStore();
 
     const { annotations, addAnnotation, updateAnnotation } = useAnnotationStore();
@@ -117,6 +119,49 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
         transformerRef.current.nodes([]);
       }
     }, [selectedIds]);
+
+    useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+          e.preventDefault();
+          if (annotations.length > 0) {
+            setSelectedIds(annotations.map((a) => a.id));
+            setSelectedId(annotations[annotations.length - 1].id);
+          }
+        }
+
+        if ((e.ctrlKey || e.metaKey) && e.key === "d") {
+          e.preventDefault();
+          if (selectedIds.length === 0) return;
+
+          const offset = 20;
+          const newIds: string[] = [];
+
+          for (const id of selectedIds) {
+            const annotation = annotations.find((a) => a.id === id);
+            if (!annotation) continue;
+
+            const newId = `annotation_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+            const duplicate = {
+              ...annotation,
+              id: newId,
+              x: annotation.x + offset,
+              y: annotation.y + offset,
+            };
+            addAnnotation(duplicate);
+            newIds.push(newId);
+          }
+
+          if (newIds.length > 0) {
+            setSelectedIds(newIds);
+            setSelectedId(newIds[newIds.length - 1]);
+          }
+        }
+      };
+
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [annotations, selectedIds, setSelectedId, setSelectedIds, addAnnotation]);
 
     useImperativeHandle(
       ref,
@@ -249,8 +294,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
             const freehandAnnotation: FreehandAnnotation = {
               ...baseProps,
               type: "freehand",
-              points: [0, 0],
-              tension: 0.4,
+              points: [[0, 0, 0.5]],
             };
             addAnnotation(freehandAnnotation);
             break;
@@ -297,10 +341,25 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
 
       switch (annotation.type) {
         case "circle": {
-          const dx = pos.x - annotation.x;
-          const dy = pos.y - annotation.y;
-          const radius = Math.sqrt(dx * dx + dy * dy);
-          updateAnnotation(annotation.id, { radius });
+          const startPos = drawStartPosRef.current;
+          if (!startPos) break;
+
+          const dx = pos.x - startPos.x;
+          const dy = pos.y - startPos.y;
+
+          if (altKey) {
+            const radius = Math.sqrt(dx * dx + dy * dy);
+            updateAnnotation(annotation.id, { radius });
+          } else {
+            const radius = Math.min(Math.abs(dx), Math.abs(dy)) / 2;
+            const centerX = startPos.x + (Math.sign(dx) || 1) * radius;
+            const centerY = startPos.y + (Math.sign(dy) || 1) * radius;
+            updateAnnotation(annotation.id, {
+              x: centerX,
+              y: centerY,
+              radius,
+            });
+          }
           break;
         }
         case "rectangle": {
@@ -340,10 +399,10 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           break;
         }
         case "freehand": {
-          const newPoints = [
+          const pressure = (e.evt as PointerEvent).pressure || 0.5;
+          const newPoints: [number, number, number][] = [
             ...(annotation as FreehandAnnotation).points,
-            pos.x - annotation.x,
-            pos.y - annotation.y,
+            [pos.x - annotation.x, pos.y - annotation.y, pressure],
           ];
           updateAnnotation(annotation.id, { points: newPoints });
           break;
@@ -401,11 +460,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       if (isDrawingRef.current && currentAnnotationRef.current) {
         const annotation = annotations.find((a) => a.id === currentAnnotationRef.current);
         if (annotation) {
-          if (annotation.type === "freehand") {
-            const smoothed = simplifyPath((annotation as FreehandAnnotation).points);
-            const { points: finalPoints } = closePathIfNearStart(smoothed);
-            updateAnnotation(annotation.id, { points: finalPoints });
-          } else if (annotation.type === "highlighter") {
+          if (annotation.type === "highlighter") {
             const smoothed = simplifyPath((annotation as HighlighterAnnotation).points);
             updateAnnotation(annotation.id, { points: smoothed });
           }
@@ -423,10 +478,18 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
         }
       }
 
+      const shouldSwitchToSelect =
+        currentAnnotationRef.current !== null &&
+        (activeTool === "circle" || activeTool === "rectangle" || activeTool === "arrow");
+
       isDrawingRef.current = false;
       setIsDrawing(false);
       currentAnnotationRef.current = null;
       drawStartPosRef.current = null;
+
+      if (shouldSwitchToSelect) {
+        setActiveTool("select");
+      }
     };
 
     const handleAnnotationClick = (
@@ -865,6 +928,49 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           const pointerWidth = basePointerWidth + annotation.strokeWidth;
           const isBeingTransformed = isTransformingAnnotation && selectedIds.includes(annotation.id);
 
+          const arrowPadding = Math.max(pointerLength, pointerWidth, annotation.strokeWidth) + 5;
+          const boundPoints = [startX, startY, endX, endY];
+          if (bend !== 0) {
+            const midX = (startX + endX) / 2;
+            const midY = (startY + endY) / 2;
+            const dx = endX - startX;
+            const dy = endY - startY;
+            const len = Math.sqrt(dx * dx + dy * dy) || 1;
+            boundPoints.push(midX + (-dy / len) * bend, midY + (dx / len) * bend);
+          }
+          const arrowXs = boundPoints.filter((_, i) => i % 2 === 0);
+          const arrowYs = boundPoints.filter((_, i) => i % 2 === 1);
+          const arrowMinX = Math.min(...arrowXs) - arrowPadding;
+          const arrowMinY = Math.min(...arrowYs) - arrowPadding;
+          const arrowWidth = Math.max(...arrowXs) - Math.min(...arrowXs) + arrowPadding * 2;
+          const arrowHeight = Math.max(...arrowYs) - Math.min(...arrowYs) + arrowPadding * 2;
+          
+          const arrowCommonProps = {
+            id: annotation.id,
+            x: annotation.x + arrowMinX,
+            y: annotation.y + arrowMinY,
+            width: arrowWidth,
+            height: arrowHeight,
+            rotation: annotation.rotation ?? 0,
+            scaleX: annotation.scaleX ?? 1,
+            scaleY: annotation.scaleY ?? 1,
+            draggable: activeTool === "select",
+            onClick: (e: Konva.KonvaEventObject<MouseEvent>) => handleAnnotationClick(e, annotation),
+            onDragStart: handleDragStart,
+            onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => {
+              const node = e.target;
+              updateAnnotation(node.id(), {
+                x: node.x() - arrowMinX,
+                y: node.y() - arrowMinY,
+              });
+              setIsTransformingAnnotation(false);
+            },
+            onTransformStart: handleTransformStart,
+            onTransformEnd: handleTransformEnd,
+          };
+          
+          const arrowDrawOffset = { x: -arrowMinX, y: -arrowMinY };
+
           if (annotation.sketchiness && !isBeingTransformed) {
             const cacheKey = `${startX}-${startY}-${endX}-${endY}-${bend}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.sketchiness}`;
             
@@ -886,11 +992,12 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               return (
                 <Shape
                   key={annotation.id}
-                  {...commonProps}
+                  {...arrowCommonProps}
                   stroke={annotation.stroke}
                   strokeWidth={Math.max(annotation.strokeWidth, 15)}
                   globalCompositeOperation={annotation.blendMode ?? "source-over"}
                   sceneFunc={(ctx) => {
+                    ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
                     const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) =>
                       gen.path(`M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}`, {
                         stroke: annotation.stroke,
@@ -916,6 +1023,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                     ctx.restore();
                   }}
                   hitFunc={(ctx, shape) => {
+                    ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
                     ctx.beginPath();
                     ctx.moveTo(startX, startY);
                     ctx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
@@ -930,11 +1038,12 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
             return (
               <Shape
                 key={annotation.id}
-                {...commonProps}
+                {...arrowCommonProps}
                 stroke={annotation.stroke}
                 strokeWidth={Math.max(annotation.strokeWidth, 15)}
                 globalCompositeOperation={annotation.blendMode ?? "source-over"}
                 sceneFunc={(ctx) => {
+                  ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
                   const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) =>
                     gen.line(startX, startY, endX, endY, {
                       stroke: annotation.stroke,
@@ -960,6 +1069,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                   ctx.restore();
                 }}
                 hitFunc={(ctx, shape) => {
+                  ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
                   ctx.beginPath();
                   ctx.moveTo(startX, startY);
                   ctx.lineTo(endX, endY);
@@ -994,12 +1104,13 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
             return (
               <Shape
                 key={annotation.id}
-                {...commonProps}
+                {...arrowCommonProps}
                 stroke={annotation.stroke}
                 strokeWidth={Math.max(annotation.strokeWidth, 15)}
                 globalCompositeOperation={annotation.blendMode ?? "source-over"}
                 sceneFunc={(ctx) => {
                   ctx.save();
+                  ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
                   
                   ctx.beginPath();
                   ctx.moveTo(startX, startY);
@@ -1025,6 +1136,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                   ctx.restore();
                 }}
                 hitFunc={(ctx, shape) => {
+                  ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
                   ctx.beginPath();
                   ctx.moveTo(startX, startY);
                   ctx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
@@ -1045,12 +1157,13 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           return (
             <Shape
               key={annotation.id}
-              {...commonProps}
+              {...arrowCommonProps}
               stroke={annotation.stroke}
               strokeWidth={Math.max(annotation.strokeWidth, 15)}
               globalCompositeOperation={annotation.blendMode ?? "source-over"}
               sceneFunc={(ctx) => {
                 ctx.save();
+                ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
                 
                 ctx.beginPath();
                 ctx.moveTo(startX, startY);
@@ -1076,6 +1189,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                 ctx.restore();
               }}
               hitFunc={(ctx, shape) => {
+                ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
                 ctx.beginPath();
                 ctx.moveTo(startX, startY);
                 ctx.lineTo(endX, endY);
@@ -1100,20 +1214,59 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               onDblClick={() => handleTextDblClick(annotation)}
             />
           );
-        case "freehand":
+        case "freehand": {
+          const { path: pathData, bounds } = getFreehandStroke(annotation.points, {
+            size: annotation.strokeWidth * 2,
+          });
+          const padding = 2;
+          const offsetX = bounds.minX - padding;
+          const offsetY = bounds.minY - padding;
+          const shapeWidth = bounds.width + padding * 2;
+          const shapeHeight = bounds.height + padding * 2;
+          
           return (
-            <Line
+            <Shape
               key={annotation.id}
-              {...commonProps}
-              points={annotation.points}
-              stroke={annotation.stroke}
-              strokeWidth={annotation.strokeWidth}
-              tension={annotation.tension}
-              lineCap="round"
-              lineJoin="round"
+              id={annotation.id}
+              x={annotation.x + offsetX}
+              y={annotation.y + offsetY}
+              width={shapeWidth}
+              height={shapeHeight}
+              rotation={annotation.rotation ?? 0}
+              scaleX={annotation.scaleX ?? 1}
+              scaleY={annotation.scaleY ?? 1}
+              draggable={activeTool === "select"}
+              onClick={(e: Konva.KonvaEventObject<MouseEvent>) => handleAnnotationClick(e, annotation)}
+              onDragStart={handleDragStart}
+              onDragEnd={(e: Konva.KonvaEventObject<DragEvent>) => {
+                const node = e.target;
+                updateAnnotation(node.id(), {
+                  x: node.x() - offsetX,
+                  y: node.y() - offsetY,
+                });
+                setIsTransformingAnnotation(false);
+              }}
+              onTransformStart={handleTransformStart}
+              onTransformEnd={handleTransformEnd}
+              sceneFunc={(ctx) => {
+                if (!pathData) return;
+                ctx.translate(-offsetX, -offsetY);
+                const path = new Path2D(pathData);
+                ctx.fillStyle = annotation.stroke;
+                ctx.fill(path);
+              }}
+              hitFunc={(ctx, shape) => {
+                if (!pathData) return;
+                ctx.translate(-offsetX, -offsetY);
+                const path = new Path2D(pathData);
+                ctx.fillStyle = "#000";
+                ctx.fill(path);
+                ctx.fillStrokeShape(shape);
+              }}
               globalCompositeOperation={annotation.blendMode ?? "source-over"}
             />
           );
+        }
         case "highlighter":
           return (
             <Line
@@ -1151,6 +1304,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
             {selectedId && !selectedArrow && (
               <Transformer
                 ref={transformerRef}
+                keepRatio={false}
                 rotateEnabled={true}
                 rotateAnchorOffset={30}
                 anchorSize={10}
