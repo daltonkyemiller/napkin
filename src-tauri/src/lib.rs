@@ -1,7 +1,9 @@
 use base64::{engine::general_purpose::STANDARD, Engine};
 use clap::Parser;
+use font_kit::source::SystemSource;
 use image::ImageFormat;
 use rusty_tesseract::{Args as TesseractArgs, Image as TesseractImage};
+use std::collections::BTreeSet;
 use std::io::{Cursor, Read};
 use std::sync::Mutex;
 use tauri::State;
@@ -100,6 +102,23 @@ fn perform_ocr(image_data: String) -> Result<String, String> {
     Ok(text.trim().to_string())
 }
 
+#[tauri::command]
+fn get_system_fonts() -> Vec<String> {
+    let source = SystemSource::new();
+    let mut families: BTreeSet<String> = BTreeSet::new();
+
+    if let Ok(all_families) = source.all_families() {
+        for family in all_families {
+            // Skip hidden/system fonts that start with '.' or are internal
+            if !family.starts_with('.') && !family.starts_with('#') {
+                families.insert(family);
+            }
+        }
+    }
+
+    families.into_iter().collect()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let args = Args::parse();
@@ -137,7 +156,8 @@ pub fn run() {
             get_initial_image,
             get_output_filename,
             get_fullscreen,
-            perform_ocr
+            perform_ocr,
+            get_system_fonts
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
