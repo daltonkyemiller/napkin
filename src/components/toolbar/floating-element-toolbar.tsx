@@ -1,4 +1,5 @@
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback, useMemo } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { motion, type MotionProps } from "motion/react";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
@@ -37,35 +38,40 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
   const { annotations, updateAnnotation } = useAnnotationStore();
 
   useEffect(() => {
-    async function loadSystemFonts() {
-      if ("queryLocalFonts" in window) {
-        try {
-          const fonts = await (window as Window & { queryLocalFonts: () => Promise<FontData[]> }).queryLocalFonts();
-          const uniqueFamilies = [...new Set(fonts.map((f) => f.family))].sort();
-          setSystemFonts(uniqueFamilies);
-        } catch {
-        }
-      }
-    }
-    loadSystemFonts();
+    invoke<string[]>("get_system_fonts")
+      .then(setSystemFonts)
+      .catch(() => {});
   }, []);
 
-  const allFonts = [...new Set([...FONT_FAMILIES, ...systemFonts])];
-
-  const selectedShapeAnnotations = annotations.filter(
-    (a) =>
-      selectedIds.includes(a.id) &&
-      (a.type === "circle" || a.type === "rectangle" || a.type === "arrow" || a.type === "freehand"),
+  const allFonts = useMemo(
+    () => [...new Set([...FONT_FAMILIES, ...systemFonts])],
+    [systemFonts],
   );
 
-  const selectedTextAnnotations = annotations.filter(
-    (a) => selectedIds.includes(a.id) && a.type === "text",
-  ) as TextAnnotation[];
+  const selectedShapeAnnotations = useMemo(
+    () =>
+      annotations.filter(
+        (a) =>
+          selectedIds.includes(a.id) &&
+          (a.type === "circle" || a.type === "rectangle" || a.type === "arrow" || a.type === "freehand"),
+      ),
+    [annotations, selectedIds],
+  );
 
-  const selectedSketchableAnnotations = annotations.filter(
-    (a) =>
-      selectedIds.includes(a.id) &&
-      (a.type === "circle" || a.type === "rectangle" || a.type === "arrow"),
+  const selectedTextAnnotations = useMemo(
+    () =>
+      annotations.filter((a) => selectedIds.includes(a.id) && a.type === "text") as TextAnnotation[],
+    [annotations, selectedIds],
+  );
+
+  const selectedSketchableAnnotations = useMemo(
+    () =>
+      annotations.filter(
+        (a) =>
+          selectedIds.includes(a.id) &&
+          (a.type === "circle" || a.type === "rectangle" || a.type === "arrow"),
+      ),
+    [annotations, selectedIds],
   );
 
   const hasShapeSelection = selectedShapeAnnotations.length > 0;
@@ -286,6 +292,8 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
           <Combobox
             value={currentFontFamily}
             onValueChange={(value) => handleFontFamilyChange(value as string | null)}
+            items={allFonts}
+            filter={(item, query) => item.toLowerCase().includes(query.toLowerCase())}
           >
             <ComboboxInput
               placeholder="Search fonts..."
@@ -293,11 +301,11 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
             />
             <ComboboxContent>
               <ComboboxList>
-                {allFonts.map((font) => (
+                {(font: string) => (
                   <ComboboxItem key={font} value={font} style={{ fontFamily: font }}>
                     {font}
                   </ComboboxItem>
-                ))}
+                )}
               </ComboboxList>
               <ComboboxEmpty>No fonts found</ComboboxEmpty>
             </ComboboxContent>
@@ -323,9 +331,4 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
   );
 }
 
-interface FontData {
-  family: string;
-  fullName: string;
-  postscriptName: string;
-  style: string;
-}
+
