@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,14 +8,24 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useCanvasStore } from "@/stores/canvas-store";
+import { useThemeStore, type ThemeMode } from "@/stores/theme-store";
+import { ThemeCustomizerDialog } from "./theme-customizer-dialog";
 
 interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+const themeModes: { value: ThemeMode; label: string }[] = [
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+  { value: "system", label: "System" },
+];
+
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { strokeWidth, setStrokeWidth, fontSize, setFontSize } = useCanvasStore();
+  const { mode, setMode } = useThemeStore();
+  const [customizerOpen, setCustomizerOpen] = useState(false);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -69,7 +80,30 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Theme</span>
-            <span className="text-xs text-muted-foreground">Coming soon</span>
+            <div className="flex items-center gap-2">
+              {themeModes.map((themeMode) => (
+                <Button
+                  key={themeMode.value}
+                  variant={mode === themeMode.value ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setMode(themeMode.value)}
+                >
+                  {themeMode.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">Custom Theme</span>
+              <span className="text-xs text-muted-foreground">
+                Paste a shadcn/ui theme CSS
+              </span>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setCustomizerOpen(true)}>
+              Customize
+            </Button>
           </div>
         </div>
 
@@ -78,6 +112,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           settings
         </div>
       </DialogContent>
+
+      <ThemeCustomizerDialog open={customizerOpen} onOpenChange={setCustomizerOpen} />
     </Dialog>
   );
 }

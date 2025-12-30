@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { DEFAULT_FONT_FAMILY } from "@/constants";
 import { useAnnotationStore } from "@/stores/annotation-store";
 import { useCanvasStore } from "@/stores/canvas-store";
+import { useThemeStore } from "@/stores/theme-store";
 import type { TextAnnotation } from "@/types";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -49,6 +50,22 @@ export default function App() {
     useAnnotationStore();
   const temporal = useAnnotationStore.temporal;
   const { strokeColor, fontSize } = useCanvasStore();
+  const { loadTheme, applyTheme, mode } = useThemeStore();
+
+  useEffect(() => {
+    loadTheme().then(() => applyTheme());
+  }, [loadTheme, applyTheme]);
+
+  useEffect(() => {
+    const unlisten = getCurrentWindow().onThemeChanged(() => {
+      if (mode === "system") {
+        applyTheme();
+      }
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [mode, applyTheme]);
 
   useEffect(() => {
     async function loadFromCli() {

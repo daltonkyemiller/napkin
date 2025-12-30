@@ -109,7 +109,6 @@ fn get_system_fonts() -> Vec<String> {
 
     if let Ok(all_families) = source.all_families() {
         for family in all_families {
-            // Skip hidden/system fonts that start with '.' or are internal
             if !family.starts_with('.') && !family.starts_with('#') {
                 families.insert(family);
             }
@@ -117,6 +116,76 @@ fn get_system_fonts() -> Vec<String> {
     }
 
     families.into_iter().collect()
+}
+
+#[tauri::command]
+fn save_theme_css(css: String, app_handle: tauri::AppHandle) -> Result<(), String> {
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+
+    std::fs::create_dir_all(&app_data_dir)
+        .map_err(|e| format!("Failed to create app data dir: {}", e))?;
+
+    let theme_path = app_data_dir.join("theme.css");
+    std::fs::write(&theme_path, css)
+        .map_err(|e| format!("Failed to write theme file: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+fn load_theme_css(app_handle: tauri::AppHandle) -> Result<Option<String>, String> {
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+
+    let theme_path = app_data_dir.join("theme.css");
+
+    if theme_path.exists() {
+        let css = std::fs::read_to_string(&theme_path)
+            .map_err(|e| format!("Failed to read theme file: {}", e))?;
+        Ok(Some(css))
+    } else {
+        Ok(None)
+    }
+}
+
+#[tauri::command]
+fn save_theme_preference(preference: String, app_handle: tauri::AppHandle) -> Result<(), String> {
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+
+    std::fs::create_dir_all(&app_data_dir)
+        .map_err(|e| format!("Failed to create app data dir: {}", e))?;
+
+    let pref_path = app_data_dir.join("theme-preference.txt");
+    std::fs::write(&pref_path, preference)
+        .map_err(|e| format!("Failed to write preference file: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+fn load_theme_preference(app_handle: tauri::AppHandle) -> Result<Option<String>, String> {
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+
+    let pref_path = app_data_dir.join("theme-preference.txt");
+
+    if pref_path.exists() {
+        let pref = std::fs::read_to_string(&pref_path)
+            .map_err(|e| format!("Failed to read preference file: {}", e))?;
+        Ok(Some(pref.trim().to_string()))
+    } else {
+        Ok(None)
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -157,7 +226,11 @@ pub fn run() {
             get_output_filename,
             get_fullscreen,
             perform_ocr,
-            get_system_fonts
+            get_system_fonts,
+            save_theme_css,
+            load_theme_css,
+            save_theme_preference,
+            load_theme_preference
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
