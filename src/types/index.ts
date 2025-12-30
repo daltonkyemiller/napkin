@@ -58,10 +58,9 @@ export interface TextAnnotation extends BaseAnnotation {
 
 export interface FreehandAnnotation extends BaseAnnotation {
   type: "freehand";
-  points: number[];
+  points: [number, number, number][];
   stroke: string;
   strokeWidth: number;
-  tension?: number;
   blendMode?: BlendMode;
 }
 

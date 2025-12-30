@@ -156,11 +156,20 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
         minY = Math.min(minY, annotation.y);
         maxX = Math.max(maxX, annotation.x + annotation.width);
         maxY = Math.max(maxY, annotation.y + annotation.height);
-      } else if (annotation.type === "arrow" || annotation.type === "freehand") {
+      } else if (annotation.type === "arrow") {
         const points = annotation.points;
         for (let i = 0; i < points.length; i += 2) {
           const px = annotation.x + points[i];
           const py = annotation.y + points[i + 1];
+          minX = Math.min(minX, px);
+          minY = Math.min(minY, py);
+          maxX = Math.max(maxX, px);
+          maxY = Math.max(maxY, py);
+        }
+      } else if (annotation.type === "freehand") {
+        for (const [x, y] of annotation.points) {
+          const px = annotation.x + x;
+          const py = annotation.y + y;
           minX = Math.min(minX, px);
           minY = Math.min(minY, py);
           maxX = Math.max(maxX, px);
