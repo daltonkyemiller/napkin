@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    annotate_tauri_lib::run()
+    napkin_lib::run()
 }

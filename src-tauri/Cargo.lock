@@ -60,24 +60,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "annotate-tauri"
-version = "0.1.0"
-dependencies = [
- "base64 0.22.1",
- "clap",
- "font-kit",
- "image",
- "rusty-tesseract",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "tauri-plugin-opener",
-]
-
-[[package]]
 name = "anstream"
 version = "0.6.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2595,6 +2577,24 @@ dependencies = [
  "serde",
  "thiserror 2.0.17",
  "windows-sys 0.60.2",
+]
+
+[[package]]
+name = "napkin"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "clap",
+ "font-kit",
+ "image",
+ "rusty-tesseract",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "tauri-plugin-opener",
 ]
 
 [[package]]

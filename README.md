@@ -1,4 +1,4 @@
-# Annotate
+# Napkin
 
 A lightweight desktop app for annotating images. Built with Tauri.
 

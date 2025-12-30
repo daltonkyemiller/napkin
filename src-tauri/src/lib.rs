@@ -10,8 +10,8 @@ use std::sync::Mutex;
 use tauri::{Manager, State};
 
 #[derive(Parser, Debug, Clone)]
-#[command(name = "annotate")]
-#[command(about = "A screenshot annotation tool")]
+#[command(name = "napkin")]
+#[command(about = "A lightweight image annotation app")]
 pub struct Args {
     #[arg(short, long)]
     pub filename: Option<String>,
