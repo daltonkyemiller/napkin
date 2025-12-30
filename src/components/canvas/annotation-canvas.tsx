@@ -145,7 +145,14 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
 
     useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
+        const target = e.target as HTMLElement;
+        const isInputFocused =
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable;
+
         if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+          if (isInputFocused) return;
           e.preventDefault();
           if (annotations.length > 0) {
             setSelectedIds(annotations.map((a) => a.id));
@@ -154,6 +161,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
         }
 
         if ((e.ctrlKey || e.metaKey) && e.key === "d") {
+          if (isInputFocused) return;
           e.preventDefault();
           if (selectedIds.length === 0) return;
 
