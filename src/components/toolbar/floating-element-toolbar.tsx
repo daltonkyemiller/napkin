@@ -43,24 +43,26 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
       .catch(() => {});
   }, []);
 
-  const allFonts = useMemo(
-    () => [...new Set([...FONT_FAMILIES, ...systemFonts])],
-    [systemFonts],
-  );
+  const allFonts = useMemo(() => [...new Set([...FONT_FAMILIES, ...systemFonts])], [systemFonts]);
 
   const selectedShapeAnnotations = useMemo(
     () =>
       annotations.filter(
         (a) =>
           selectedIds.includes(a.id) &&
-          (a.type === "circle" || a.type === "rectangle" || a.type === "arrow" || a.type === "freehand"),
+          (a.type === "circle" ||
+            a.type === "rectangle" ||
+            a.type === "arrow" ||
+            a.type === "freehand"),
       ),
     [annotations, selectedIds],
   );
 
   const selectedTextAnnotations = useMemo(
     () =>
-      annotations.filter((a) => selectedIds.includes(a.id) && a.type === "text") as TextAnnotation[],
+      annotations.filter(
+        (a) => selectedIds.includes(a.id) && a.type === "text",
+      ) as TextAnnotation[],
     [annotations, selectedIds],
   );
 
@@ -80,11 +82,11 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
   const hasAnySelection = hasShapeSelection || hasTextSelection;
 
   const currentSketchiness = hasSketchableSelection
-    ? (selectedSketchableAnnotations[0] as { sketchiness?: number }).sketchiness ?? 1.5
+    ? ((selectedSketchableAnnotations[0] as { sketchiness?: number }).sketchiness ?? 1.5)
     : 1.5;
 
   const currentBlendMode = hasShapeSelection
-    ? (selectedShapeAnnotations[0] as { blendMode?: BlendMode }).blendMode ?? "source-over"
+    ? ((selectedShapeAnnotations[0] as { blendMode?: BlendMode }).blendMode ?? "source-over")
     : "source-over";
 
   const currentStrokeWidth = hasShapeSelection
@@ -304,10 +306,7 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
             items={allFonts}
             filter={(item, query) => item.toLowerCase().includes(query.toLowerCase())}
           >
-            <ComboboxInput
-              placeholder="Search fonts..."
-              className="h-8 w-44 text-xs"
-            />
+            <ComboboxInput placeholder="Search fonts..." className="h-8 w-44 text-xs" />
             <ComboboxContent>
               <ComboboxList>
                 {(font: string) => (
@@ -339,5 +338,3 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
     </motion.div>
   );
 }
-
-

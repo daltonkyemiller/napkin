@@ -1,4 +1,12 @@
-import { useEffect, useRef, forwardRef, useImperativeHandle, useState, useMemo, useCallback } from "react";
+import {
+  useEffect,
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
 import { Stage, Layer, Image, Transformer, Rect, Circle, Text, Line, Shape } from "react-konva";
 import type Konva from "konva";
 import rough from "roughjs";
@@ -21,11 +29,15 @@ import type {
   HighlighterAnnotation,
 } from "@/types";
 
-
-
 interface AnnotationCanvasProps {
   image: HTMLImageElement;
-  onOcrRegionSelected?: (imageData: string, x: number, y: number, width: number, height: number) => void;
+  onOcrRegionSelected?: (
+    imageData: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ) => void;
 }
 
 export interface AnnotationCanvasHandle {
@@ -41,8 +53,15 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
     const currentAnnotationRef = useRef<string | null>(null);
     const preDrawHistoryLengthRef = useRef<number>(0);
     const drawStartPosRef = useRef<{ x: number; y: number } | null>(null);
-    const [ocrSelectionStart, setOcrSelectionStart] = useState<{ x: number; y: number } | null>(null);
-    const [ocrSelectionRect, setOcrSelectionRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+    const [ocrSelectionStart, setOcrSelectionStart] = useState<{ x: number; y: number } | null>(
+      null,
+    );
+    const [ocrSelectionRect, setOcrSelectionRect] = useState<{
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    } | null>(null);
     const [isTransformingAnnotation, setIsTransformingAnnotation] = useState(false);
 
     const {
@@ -70,7 +89,11 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
     const roughDrawablesRef = useRef<Map<string, { key: string; drawable: Drawable }>>(new Map());
 
     const getRoughDrawable = useCallback(
-      (id: string, cacheKey: string, createDrawable: (gen: RoughGenerator) => Drawable): Drawable => {
+      (
+        id: string,
+        cacheKey: string,
+        createDrawable: (gen: RoughGenerator) => Drawable,
+      ): Drawable => {
         const cached = roughDrawablesRef.current.get(id);
         if (cached && cached.key === cacheKey) {
           return cached.drawable;
@@ -319,7 +342,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       if (activeTool === "ocr" && ocrSelectionStart) {
         const pos = stageRef.current?.getPointerPosition();
         if (!pos) return;
-        
+
         const x = Math.min(ocrSelectionStart.x, pos.x);
         const y = Math.min(ocrSelectionStart.y, pos.y);
         const width = Math.abs(pos.x - ocrSelectionStart.x);
@@ -427,28 +450,34 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           if (ctx && stageRef.current) {
             const scaleX = image.width / scaledWidth;
             const scaleY = image.height / scaledHeight;
-            
+
             const sourceX = (ocrSelectionRect.x - imageX) * scaleX;
             const sourceY = (ocrSelectionRect.y - imageY) * scaleY;
             const sourceWidth = ocrSelectionRect.width * scaleX;
             const sourceHeight = ocrSelectionRect.height * scaleY;
-            
+
             tempCanvas.width = sourceWidth;
             tempCanvas.height = sourceHeight;
-            
+
             ctx.drawImage(
               image,
-              sourceX, sourceY, sourceWidth, sourceHeight,
-              0, 0, sourceWidth, sourceHeight
+              sourceX,
+              sourceY,
+              sourceWidth,
+              sourceHeight,
+              0,
+              0,
+              sourceWidth,
+              sourceHeight,
             );
-            
+
             const imageData = tempCanvas.toDataURL("image/png");
             onOcrRegionSelected(
               imageData,
               ocrSelectionRect.x,
               ocrSelectionRect.y,
               ocrSelectionRect.width,
-              ocrSelectionRect.height
+              ocrSelectionRect.height,
             );
           }
         }
@@ -598,20 +627,20 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       const [startX, startY, endX, endY] = arrow.points;
       const midX = (startX + endX) / 2;
       const midY = (startY + endY) / 2;
-      
+
       const bend = arrow.bend ?? 0;
       if (bend === 0) {
         return { x: midX, y: midY };
       }
-      
+
       const dx = endX - startX;
       const dy = endY - startY;
       const length = Math.sqrt(dx * dx + dy * dy);
       if (length === 0) return { x: midX, y: midY };
-      
+
       const perpX = -dy / length;
       const perpY = dx / length;
-      
+
       return {
         x: midX + perpX * bend * 0.5,
         y: midY + perpY * bend * 0.5,
@@ -644,25 +673,25 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       if (!selectedArrow) return;
       const node = e.target;
       const [startX, startY, endX, endY] = selectedArrow.points;
-      
+
       const midX = (startX + endX) / 2;
       const midY = (startY + endY) / 2;
-      
+
       const dx = endX - startX;
       const dy = endY - startY;
       const length = Math.sqrt(dx * dx + dy * dy);
       if (length === 0) return;
-      
+
       const perpX = -dy / length;
       const perpY = dx / length;
-      
+
       const handleX = node.x() - selectedArrow.x;
       const handleY = node.y() - selectedArrow.y;
-      
+
       const offsetX = handleX - midX;
       const offsetY = handleY - midY;
       const bend = (offsetX * perpX + offsetY * perpY) * 2;
-      
+
       updateAnnotation(selectedArrow.id, { bend });
     };
 
@@ -685,13 +714,13 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       const rotation = rect.rotation ?? 0;
       const signX = Math.sign(rect.width) || 1;
       const signY = Math.sign(rect.height) || 1;
-      
+
       const offset = cornerRadius + CORNER_RADIUS_HANDLE_OFFSET;
       const scaledX = offset * scaleX * signX;
       const scaledY = offset * scaleY * signY;
-      
+
       const rotated = rotatePoint(scaledX, scaledY, rotation);
-      
+
       return {
         x: rect.x + rotated.x,
         y: rect.y + rotated.y,
@@ -700,32 +729,34 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
 
     const cornerRadiusDragBoundFunc = (pos: { x: number; y: number }) => {
       if (!selectedRectangle) return pos;
-      
+
       const rotation = selectedRectangle.rotation ?? 0;
       const scaleX = selectedRectangle.scaleX ?? 1;
       const scaleY = selectedRectangle.scaleY ?? 1;
       const signX = Math.sign(selectedRectangle.width) || 1;
       const signY = Math.sign(selectedRectangle.height) || 1;
-      
+
       const dx = pos.x - selectedRectangle.x;
       const dy = pos.y - selectedRectangle.y;
-      
+
       const unrotated = rotatePoint(dx, dy, -rotation);
       const localX = (unrotated.x / scaleX) * signX;
       const localY = (unrotated.y / scaleY) * signY;
-      
-      const maxRadius = Math.min(
-        Math.abs(selectedRectangle.width),
-        Math.abs(selectedRectangle.height)
-      ) / 2;
-      
+
+      const maxRadius =
+        Math.min(Math.abs(selectedRectangle.width), Math.abs(selectedRectangle.height)) / 2;
+
       const diagonalPos = (localX + localY) / 2;
       const minOffset = CORNER_RADIUS_HANDLE_OFFSET;
       const maxOffset = maxRadius + CORNER_RADIUS_HANDLE_OFFSET;
       const clampedOffset = Math.max(minOffset, Math.min(diagonalPos, maxOffset));
-      
-      const rotated = rotatePoint(clampedOffset * scaleX * signX, clampedOffset * scaleY * signY, rotation);
-      
+
+      const rotated = rotatePoint(
+        clampedOffset * scaleX * signX,
+        clampedOffset * scaleY * signY,
+        rotation,
+      );
+
       return {
         x: selectedRectangle.x + rotated.x,
         y: selectedRectangle.y + rotated.y,
@@ -734,25 +765,23 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
 
     const handleCornerRadiusDrag = (e: Konva.KonvaEventObject<DragEvent>) => {
       if (!selectedRectangle) return;
-      
+
       const node = e.target;
       const rotation = selectedRectangle.rotation ?? 0;
       const scaleX = selectedRectangle.scaleX ?? 1;
       const signX = Math.sign(selectedRectangle.width) || 1;
-      
+
       const dx = node.x() - selectedRectangle.x;
       const dy = node.y() - selectedRectangle.y;
-      
+
       const unrotated = rotatePoint(dx, dy, -rotation);
       const localOffset = (unrotated.x / scaleX) * signX;
       const localRadius = localOffset - CORNER_RADIUS_HANDLE_OFFSET;
-      
-      const maxRadius = Math.min(
-        Math.abs(selectedRectangle.width),
-        Math.abs(selectedRectangle.height)
-      ) / 2;
+
+      const maxRadius =
+        Math.min(Math.abs(selectedRectangle.width), Math.abs(selectedRectangle.height)) / 2;
       const clampedRadius = Math.max(0, Math.min(localRadius, maxRadius));
-      
+
       updateAnnotation(selectedRectangle.id, { cornerRadius: Math.round(clampedRadius) });
     };
 
@@ -775,7 +804,8 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       switch (annotation.type) {
         case "circle": {
           if (annotation.sketchiness) {
-            const isBeingTransformed = isTransformingAnnotation && selectedIds.includes(annotation.id);
+            const isBeingTransformed =
+              isTransformingAnnotation && selectedIds.includes(annotation.id);
             const cacheKey = `${annotation.radius}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.fill}-${annotation.sketchiness}`;
             const diameter = annotation.radius * 2;
             return (
@@ -791,7 +821,13 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                 sceneFunc={(ctx) => {
                   if (isBeingTransformed) {
                     ctx.beginPath();
-                    ctx.arc(annotation.radius, annotation.radius, annotation.radius, 0, Math.PI * 2);
+                    ctx.arc(
+                      annotation.radius,
+                      annotation.radius,
+                      annotation.radius,
+                      0,
+                      Math.PI * 2,
+                    );
                     ctx.strokeStyle = annotation.stroke;
                     ctx.lineWidth = annotation.strokeWidth;
                     if (annotation.fill) {
@@ -837,7 +873,8 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
         }
         case "rectangle": {
           if (annotation.sketchiness) {
-            const isBeingTransformed = isTransformingAnnotation && selectedIds.includes(annotation.id);
+            const isBeingTransformed =
+              isTransformingAnnotation && selectedIds.includes(annotation.id);
             const r = annotation.cornerRadius ?? 0;
             const cacheKey = `${annotation.width}-${annotation.height}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.fill}-${annotation.sketchiness}-${r}`;
             return (
@@ -926,7 +963,8 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           const basePointerWidth = annotation.pointerWidth ?? 10;
           const pointerLength = basePointerLength + annotation.strokeWidth;
           const pointerWidth = basePointerWidth + annotation.strokeWidth;
-          const isBeingTransformed = isTransformingAnnotation && selectedIds.includes(annotation.id);
+          const isBeingTransformed =
+            isTransformingAnnotation && selectedIds.includes(annotation.id);
 
           const arrowPadding = Math.max(pointerLength, pointerWidth, annotation.strokeWidth) + 5;
           const boundPoints = [startX, startY, endX, endY];
@@ -944,7 +982,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           const arrowMinY = Math.min(...arrowYs) - arrowPadding;
           const arrowWidth = Math.max(...arrowXs) - Math.min(...arrowXs) + arrowPadding * 2;
           const arrowHeight = Math.max(...arrowYs) - Math.min(...arrowYs) + arrowPadding * 2;
-          
+
           const arrowCommonProps = {
             id: annotation.id,
             x: annotation.x + arrowMinX,
@@ -955,7 +993,8 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
             scaleX: annotation.scaleX ?? 1,
             scaleY: annotation.scaleY ?? 1,
             draggable: activeTool === "select",
-            onClick: (e: Konva.KonvaEventObject<MouseEvent>) => handleAnnotationClick(e, annotation),
+            onClick: (e: Konva.KonvaEventObject<MouseEvent>) =>
+              handleAnnotationClick(e, annotation),
             onDragStart: handleDragStart,
             onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => {
               const node = e.target;
@@ -968,12 +1007,12 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
             onTransformStart: handleTransformStart,
             onTransformEnd: handleTransformEnd,
           };
-          
+
           const arrowDrawOffset = { x: -arrowMinX, y: -arrowMinY };
 
           if (annotation.sketchiness && !isBeingTransformed) {
             const cacheKey = `${startX}-${startY}-${endX}-${endY}-${bend}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.sketchiness}`;
-            
+
             if (bend !== 0) {
               const midX = (startX + endX) / 2;
               const midY = (startY + endY) / 2;
@@ -984,11 +1023,11 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               const perpY = dx / length;
               const ctrlX = midX + perpX * bend;
               const ctrlY = midY + perpY * bend;
-              
+
               const tangentX = endX - ctrlX;
               const tangentY = endY - ctrlY;
               const angle = Math.atan2(tangentY, tangentX);
-              
+
               return (
                 <Shape
                   key={annotation.id}
@@ -1007,7 +1046,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                       }),
                     );
                     drawRoughDrawable(ctx._context, drawable);
-                    
+
                     ctx.save();
                     ctx.translate(endX, endY);
                     ctx.rotate(angle);
@@ -1032,9 +1071,9 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                 />
               );
             }
-            
+
             const straightAngle = Math.atan2(endY - startY, endX - startX);
-            
+
             return (
               <Shape
                 key={annotation.id}
@@ -1053,7 +1092,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                     }),
                   );
                   drawRoughDrawable(ctx._context, drawable);
-                  
+
                   ctx.save();
                   ctx.translate(endX, endY);
                   ctx.rotate(straightAngle);
@@ -1089,18 +1128,18 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
             const perpY = dx / length;
             const ctrlX = midX + perpX * bend;
             const ctrlY = midY + perpY * bend;
-            
+
             const tangentX = endX - ctrlX;
             const tangentY = endY - ctrlY;
             const tangentLen = Math.sqrt(tangentX * tangentX + tangentY * tangentY) || 1;
             const normTangentX = tangentX / tangentLen;
             const normTangentY = tangentY / tangentLen;
             const angle = Math.atan2(tangentY, tangentX);
-            
+
             const shortenBy = annotation.strokeWidth / 2;
             const shortenedEndX = endX - normTangentX * shortenBy;
             const shortenedEndY = endY - normTangentY * shortenBy;
-          
+
             return (
               <Shape
                 key={annotation.id}
@@ -1111,7 +1150,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                 sceneFunc={(ctx) => {
                   ctx.save();
                   ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
-                  
+
                   ctx.beginPath();
                   ctx.moveTo(startX, startY);
                   ctx.quadraticCurveTo(ctrlX, ctrlY, shortenedEndX, shortenedEndY);
@@ -1132,7 +1171,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                   ctx.lineCap = "round";
                   ctx.lineJoin = "round";
                   ctx.stroke();
-                  
+
                   ctx.restore();
                 }}
                 hitFunc={(ctx, shape) => {
@@ -1164,7 +1203,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               sceneFunc={(ctx) => {
                 ctx.save();
                 ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
-                
+
                 ctx.beginPath();
                 ctx.moveTo(startX, startY);
                 ctx.lineTo(straightEndX, straightEndY);
@@ -1185,7 +1224,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                 ctx.lineCap = "round";
                 ctx.lineJoin = "round";
                 ctx.stroke();
-                
+
                 ctx.restore();
               }}
               hitFunc={(ctx, shape) => {
@@ -1223,7 +1262,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           const offsetY = bounds.minY - padding;
           const shapeWidth = bounds.width + padding * 2;
           const shapeHeight = bounds.height + padding * 2;
-          
+
           return (
             <Shape
               key={annotation.id}
@@ -1236,7 +1275,9 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               scaleX={annotation.scaleX ?? 1}
               scaleY={annotation.scaleY ?? 1}
               draggable={activeTool === "select"}
-              onClick={(e: Konva.KonvaEventObject<MouseEvent>) => handleAnnotationClick(e, annotation)}
+              onClick={(e: Konva.KonvaEventObject<MouseEvent>) =>
+                handleAnnotationClick(e, annotation)
+              }
               onDragStart={handleDragStart}
               onDragEnd={(e: Konva.KonvaEventObject<DragEvent>) => {
                 const node = e.target;
@@ -1327,64 +1368,70 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                 fill="rgba(59, 130, 246, 0.1)"
               />
             )}
-            {selectedRectangle && activeTool === "select" && !isTransformingAnnotation && (() => {
-              const pos = getCornerRadiusHandlePosition(selectedRectangle);
-              return (
-                <Circle
-                  x={pos.x}
-                  y={pos.y}
-                  radius={6}
-                  fill="#4F46E5"
-                  stroke="#fff"
-                  strokeWidth={2}
-                  draggable
-                  dragBoundFunc={cornerRadiusDragBoundFunc}
-                  onDragMove={handleCornerRadiusDrag}
-                  hitStrokeWidth={10}
-                />
-              );
-            })()}
-            {selectedArrow && activeTool === "select" && !isTransformingAnnotation && (() => {
-              const [startX, startY, endX, endY] = selectedArrow.points;
-              const mid = getArrowCurveMidpoint(selectedArrow);
-              return (
-                <>
+            {selectedRectangle &&
+              activeTool === "select" &&
+              !isTransformingAnnotation &&
+              (() => {
+                const pos = getCornerRadiusHandlePosition(selectedRectangle);
+                return (
                   <Circle
-                    x={selectedArrow.x + startX}
-                    y={selectedArrow.y + startY}
+                    x={pos.x}
+                    y={pos.y}
                     radius={6}
                     fill="#4F46E5"
                     stroke="#fff"
                     strokeWidth={2}
                     draggable
-                    onDragMove={handleArrowStartDrag}
+                    dragBoundFunc={cornerRadiusDragBoundFunc}
+                    onDragMove={handleCornerRadiusDrag}
                     hitStrokeWidth={10}
                   />
-                  <Circle
-                    x={selectedArrow.x + mid.x}
-                    y={selectedArrow.y + mid.y}
-                    radius={6}
-                    fill="#10b981"
-                    stroke="#fff"
-                    strokeWidth={2}
-                    draggable
-                    onDragMove={handleArrowMidDrag}
-                    hitStrokeWidth={10}
-                  />
-                  <Circle
-                    x={selectedArrow.x + endX}
-                    y={selectedArrow.y + endY}
-                    radius={6}
-                    fill="#4F46E5"
-                    stroke="#fff"
-                    strokeWidth={2}
-                    draggable
-                    onDragMove={handleArrowEndDrag}
-                    hitStrokeWidth={10}
-                  />
-                </>
-              );
-            })()}
+                );
+              })()}
+            {selectedArrow &&
+              activeTool === "select" &&
+              !isTransformingAnnotation &&
+              (() => {
+                const [startX, startY, endX, endY] = selectedArrow.points;
+                const mid = getArrowCurveMidpoint(selectedArrow);
+                return (
+                  <>
+                    <Circle
+                      x={selectedArrow.x + startX}
+                      y={selectedArrow.y + startY}
+                      radius={6}
+                      fill="#4F46E5"
+                      stroke="#fff"
+                      strokeWidth={2}
+                      draggable
+                      onDragMove={handleArrowStartDrag}
+                      hitStrokeWidth={10}
+                    />
+                    <Circle
+                      x={selectedArrow.x + mid.x}
+                      y={selectedArrow.y + mid.y}
+                      radius={6}
+                      fill="#10b981"
+                      stroke="#fff"
+                      strokeWidth={2}
+                      draggable
+                      onDragMove={handleArrowMidDrag}
+                      hitStrokeWidth={10}
+                    />
+                    <Circle
+                      x={selectedArrow.x + endX}
+                      y={selectedArrow.y + endY}
+                      radius={6}
+                      fill="#4F46E5"
+                      stroke="#fff"
+                      strokeWidth={2}
+                      draggable
+                      onDragMove={handleArrowEndDrag}
+                      hitStrokeWidth={10}
+                    />
+                  </>
+                );
+              })()}
           </Layer>
         </Stage>
       </div>

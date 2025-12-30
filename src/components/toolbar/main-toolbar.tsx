@@ -165,9 +165,7 @@ export function MainToolbar({ onUploadClick, onDownload }: MainToolbarProps) {
                 : "border-muted-foreground/30 bg-muted"
             }`}
             style={
-              !STROKE_COLORS.includes(strokeColor)
-                ? { backgroundColor: strokeColor }
-                : undefined
+              !STROKE_COLORS.includes(strokeColor) ? { backgroundColor: strokeColor } : undefined
             }
             title="Custom color"
           >
@@ -180,9 +178,10 @@ export function MainToolbar({ onUploadClick, onDownload }: MainToolbarProps) {
               value={strokeColor}
               onChange={(rgba) => {
                 const [r, g, b, a] = rgba as [number, number, number, number];
-                const color = a < 1 
-                  ? `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a})`
-                  : Color.rgb(r, g, b).hex();
+                const color =
+                  a < 1
+                    ? `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a})`
+                    : Color.rgb(r, g, b).hex();
                 handleStrokeColorChange(color);
               }}
             >

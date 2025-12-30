@@ -59,11 +59,11 @@ export interface FreehandStrokeData {
 
 export function getFreehandStroke(
   points: InputPoint[],
-  options?: Partial<StrokeOptions>
+  options?: Partial<StrokeOptions>,
 ): FreehandStrokeData {
   const strokeOptions = { ...defaultFreehandOptions, ...options };
   const outlinePoints = getStroke(points, strokeOptions);
-  
+
   if (outlinePoints.length === 0) {
     return {
       path: "",
