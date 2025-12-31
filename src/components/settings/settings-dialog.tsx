@@ -77,7 +77,7 @@ export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogPro
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setStrokeWidth(Math.min(20, strokeWidth + 1))}
+                onClick={() => setStrokeWidth(Math.min(100, strokeWidth + 1))}
               >
                 +
               </Button>

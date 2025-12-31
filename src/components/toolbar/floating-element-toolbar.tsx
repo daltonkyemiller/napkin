@@ -212,7 +212,7 @@ export function FloatingElementToolbar({ containerRef, image }: FloatingElementT
     const toolbarRect = toolbarRef.current.getBoundingClientRect();
     const toolbarHeight = toolbarRect.height || 44;
     const toolbarWidth = toolbarRect.width || 200;
-    const gap = 36;
+    const gap = 45;
     const padding = 8;
 
     const centerX = (screenMinX + screenMaxX) / 2;
@@ -276,7 +276,7 @@ export function FloatingElementToolbar({ containerRef, image }: FloatingElementT
               value={[currentStrokeWidth]}
               onValueChange={handleStrokeWidthChange}
               min={1}
-              max={20}
+              max={100}
               step={1}
             />
             <span className="w-6 text-xs tabular-nums text-muted-foreground">
