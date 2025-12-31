@@ -39,14 +39,16 @@ export function FloatingElementToolbar({ containerRef, image }: FloatingElementT
   const { annotations, updateAnnotation } = useAnnotationStore();
 
   const imageTransform = useMemo(() => {
-    if (!image) return null;
-    const imageScale = Math.min(canvasWidth / image.width, canvasHeight / image.height, 1);
+    if (!image || !containerRef.current) return null;
+    const containerWidth = containerRef.current.clientWidth || canvasWidth;
+    const containerHeight = containerRef.current.clientHeight || canvasHeight;
+    const imageScale = Math.min(containerWidth / image.width, containerHeight / image.height, 1);
     const scaledWidth = image.width * imageScale;
     const scaledHeight = image.height * imageScale;
-    const imageX = (canvasWidth - scaledWidth) / 2;
-    const imageY = (canvasHeight - scaledHeight) / 2;
+    const imageX = (containerWidth - scaledWidth) / 2;
+    const imageY = (containerHeight - scaledHeight) / 2;
     return { imageX, imageY, imageScale };
-  }, [image, canvasWidth, canvasHeight]);
+  }, [image, containerRef, canvasWidth, canvasHeight]);
 
   useEffect(() => {
     invoke<string[]>("get_system_fonts")
@@ -161,21 +163,27 @@ export function FloatingElementToolbar({ containerRef, image }: FloatingElementT
     const allSelected = [...selectedShapeAnnotations, ...selectedTextAnnotations];
 
     for (const annotation of allSelected) {
+      const scaleX = annotation.scaleX ?? 1;
+      const scaleY = annotation.scaleY ?? 1;
+
       if (annotation.type === "circle") {
-        minX = Math.min(minX, annotation.x - annotation.radius);
-        minY = Math.min(minY, annotation.y - annotation.radius);
-        maxX = Math.max(maxX, annotation.x + annotation.radius);
-        maxY = Math.max(maxY, annotation.y + annotation.radius);
+        const scaledRadius = annotation.radius * Math.max(scaleX, scaleY);
+        minX = Math.min(minX, annotation.x - scaledRadius);
+        minY = Math.min(minY, annotation.y - scaledRadius);
+        maxX = Math.max(maxX, annotation.x + scaledRadius);
+        maxY = Math.max(maxY, annotation.y + scaledRadius);
       } else if (annotation.type === "rectangle") {
+        const scaledWidth = annotation.width * scaleX;
+        const scaledHeight = annotation.height * scaleY;
         minX = Math.min(minX, annotation.x);
         minY = Math.min(minY, annotation.y);
-        maxX = Math.max(maxX, annotation.x + annotation.width);
-        maxY = Math.max(maxY, annotation.y + annotation.height);
+        maxX = Math.max(maxX, annotation.x + scaledWidth);
+        maxY = Math.max(maxY, annotation.y + scaledHeight);
       } else if (annotation.type === "arrow") {
         const points = annotation.points;
         for (let i = 0; i < points.length; i += 2) {
-          const px = annotation.x + points[i];
-          const py = annotation.y + points[i + 1];
+          const px = annotation.x + points[i] * scaleX;
+          const py = annotation.y + points[i + 1] * scaleY;
           minX = Math.min(minX, px);
           minY = Math.min(minY, py);
           maxX = Math.max(maxX, px);
@@ -183,8 +191,8 @@ export function FloatingElementToolbar({ containerRef, image }: FloatingElementT
         }
       } else if (annotation.type === "freehand") {
         for (const [x, y] of annotation.points) {
-          const px = annotation.x + x;
-          const py = annotation.y + y;
+          const px = annotation.x + x * scaleX;
+          const py = annotation.y + y * scaleY;
           minX = Math.min(minX, px);
           minY = Math.min(minY, py);
           maxX = Math.max(maxX, px);
@@ -194,7 +202,7 @@ export function FloatingElementToolbar({ containerRef, image }: FloatingElementT
         minX = Math.min(minX, annotation.x);
         minY = Math.min(minY, annotation.y);
         maxX = Math.max(maxX, annotation.x + (annotation.width ?? 100));
-        maxY = Math.max(maxY, annotation.y + annotation.fontSize);
+        maxY = Math.max(maxY, annotation.y + annotation.fontSize * 1.2);
       }
     }
 
