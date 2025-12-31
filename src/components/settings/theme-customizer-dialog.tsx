@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
+import {
+  Dialog,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  NestedDialogContent,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -232,88 +238,85 @@ export function ThemeCustomizerDialog({ open, onOpenChange }: ThemeCustomizerDia
   };
 
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
-      <DialogPrimitive.Portal>
-        <DialogPrimitive.Backdrop className="bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs fixed inset-0 isolate z-[60] data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0" />
-        <DialogPrimitive.Popup className="bg-background ring-foreground/10 fixed top-1/2 left-1/2 z-[60] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-xl p-6 text-sm ring-1 duration-100 data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95">
-          <DialogPrimitive.Title className="font-medium leading-none">
-            Customize Theme
-          </DialogPrimitive.Title>
-          <DialogPrimitive.Description className="text-muted-foreground mt-2 text-sm">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <NestedDialogContent className="sm:max-w-2xl" showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle>Customize Theme</DialogTitle>
+          <DialogDescription>
             Choose a preset theme or paste custom shadcn/ui CSS.
-          </DialogPrimitive.Description>
+          </DialogDescription>
+        </DialogHeader>
 
-          <div className="mt-4 flex flex-col gap-3">
-            <div className="flex flex-col gap-2">
-              <span className="text-sm font-medium">Preset Themes</span>
-              <Select value={selectedPreset} onValueChange={handlePresetChange}>
-                <SelectTrigger className="w-full">
-                  <SelectValue>
-                    {selectedPreset ? (
-                      getSelectedPresetDisplay()
-                    ) : (
-                      <span className="text-muted-foreground">Select a preset theme...</span>
-                    )}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent positionerClassName="z-[70]">
-                  {THEME_PRESETS.map((preset) => (
-                    <SelectItem key={preset.id} value={preset.id}>
-                      <div className="flex flex-col items-start">
-                        <span>{preset.name}</span>
-                        <span className="text-muted-foreground text-xs">{preset.description}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <span className="text-sm font-medium">Custom CSS</span>
-              <Textarea
-                value={cssValue}
-                onChange={(e) => {
-                  setCssValue(e.target.value);
-                  setSelectedPreset(null);
-                  setError(null);
-                }}
-                placeholder={EXAMPLE_CSS}
-                className={cn(
-                  "h-72 font-mono text-xs",
-                  error && "border-destructive focus-visible:ring-destructive",
-                )}
-              />
-            </div>
-
-            {error && <p className="text-destructive text-xs">{error}</p>}
-
-            <div className="text-muted-foreground text-xs">
-              Tip: You can generate themes at{" "}
-              <a
-                href="https://tweakcn.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-foreground underline underline-offset-2"
-              >
-                tweakcn.com
-              </a>
-            </div>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium">Preset Themes</span>
+            <Select value={selectedPreset} onValueChange={handlePresetChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue>
+                  {selectedPreset ? (
+                    getSelectedPresetDisplay()
+                  ) : (
+                    <span className="text-muted-foreground">Select a preset theme...</span>
+                  )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent positionerClassName="z-[70]">
+                {THEME_PRESETS.map((preset) => (
+                  <SelectItem key={preset.id} value={preset.id}>
+                    <div className="flex flex-col items-start">
+                      <span>{preset.name}</span>
+                      <span className="text-muted-foreground text-xs">{preset.description}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="mt-6 flex justify-between">
-            <Button variant="outline" onClick={handleReset}>
-              Reset to Default
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium">Custom CSS</span>
+            <Textarea
+              value={cssValue}
+              onChange={(e) => {
+                setCssValue(e.target.value);
+                setSelectedPreset(null);
+                setError(null);
+              }}
+              placeholder={EXAMPLE_CSS}
+              className={cn(
+                "h-72 font-mono text-xs",
+                error && "border-destructive focus-visible:ring-destructive",
+              )}
+            />
+          </div>
+
+          {error && <p className="text-destructive text-xs">{error}</p>}
+
+          <div className="text-muted-foreground text-xs">
+            Tip: You can generate themes at{" "}
+            <a
+              href="https://tweakcn.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground underline underline-offset-2"
+            >
+              tweakcn.com
+            </a>
+          </div>
+        </div>
+
+        <div className="flex justify-between">
+          <Button variant="outline" onClick={handleReset}>
+            Reset to Default
+          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
             </Button>
-            <div className="flex gap-2">
-              <DialogPrimitive.Close render={<Button variant="outline" />}>
-                Cancel
-              </DialogPrimitive.Close>
-              <Button onClick={handleApply}>Apply Theme</Button>
-            </div>
+            <Button onClick={handleApply}>Apply Theme</Button>
           </div>
-        </DialogPrimitive.Popup>
-      </DialogPrimitive.Portal>
-    </DialogPrimitive.Root>
+        </div>
+      </NestedDialogContent>
+    </Dialog>
   );
 }

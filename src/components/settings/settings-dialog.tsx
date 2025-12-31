@@ -183,9 +183,9 @@ export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogPro
           Press <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono">Ctrl+,</kbd> to open
           settings
         </div>
-      </DialogContent>
 
-      <ThemeCustomizerDialog open={customizerOpen} onOpenChange={setCustomizerOpen} />
+        <ThemeCustomizerDialog open={customizerOpen} onOpenChange={setCustomizerOpen} />
+      </DialogContent>
     </Dialog>
   );
 }

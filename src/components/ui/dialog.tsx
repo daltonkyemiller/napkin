@@ -34,6 +34,17 @@ function DialogOverlay({ className, ...props }: DialogPrimitive.Backdrop.Props) 
   );
 }
 
+const nestedDialogPopupStyles = `
+  [data-nested-dialog-open]::after {
+    content: '';
+    inset: 0;
+    position: absolute;
+    border-radius: inherit;
+    background-color: rgb(0 0 0 / 0.05);
+    pointer-events: none;
+  }
+`;
+
 function DialogContent({
   className,
   children,
@@ -44,7 +55,45 @@ function DialogContent({
 }) {
   return (
     <DialogPortal>
+      <style>{nestedDialogPopupStyles}</style>
       <DialogOverlay />
+      <DialogPrimitive.Popup
+        data-slot="dialog-content"
+        className={cn(
+          "bg-background data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 ring-foreground/10 grid max-w-[calc(100%-2rem)] gap-6 rounded-xl p-6 text-sm ring-1 duration-100 sm:max-w-md fixed top-1/2 left-1/2 z-50 w-full outline-none transition-transform",
+          className,
+        )}
+        style={{
+          transform: `translate(-50%, -50%) scale(calc(1 - 0.05 * var(--nested-dialogs, 0)))`,
+          translate: `0 calc(0.75rem * var(--nested-dialogs, 0))`,
+        }}
+        {...props}
+      >
+        {children}
+        {showCloseButton && (
+          <DialogPrimitive.Close
+            data-slot="dialog-close"
+            render={<Button variant="ghost" className="absolute top-4 right-4" size="icon-sm" />}
+          >
+            <IconXmarkOutlineDuo18 />
+            <span className="sr-only">Close</span>
+          </DialogPrimitive.Close>
+        )}
+      </DialogPrimitive.Popup>
+    </DialogPortal>
+  );
+}
+
+function NestedDialogContent({
+  className,
+  children,
+  showCloseButton = true,
+  ...props
+}: DialogPrimitive.Popup.Props & {
+  showCloseButton?: boolean;
+}) {
+  return (
+    <DialogPortal>
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
@@ -130,4 +179,5 @@ export {
   DialogPortal,
   DialogTitle,
   DialogTrigger,
+  NestedDialogContent,
 };
