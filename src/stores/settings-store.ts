@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
+import { useCanvasStore } from "./canvas-store";
 
 interface AppSettings {
   strokeWidth: number;
@@ -63,13 +64,19 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     try {
       const settings = await invoke<AppSettings | null>("load_settings");
       if (settings) {
+        const strokeWidth = settings.strokeWidth ?? DEFAULT_SETTINGS.strokeWidth;
+        const fontSize = settings.fontSize ?? DEFAULT_SETTINGS.fontSize;
+        
         set({
-          strokeWidth: settings.strokeWidth ?? DEFAULT_SETTINGS.strokeWidth,
-          fontSize: settings.fontSize ?? DEFAULT_SETTINGS.fontSize,
+          strokeWidth,
+          fontSize,
           sketchiness: settings.sketchiness ?? DEFAULT_SETTINGS.sketchiness,
           defaultSaveLocation: settings.defaultSaveLocation ?? DEFAULT_SETTINGS.defaultSaveLocation,
           isLoaded: true,
         });
+        
+        useCanvasStore.getState().setStrokeWidth(strokeWidth);
+        useCanvasStore.getState().setFontSize(fontSize);
       } else {
         set({ isLoaded: true });
       }
