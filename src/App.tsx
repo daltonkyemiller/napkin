@@ -6,7 +6,7 @@ import { OcrResultDialog } from "@/components/ocr/ocr-result-dialog";
 import { SettingsDialog } from "@/components/settings/settings-dialog";
 import { FloatingElementToolbar } from "@/components/toolbar/floating-element-toolbar";
 import { MainToolbar } from "@/components/toolbar/main-toolbar";
-import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DEFAULT_FONT_FAMILY } from "@/constants";
 import { useAnnotationStore } from "@/stores/annotation-store";
 import { useCanvasStore } from "@/stores/canvas-store";
@@ -16,16 +16,14 @@ import type { TextAnnotation } from "@/types";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { save } from "@tauri-apps/plugin-dialog";
-
-const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 import { writeFile } from "@tauri-apps/plugin-fs";
-import { IconImageOutlineDuo18, IconUpload3OutlineDuo18 } from "nucleo-ui-outline-duo-18";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { Toaster } from "sonner";
 
+const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
 export default function App() {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<AnnotationCanvasHandle>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -49,8 +47,7 @@ export default function App() {
     activeTool,
   } = useCanvasStore();
 
-  const { annotations, deleteAnnotations, clearAnnotations, updateAnnotation, addAnnotation } =
-    useAnnotationStore();
+  const { annotations, deleteAnnotations, updateAnnotation, addAnnotation } = useAnnotationStore();
   const temporal = useAnnotationStore.temporal;
   const { strokeColor, fontSize } = useCanvasStore();
   const { loadTheme, applyTheme, mode } = useThemeStore();
@@ -107,6 +104,12 @@ export default function App() {
   }, [setImageInStore]);
 
   useEffect(() => {
+    if (!isLoading) {
+      getCurrentWindow().show();
+    }
+  }, [isLoading]);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const imagePath = params.get("image");
 
@@ -146,48 +149,6 @@ export default function App() {
     img.onload = () => setImage(img);
     img.src = imageUrl;
   }, [imageUrl]);
-
-  const handleFileSelect = useCallback(
-    (file: File) => {
-      if (!file.type.startsWith("image/")) return;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const url = e.target?.result as string;
-        const img = new window.Image();
-        img.onload = () => {
-          setImageInStore(url, img.width, img.height);
-          clearAnnotations();
-        };
-        img.src = url;
-      };
-      reader.readAsDataURL(file);
-    },
-    [setImageInStore, clearAnnotations],
-  );
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleFileSelect(file);
-    e.target.value = "";
-  };
-
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      const file = e.dataTransfer.files[0];
-      if (file) handleFileSelect(file);
-    },
-    [handleFileSelect],
-  );
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
 
   const handleDownload = useCallback(async () => {
     const dataURL = canvasRef.current?.exportImage();
@@ -329,20 +290,7 @@ export default function App() {
   );
 
   return (
-    <div
-      role="application"
-      className="h-screen w-screen overflow-hidden bg-muted"
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-    >
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleInputChange}
-        className="hidden"
-      />
-
+    <div role="application" className="flex h-screen w-screen flex-col overflow-hidden bg-muted">
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
       <OcrResultDialog
         open={ocrDialogOpen}
@@ -354,38 +302,25 @@ export default function App() {
         selectionPosition={ocrSelectionPosition}
       />
 
-      {isLoading ? (
-        <div className="flex h-full items-center justify-center" />
-      ) : !image ? (
-        <div className="flex h-full flex-col items-center justify-center gap-6">
-          <div className="flex flex-col items-center gap-2 text-muted-foreground">
-            <IconImageOutlineDuo18 className="size-24" />
-            <h1 className="text-2xl font-semibold text-foreground">Napkin</h1>
-            <p className="text-sm">Upload an image to start annotating</p>
+      <MainToolbar onDownload={handleDownload} onSettingsClick={() => setSettingsOpen(true)} />
+
+      <div ref={canvasContainerRef} className="relative flex-1 overflow-hidden">
+        {isLoading || !image ? (
+          <div className="flex h-full items-center justify-center">
+            <Skeleton className="h-3/4 w-3/4 bg-background" />
           </div>
-          <Button onClick={handleUploadClick} size="lg">
-            <IconUpload3OutlineDuo18 />
-            Select Image
-          </Button>
-          <p className="text-xs text-muted-foreground">Or drag and drop an image anywhere</p>
-        </div>
-      ) : (
-        <div className="flex h-full flex-col">
-          <MainToolbar
-            onUploadClick={handleUploadClick}
-            onDownload={handleDownload}
-            onSettingsClick={() => setSettingsOpen(true)}
-          />
-          <div ref={canvasContainerRef} className="relative flex-1 overflow-hidden">
+        ) : (
+          <>
             <AnnotationCanvas
               ref={canvasRef}
               image={image}
               onOcrRegionSelected={handleOcrRegionSelected}
             />
             <FloatingElementToolbar containerRef={canvasContainerRef} image={image} />
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </div>
+
       <Toaster position="top-right" richColors />
     </div>
   );

@@ -30,16 +30,14 @@ import {
   IconTrash2OutlineDuo18,
   IconTypographyOutlineDuo18,
   IconUndoOutlineDuo18,
-  IconUpload3OutlineDuo18,
 } from "nucleo-ui-outline-duo-18";
 
 interface MainToolbarProps {
-  onUploadClick: () => void;
   onDownload: () => void;
   onSettingsClick: () => void;
 }
 
-export function MainToolbar({ onUploadClick, onDownload, onSettingsClick }: MainToolbarProps) {
+export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
   const {
     activeTool,
     setActiveTool,
@@ -215,9 +213,6 @@ export function MainToolbar({ onUploadClick, onDownload, onSettingsClick }: Main
       <div className="h-6 w-px bg-border" />
 
       <div className="flex gap-1">
-        <Button variant="ghost" size="sm" onClick={onUploadClick} title="Upload Image">
-          <IconUpload3OutlineDuo18 />
-        </Button>
         <Button variant="ghost" size="sm" onClick={onDownload} title="Download">
           <IconDownload3OutlineDuo18 />
         </Button>
