@@ -61,7 +61,6 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
 
     const { annotations, addAnnotation, updateAnnotation } = useAnnotationStore();
     const { sketchiness: defaultSketchiness } = useSettingsStore();
-    const { startInlineEdit } = useInlineTextEditing(stageRef);
     const { getRoughDrawable } = useRoughGenerator();
     const {
       imageScale,
@@ -72,6 +71,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       getImageCoords,
       getStageCoords,
     } = useImageTransform({ image, canvasWidth: width, canvasHeight: height });
+    const { startInlineEdit } = useInlineTextEditing(stageRef, imageScale);
     const {
       isTransformingAnnotation,
       setIsTransformingAnnotation,

@@ -5,7 +5,10 @@ import { useAnnotationStore } from "@/stores/annotation-store";
 import { useCanvasStore } from "@/stores/canvas-store";
 import type { TextAnnotation } from "@/types";
 
-export function useInlineTextEditing(stageRef: React.RefObject<Konva.Stage | null>) {
+export function useInlineTextEditing(
+  stageRef: React.RefObject<Konva.Stage | null>,
+  imageScale: number = 1,
+) {
   const { updateAnnotation, deleteAnnotations } = useAnnotationStore();
   const { selectedIds, clearSelection, setActiveTool } = useCanvasStore();
 
@@ -35,13 +38,16 @@ export function useInlineTextEditing(stageRef: React.RefObject<Konva.Stage | nul
       const textarea = document.createElement("textarea");
       document.body.appendChild(textarea);
 
+      const effectiveScaleX = imageScale * textNode.scaleX();
+      const effectiveScaleY = imageScale * textNode.scaleY();
+
       textarea.value = textNode.text();
       textarea.style.position = "absolute";
       textarea.style.top = areaPosition.y + "px";
       textarea.style.left = areaPosition.x + "px";
-      textarea.style.width = Math.max(textNode.width() * textNode.scaleX(), 100) + "px";
-      textarea.style.height = textNode.height() * textNode.scaleY() + 5 + "px";
-      textarea.style.fontSize = textNode.fontSize() * textNode.scaleY() + "px";
+      textarea.style.width = Math.max(textNode.width() * effectiveScaleX, 100) + "px";
+      textarea.style.height = textNode.height() * effectiveScaleY + 5 + "px";
+      textarea.style.fontSize = textNode.fontSize() * effectiveScaleY + "px";
       textarea.style.border = "none";
       textarea.style.padding = "0px";
       textarea.style.margin = "0px";
@@ -143,7 +149,7 @@ export function useInlineTextEditing(stageRef: React.RefObject<Konva.Stage | nul
         window.addEventListener("touchstart", handleOutsideClick);
       }, 100);
     },
-    [stageRef, updateAnnotation, deleteAnnotations, clearSelection, selectedIds, setActiveTool],
+    [stageRef, imageScale, updateAnnotation, deleteAnnotations, clearSelection, selectedIds, setActiveTool],
   );
 
   return { startInlineEdit };
