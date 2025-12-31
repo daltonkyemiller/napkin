@@ -1,26 +1,20 @@
-import { useTheme } from "next-themes";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
-import {
-  IconCircleHalfDottedCheckOutlineDuo18,
-  IconCircleInfoOutlineDuo18,
-  IconTriangleWarningOutlineDuo18,
-  IconLoaderOutlineDuo18,
-  IconBugOutlineDuo18,
-} from "nucleo-ui-outline-duo-18";
+import { Icon } from "@/components/ui/icon";
+import { useThemeStore } from "@/stores/theme-store";
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
+  const theme = useThemeStore((state) => state.mode);
 
   return (
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
       icons={{
-        success: <IconCircleHalfDottedCheckOutlineDuo18 className="size-4" />,
-        info: <IconCircleInfoOutlineDuo18 className="size-4" />,
-        warning: <IconTriangleWarningOutlineDuo18 className="size-4" />,
-        error: <IconBugOutlineDuo18 className="size-4" />,
-        loading: <IconLoaderOutlineDuo18 className="size-4 animate-spin" />,
+        success: <Icon name="circle-check" size={16} />,
+        info: <Icon name="circle-info" size={16} />,
+        warning: <Icon name="triangle-warning" size={16} />,
+        error: <Icon name="bug" size={16} />,
+        loading: <Icon name="loader" size={16} className="animate-spin" />,
       }}
       style={
         {

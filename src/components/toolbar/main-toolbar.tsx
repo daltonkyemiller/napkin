@@ -15,22 +15,7 @@ import { useAnnotationStore } from "@/stores/annotation-store";
 import { STROKE_COLORS } from "@/constants";
 import type { Tool } from "@/types";
 
-import {
-  IconArrowRightOutlineDuo18,
-  IconCursorDefaultOutlineDuo18,
-  IconDownload3OutlineDuo18,
-  IconGearOutlineDuo18,
-  IconPalette2OutlineDuo18,
-  IconPenOutlineDuo18,
-  IconRedoOutlineDuo18,
-  IconScanTextOutlineDuo18,
-  IconShapeCircleOutlineDuo18,
-  IconShapeSquareOutlineDuo18,
-  IconTextHighlight3OutlineDuo18,
-  IconTrash2OutlineDuo18,
-  IconTypographyOutlineDuo18,
-  IconUndoOutlineDuo18,
-} from "nucleo-ui-outline-duo-18";
+import { Icon } from "@/components/ui/icon";
 
 interface MainToolbarProps {
   onDownload: () => void;
@@ -100,10 +85,10 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
     <div className="flex shrink-0 items-center justify-center gap-4 border-b bg-background p-3">
       <div className="flex gap-1">
         <Button variant="ghost" size="icon" onClick={handleUndo} disabled={!canUndo} title="Undo">
-          <IconUndoOutlineDuo18 />
+          <Icon name="undo" />
         </Button>
         <Button variant="ghost" size="icon" onClick={handleRedo} disabled={!canRedo} title="Redo">
-          <IconRedoOutlineDuo18 />
+          <Icon name="redo" />
         </Button>
       </div>
 
@@ -117,28 +102,28 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
         }}
       >
         <ToggleGroupItem value="select" title="Select">
-          <IconCursorDefaultOutlineDuo18 />
+          <Icon name="cursor-default" />
         </ToggleGroupItem>
         <ToggleGroupItem value="circle" title="Circle">
-          <IconShapeCircleOutlineDuo18 />
+          <Icon name="shape-circle" />
         </ToggleGroupItem>
         <ToggleGroupItem value="rectangle" title="Rectangle">
-          <IconShapeSquareOutlineDuo18 />
+          <Icon name="shape-square" />
         </ToggleGroupItem>
         <ToggleGroupItem value="arrow" title="Arrow">
-          <IconArrowRightOutlineDuo18 />
+          <Icon name="arrow-right" />
         </ToggleGroupItem>
         <ToggleGroupItem value="text" title="Text">
-          <IconTypographyOutlineDuo18 />
+          <Icon name="typography" />
         </ToggleGroupItem>
         <ToggleGroupItem value="freehand" title="Freehand">
-          <IconPenOutlineDuo18 />
+          <Icon name="pen" />
         </ToggleGroupItem>
         <ToggleGroupItem value="highlighter" title="Highlighter">
-          <IconTextHighlight3OutlineDuo18 />
+          <Icon name="text-highlight" />
         </ToggleGroupItem>
         <ToggleGroupItem value="ocr" title="OCR Text Recognition">
-          <IconScanTextOutlineDuo18 />
+          <Icon name="scan-text" />
         </ToggleGroupItem>
       </ToggleGroup>
 
@@ -170,7 +155,7 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
             title="Custom color"
           >
             {STROKE_COLORS.includes(strokeColor) && (
-              <IconPalette2OutlineDuo18 className="text-muted-foreground" />
+              <Icon name="palette" className="text-muted-foreground" />
             )}
           </PopoverTrigger>
           <PopoverContent className="w-64">
@@ -214,7 +199,7 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
 
       <div className="flex gap-1">
         <Button variant="ghost" size="sm" onClick={onDownload} title="Download">
-          <IconDownload3OutlineDuo18 />
+          <Icon name="download" />
         </Button>
         <Button
           variant="ghost"
@@ -223,13 +208,13 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
           disabled={selectedIds.length === 0}
           title="Delete Selected"
         >
-          <IconTrash2OutlineDuo18 />
+          <Icon name="trash" />
         </Button>
         <Button variant="destructive" size="sm" onClick={handleClear} title="Clear All">
           Clear
         </Button>
         <Button variant="ghost" size="sm" onClick={onSettingsClick} title="Settings">
-          <IconGearOutlineDuo18 />
+          <Icon name="gear" />
         </Button>
       </div>
     </div>

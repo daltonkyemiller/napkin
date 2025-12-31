@@ -12,11 +12,7 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group";
 
-import {
-  IconCheckOutlineDuo18,
-  IconChevronDownOutlineDuo18,
-  IconSquareXmarkOutlineDuo18,
-} from "nucleo-ui-outline-duo-18";
+import { Icon } from "@/components/ui/icon";
 
 const Combobox = ComboboxPrimitive.Root;
 
@@ -32,7 +28,7 @@ function ComboboxTrigger({ className, children, ...props }: ComboboxPrimitive.Tr
       {...props}
     >
       {children}
-      <IconChevronDownOutlineDuo18 className="text-muted-foreground size-4 pointer-events-none" />
+      <Icon name="chevron-down" size={16} className="text-muted-foreground pointer-events-none" />
     </ComboboxPrimitive.Trigger>
   );
 }
@@ -45,7 +41,7 @@ function ComboboxClear({ className, ...props }: ComboboxPrimitive.Clear.Props) {
       className={cn(className)}
       {...props}
     >
-      <IconSquareXmarkOutlineDuo18 className="pointer-events-none" />
+      <Icon name="square-xmark" className="pointer-events-none" />
     </ComboboxPrimitive.Clear>
   );
 }
@@ -158,7 +154,7 @@ function ComboboxItem({ className, children, ...props }: ComboboxPrimitive.Item.
           <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" />
         }
       >
-        <IconCheckOutlineDuo18 className="pointer-events-none" />
+        <Icon name="check" className="pointer-events-none" />
       </ComboboxPrimitive.ItemIndicator>
     </ComboboxPrimitive.Item>
   );
@@ -247,7 +243,7 @@ function ComboboxChip({
           className="-ml-1 opacity-50 hover:opacity-100"
           data-slot="combobox-chip-remove"
         >
-          <IconSquareXmarkOutlineDuo18 className="pointer-events-none" />
+          <Icon name="square-xmark" className="pointer-events-none" />
         </ComboboxPrimitive.ChipRemove>
       )}
     </ComboboxPrimitive.Chip>

@@ -9,11 +9,7 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  IconClipboardContentOutlineDuo18,
-  IconLoaderOutlineDuo18,
-  IconTypographyOutlineDuo18,
-} from "nucleo-ui-outline-duo-18";
+import { Icon } from "@/components/ui/icon";
 import { toast } from "sonner";
 
 interface OcrResultDialogProps {
@@ -76,7 +72,7 @@ export function OcrResultDialog({
 
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <IconLoaderOutlineDuo18 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <Icon name="loader" size={32} className="animate-spin text-muted-foreground" />
           </div>
         ) : error ? (
           <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">{error}</div>
@@ -98,11 +94,11 @@ export function OcrResultDialog({
                 onClick={handleCopyToClipboard}
                 disabled={!editedText.trim()}
               >
-                <IconClipboardContentOutlineDuo18 />
+                <Icon name="clipboard" />
                 Copy
               </Button>
               <Button onClick={handleCreateTextAnnotation} disabled={!editedText.trim()}>
-                <IconTypographyOutlineDuo18 />
+                <Icon name="typography" />
                 Create Text
               </Button>
             </>

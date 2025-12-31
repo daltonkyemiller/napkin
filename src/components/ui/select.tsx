@@ -2,11 +2,7 @@ import * as React from "react";
 import { Select as SelectPrimitive } from "@base-ui/react/select";
 
 import { cn } from "@/lib/utils";
-import {
-  IconCheckOutlineDuo18,
-  IconChevronDownOutlineDuo18,
-  IconChevronUpOutlineDuo18,
-} from "nucleo-ui-outline-duo-18";
+import { Icon } from "@/components/ui/icon";
 
 const Select = SelectPrimitive.Root;
 
@@ -51,7 +47,7 @@ function SelectTrigger({
       {children}
       <SelectPrimitive.Icon
         render={
-          <IconChevronDownOutlineDuo18 className="text-muted-foreground size-4 pointer-events-none" />
+          <Icon name="chevron-down" size={16} className="text-muted-foreground pointer-events-none" />
         }
       />
     </SelectPrimitive.Trigger>
@@ -128,7 +124,7 @@ function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Prop
           <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" />
         }
       >
-        <IconCheckOutlineDuo18 className="pointer-events-none" />
+        <Icon name="check" className="pointer-events-none" />
       </SelectPrimitive.ItemIndicator>
     </SelectPrimitive.Item>
   );
@@ -157,7 +153,7 @@ function SelectScrollUpButton({
       )}
       {...props}
     >
-      <IconChevronUpOutlineDuo18 />
+      <Icon name="chevron-up" />
     </SelectPrimitive.ScrollUpArrow>
   );
 }
@@ -175,7 +171,7 @@ function SelectScrollDownButton({
       )}
       {...props}
     >
-      <IconChevronDownOutlineDuo18 />
+      <Icon name="chevron-down" />
     </SelectPrimitive.ScrollDownArrow>
   );
 }

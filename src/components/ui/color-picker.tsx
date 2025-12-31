@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { IconPaintbrushOutlineDuo18 } from "nucleo-ui-outline-duo-18";
+import { Icon } from "@/components/ui/icon";
 
 interface ColorPickerContextValue {
   hue: number;
@@ -283,7 +283,7 @@ export const ColorPickerEyeDropper = ({ className, ...props }: ColorPickerEyeDro
       type="button"
       {...(props as any)}
     >
-      <IconPaintbrushOutlineDuo18 />
+      <Icon name="paintbrush" />
     </Button>
   );
 };

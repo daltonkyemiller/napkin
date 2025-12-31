@@ -3,7 +3,7 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { IconXmarkOutlineDuo18 } from "nucleo-ui-outline-duo-18";
+import { Icon } from "@/components/ui/icon";
 
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
@@ -26,7 +26,7 @@ function DialogOverlay({ className, ...props }: DialogPrimitive.Backdrop.Props) 
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 z-50 bg-black/20 transition-opacity duration-150 data-starting-style:opacity-0 data-ending-style:opacity-0",
+        "fixed inset-0 z-50 bg-black/20 transition-opacity duration-150 backdrop-blur-sm data-ending-style:backdrop-blur-none data-starting-style:opacity-0 data-ending-style:opacity-0",
         className,
       )}
       {...props}
@@ -66,7 +66,7 @@ function DialogContent({
             data-slot="dialog-close"
             render={<Button variant="ghost" className="absolute top-4 right-4" size="icon-sm" />}
           >
-            <IconXmarkOutlineDuo18 />
+            <Icon name="xmark" />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         )}
@@ -96,7 +96,7 @@ function NestedDialogContent({
             data-slot="dialog-close"
             render={<Button variant="ghost" className="absolute top-4 right-4" size="icon-sm" />}
           >
-            <IconXmarkOutlineDuo18 />
+            <Icon name="xmark" />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         )}
