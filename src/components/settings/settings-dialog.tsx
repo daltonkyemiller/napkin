@@ -10,9 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useThemeStore, type ThemeMode } from "@/stores/theme-store";
+import { IconCustomizerDialog } from "./icon-customizer-dialog";
 import { ThemeCustomizerDialog } from "./theme-customizer-dialog";
 import { open } from "@tauri-apps/plugin-dialog";
-import { IconFolder2OutlineDuo18 } from "nucleo-ui-outline-duo-18";
+import { Icon } from "@/components/ui/icon";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -42,6 +43,7 @@ export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogPro
   } = useSettingsStore();
   const { mode, setMode } = useThemeStore();
   const [customizerOpen, setCustomizerOpen] = useState(false);
+  const [iconCustomizerOpen, setIconCustomizerOpen] = useState(false);
 
   const handleSelectFolder = async () => {
     const selected = await open({
@@ -150,7 +152,7 @@ export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogPro
                 </Button>
               )}
               <Button variant="outline" size="sm" onClick={handleSelectFolder}>
-                <IconFolder2OutlineDuo18 className="size-4" />
+                <Icon name="folder" size={16} />
                 Browse
               </Button>
             </div>
@@ -211,6 +213,16 @@ export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogPro
               Customize
             </Button>
           </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">Custom Icons</span>
+              <span className="text-xs text-muted-foreground">Map icons to custom SVG files</span>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setIconCustomizerOpen(true)}>
+              Customize
+            </Button>
+          </div>
         </div>
 
         <div className="text-xs text-muted-foreground">
@@ -219,6 +231,7 @@ export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogPro
         </div>
 
         <ThemeCustomizerDialog open={customizerOpen} onOpenChange={setCustomizerOpen} />
+        <IconCustomizerDialog open={iconCustomizerOpen} onOpenChange={setIconCustomizerOpen} />
       </DialogContent>
     </Dialog>
   );
