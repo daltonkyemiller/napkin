@@ -1,4 +1,5 @@
 mod config;
+mod icons;
 
 use base64::{engine::general_purpose::STANDARD, Engine};
 use clap::Parser;
@@ -252,7 +253,11 @@ pub fn run() {
             load_theme_preference,
             save_settings,
             load_settings,
-            get_config_dir
+            get_config_dir,
+            icons::load_icon_mapping,
+            icons::save_icon_mapping,
+            icons::load_svg_file,
+            icons::scan_icon_directory
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
