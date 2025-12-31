@@ -50,6 +50,7 @@ jobs:
         with:
           name: linux-${{ matrix.arch }}
           path: |
+            src-tauri/target/release/napkin
             src-tauri/target/release/bundle/deb/*.deb
             src-tauri/target/release/bundle/rpm/*.rpm
             src-tauri/target/release/bundle/appimage/*.AppImage
