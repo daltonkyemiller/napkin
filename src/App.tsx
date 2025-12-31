@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DEFAULT_FONT_FAMILY } from "@/constants";
 import { useAnnotationStore } from "@/stores/annotation-store";
 import { useCanvasStore } from "@/stores/canvas-store";
+import { useIconStore } from "@/stores/icon-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useThemeStore } from "@/stores/theme-store";
 import type { TextAnnotation } from "@/types";
@@ -52,11 +53,13 @@ export default function App() {
   const { strokeColor, fontSize } = useCanvasStore();
   const { loadTheme, applyTheme, mode } = useThemeStore();
   const { loadSettings, defaultSaveLocation, autoSaveToDefault, closeAfterSave } = useSettingsStore();
+  const { loadIconMapping } = useIconStore();
 
   useEffect(() => {
     loadTheme().then(() => applyTheme());
     loadSettings();
-  }, [loadTheme, applyTheme, loadSettings]);
+    loadIconMapping();
+  }, [loadTheme, applyTheme, loadSettings, loadIconMapping]);
 
   useEffect(() => {
     const handler = () => {
