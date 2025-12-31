@@ -363,7 +363,11 @@ export default function App() {
         </div>
       ) : (
         <div className="flex h-full flex-col">
-          <MainToolbar onUploadClick={handleUploadClick} onDownload={handleDownload} />
+          <MainToolbar
+            onUploadClick={handleUploadClick}
+            onDownload={handleDownload}
+            onSettingsClick={() => setSettingsOpen(true)}
+          />
           <div ref={canvasContainerRef} className="relative flex-1 overflow-hidden">
             <AnnotationCanvas
               ref={canvasRef}

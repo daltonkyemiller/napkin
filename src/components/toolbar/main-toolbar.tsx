@@ -19,6 +19,7 @@ import {
   IconArrowRightOutlineDuo18,
   IconCursorDefaultOutlineDuo18,
   IconDownload3OutlineDuo18,
+  IconGearOutlineDuo18,
   IconPalette2OutlineDuo18,
   IconPenOutlineDuo18,
   IconRedoOutlineDuo18,
@@ -35,9 +36,10 @@ import {
 interface MainToolbarProps {
   onUploadClick: () => void;
   onDownload: () => void;
+  onSettingsClick: () => void;
 }
 
-export function MainToolbar({ onUploadClick, onDownload }: MainToolbarProps) {
+export function MainToolbar({ onUploadClick, onDownload, onSettingsClick }: MainToolbarProps) {
   const {
     activeTool,
     setActiveTool,
@@ -230,6 +232,9 @@ export function MainToolbar({ onUploadClick, onDownload }: MainToolbarProps) {
         </Button>
         <Button variant="destructive" size="sm" onClick={handleClear} title="Clear All">
           Clear
+        </Button>
+        <Button variant="ghost" size="sm" onClick={onSettingsClick} title="Settings">
+          <IconGearOutlineDuo18 />
         </Button>
       </div>
     </div>
