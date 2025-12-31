@@ -12,7 +12,8 @@ export interface BaseAnnotation {
 
 export interface CircleAnnotation extends BaseAnnotation {
   type: "circle";
-  radius: number;
+  radiusX: number;
+  radiusY: number;
   stroke: string;
   strokeWidth: number;
   fill?: string | null;

@@ -1,4 +1,4 @@
-import { Circle, Shape } from "react-konva";
+import { Ellipse, Shape } from "react-konva";
 import { drawRoughDrawable } from "@/lib/rough-draw";
 import type { CircleAnnotation } from "@/types";
 import type { CommonProps, ShapeRenderContext } from "./types";
@@ -9,25 +9,27 @@ export function renderCircle(
   ctx: ShapeRenderContext,
 ) {
   const { isTransformingAnnotation, selectedIds, getRoughDrawable } = ctx;
+  const { radiusX, radiusY } = annotation;
+  const width = radiusX * 2;
+  const height = radiusY * 2;
 
   if (annotation.sketchiness) {
     const isBeingTransformed = isTransformingAnnotation && selectedIds.includes(annotation.id);
-    const cacheKey = `${annotation.radius}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.fill}-${annotation.sketchiness}`;
-    const diameter = annotation.radius * 2;
+    const cacheKey = `${radiusX}-${radiusY}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.fill}-${annotation.sketchiness}`;
     return (
       <Shape
         key={annotation.id}
         {...commonProps}
-        width={diameter}
-        height={diameter}
-        offsetX={annotation.radius}
-        offsetY={annotation.radius}
+        width={width}
+        height={height}
+        offsetX={radiusX}
+        offsetY={radiusY}
         strokeScaleEnabled={false}
         globalCompositeOperation={annotation.blendMode ?? "source-over"}
         sceneFunc={(ctx) => {
           if (isBeingTransformed) {
             ctx.beginPath();
-            ctx.arc(annotation.radius, annotation.radius, annotation.radius, 0, Math.PI * 2);
+            ctx.ellipse(radiusX, radiusY, radiusX, radiusY, 0, 0, Math.PI * 2);
             ctx.strokeStyle = annotation.stroke;
             ctx.lineWidth = annotation.strokeWidth;
             if (annotation.fill) {
@@ -37,7 +39,7 @@ export function renderCircle(
             ctx.stroke();
           } else {
             const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) =>
-              gen.ellipse(annotation.radius, annotation.radius, diameter, diameter, {
+              gen.ellipse(radiusX, radiusY, width, height, {
                 stroke: annotation.stroke,
                 strokeWidth: annotation.strokeWidth,
                 fill: annotation.fill ?? undefined,
@@ -51,7 +53,7 @@ export function renderCircle(
         }}
         hitFunc={(ctx, shape) => {
           ctx.beginPath();
-          ctx.arc(annotation.radius, annotation.radius, annotation.radius, 0, Math.PI * 2);
+          ctx.ellipse(radiusX, radiusY, radiusX, radiusY, 0, 0, Math.PI * 2);
           ctx.closePath();
           ctx.fillStrokeShape(shape);
         }}
@@ -60,10 +62,11 @@ export function renderCircle(
   }
 
   return (
-    <Circle
+    <Ellipse
       key={annotation.id}
       {...commonProps}
-      radius={annotation.radius}
+      radiusX={radiusX}
+      radiusY={radiusY}
       stroke={annotation.stroke}
       strokeWidth={annotation.strokeWidth}
       strokeScaleEnabled={false}

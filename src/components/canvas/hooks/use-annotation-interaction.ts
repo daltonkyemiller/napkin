@@ -83,12 +83,12 @@ export function useAnnotationInteraction({
         node.scaleY(1);
       } else if (annotation.type === "circle") {
         const circle = annotation as CircleAnnotation;
-        const avgScale = (Math.abs(scaleX) + Math.abs(scaleY)) / 2;
         updateAnnotation(id, {
           x: node.x(),
           y: node.y(),
           rotation: node.rotation(),
-          radius: circle.radius * avgScale,
+          radiusX: circle.radiusX * Math.abs(scaleX),
+          radiusY: circle.radiusY * Math.abs(scaleY),
           scaleX: 1,
           scaleY: 1,
         });

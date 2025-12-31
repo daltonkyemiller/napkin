@@ -167,11 +167,12 @@ export function FloatingElementToolbar({ containerRef, image }: FloatingElementT
       const scaleY = annotation.scaleY ?? 1;
 
       if (annotation.type === "circle") {
-        const scaledRadius = annotation.radius * Math.max(scaleX, scaleY);
-        minX = Math.min(minX, annotation.x - scaledRadius);
-        minY = Math.min(minY, annotation.y - scaledRadius);
-        maxX = Math.max(maxX, annotation.x + scaledRadius);
-        maxY = Math.max(maxY, annotation.y + scaledRadius);
+        const scaledRadiusX = annotation.radiusX * scaleX;
+        const scaledRadiusY = annotation.radiusY * scaleY;
+        minX = Math.min(minX, annotation.x - scaledRadiusX);
+        minY = Math.min(minY, annotation.y - scaledRadiusY);
+        maxX = Math.max(maxX, annotation.x + scaledRadiusX);
+        maxY = Math.max(maxY, annotation.y + scaledRadiusY);
       } else if (annotation.type === "rectangle") {
         const scaledWidth = annotation.width * scaleX;
         const scaledHeight = annotation.height * scaleY;

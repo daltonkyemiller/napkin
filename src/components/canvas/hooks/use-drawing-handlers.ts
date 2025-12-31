@@ -116,7 +116,8 @@ export function useDrawingHandlers({
             const circleAnnotation: CircleAnnotation = {
               ...baseProps,
               type: "circle",
-              radius: 0,
+              radiusX: 0,
+              radiusY: 0,
               fill: fillColor,
               sketchiness: defaultSketchiness,
             };
@@ -237,20 +238,28 @@ export function useDrawingHandlers({
           const startPos = drawStartPosRef.current;
           if (!startPos) break;
 
-          const dx = pos.x - startPos.x;
-          const dy = pos.y - startPos.y;
+          let dx = pos.x - startPos.x;
+          let dy = pos.y - startPos.y;
+
+          if (shiftKey) {
+            const maxDim = Math.max(Math.abs(dx), Math.abs(dy));
+            dx = maxDim * Math.sign(dx || 1);
+            dy = maxDim * Math.sign(dy || 1);
+          }
 
           if (altKey) {
-            const radius = Math.sqrt(dx * dx + dy * dy);
-            updateAnnotation(annotation.id, { radius });
-          } else {
-            const radius = Math.min(Math.abs(dx), Math.abs(dy)) / 2;
-            const centerX = startPos.x + (Math.sign(dx) || 1) * radius;
-            const centerY = startPos.y + (Math.sign(dy) || 1) * radius;
             updateAnnotation(annotation.id, {
-              x: centerX,
-              y: centerY,
-              radius,
+              x: startPos.x,
+              y: startPos.y,
+              radiusX: Math.abs(dx),
+              radiusY: Math.abs(dy),
+            });
+          } else {
+            updateAnnotation(annotation.id, {
+              x: startPos.x + dx / 2,
+              y: startPos.y + dy / 2,
+              radiusX: Math.abs(dx) / 2,
+              radiusY: Math.abs(dy) / 2,
             });
           }
           break;
