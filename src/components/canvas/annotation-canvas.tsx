@@ -7,18 +7,7 @@ import {
   useMemo,
   useCallback,
 } from "react";
-import {
-  Stage,
-  Layer,
-  Image,
-  Transformer,
-  Rect,
-  Circle,
-  Text,
-  Line,
-  Shape,
-  Group,
-} from "react-konva";
+import { Stage, Layer, Image, Transformer, Rect, Group } from "react-konva";
 import type Konva from "konva";
 import rough from "roughjs";
 import type { RoughGenerator } from "roughjs/bin/generator";
@@ -28,10 +17,11 @@ import { useAnnotationStore } from "@/stores/annotation-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useInlineTextEditing } from "@/hooks/use-inline-text-editing";
 import { simplifyPath } from "@/lib/path-smoothing";
-import { getFreehandStroke } from "@/lib/freehand";
-import { drawRoughDrawable } from "@/lib/rough-draw";
 import { stageToImageCoords, imageToStageCoords, type ImageTransform } from "@/lib/coordinates";
 import { DEFAULT_FONT_FAMILY } from "@/constants";
+import { renderAnnotation } from "./renderers";
+import { ArrowHandles, CornerRadiusHandle } from "./selection-handles";
+import { useKeyboardShortcuts } from "./hooks/use-keyboard-shortcuts";
 import type {
   Annotation,
   CircleAnnotation,
@@ -173,54 +163,13 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       }
     }, [selectedIds]);
 
-    useEffect(() => {
-      const handleKeyDown = (e: KeyboardEvent) => {
-        const target = e.target as HTMLElement;
-        const isInputFocused =
-          target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
-
-        if ((e.ctrlKey || e.metaKey) && e.key === "a") {
-          if (isInputFocused) return;
-          e.preventDefault();
-          if (annotations.length > 0) {
-            setSelectedIds(annotations.map((a) => a.id));
-            setSelectedId(annotations[annotations.length - 1].id);
-          }
-        }
-
-        if ((e.ctrlKey || e.metaKey) && e.key === "d") {
-          if (isInputFocused) return;
-          e.preventDefault();
-          if (selectedIds.length === 0) return;
-
-          const offset = 20;
-          const newIds: string[] = [];
-
-          for (const id of selectedIds) {
-            const annotation = annotations.find((a) => a.id === id);
-            if (!annotation) continue;
-
-            const newId = `annotation_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-            const duplicate = {
-              ...annotation,
-              id: newId,
-              x: annotation.x + offset,
-              y: annotation.y + offset,
-            };
-            addAnnotation(duplicate);
-            newIds.push(newId);
-          }
-
-          if (newIds.length > 0) {
-            setSelectedIds(newIds);
-            setSelectedId(newIds[newIds.length - 1]);
-          }
-        }
-      };
-
-      window.addEventListener("keydown", handleKeyDown);
-      return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [annotations, selectedIds, setSelectedId, setSelectedIds, addAnnotation]);
+    useKeyboardShortcuts({
+      annotations,
+      selectedIds,
+      setSelectedId,
+      setSelectedIds,
+      addAnnotation,
+    });
 
     useImperativeHandle(
       ref,
@@ -291,8 +240,6 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           strokeWidth,
         };
 
-        // Save pre-draw state and pause history tracking
-        // This allows us to create a single undo entry for the entire drawing operation
         preDrawAnnotationsRef.current = [...useAnnotationStore.getState().annotations];
         useAnnotationStore.temporal.getState().pause();
 
@@ -386,9 +333,9 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
 
         const x = Math.min(ocrSelectionStart.x, pos.x);
         const y = Math.min(ocrSelectionStart.y, pos.y);
-        const width = Math.abs(pos.x - ocrSelectionStart.x);
-        const height = Math.abs(pos.y - ocrSelectionStart.y);
-        setOcrSelectionRect({ x, y, width, height });
+        const rectWidth = Math.abs(pos.x - ocrSelectionStart.x);
+        const rectHeight = Math.abs(pos.y - ocrSelectionStart.y);
+        setOcrSelectionRect({ x, y, width: rectWidth, height: rectHeight });
         return;
       }
 
@@ -539,13 +486,8 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
 
           const finalAnnotations = [...useAnnotationStore.getState().annotations];
 
-          // Restore pre-draw state while still paused (not tracked)
           useAnnotationStore.setState({ annotations: preDrawAnnotationsRef.current });
-
-          // Resume tracking - next state change will be recorded
           useAnnotationStore.temporal.getState().resume();
-
-          // Set final state - creates single history entry: pre-draw → final
           useAnnotationStore.setState({ annotations: finalAnnotations });
         }
       }
@@ -666,715 +608,6 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       return annotation as ArrowAnnotation;
     }, [selectedIds, annotations]);
 
-    const getArrowCurveMidpoint = (arrow: ArrowAnnotation) => {
-      const [startX, startY, endX, endY] = arrow.points;
-      const midX = (startX + endX) / 2;
-      const midY = (startY + endY) / 2;
-
-      const bend = arrow.bend ?? 0;
-      if (bend === 0) {
-        return { x: midX, y: midY };
-      }
-
-      const dx = endX - startX;
-      const dy = endY - startY;
-      const length = Math.sqrt(dx * dx + dy * dy);
-      if (length === 0) return { x: midX, y: midY };
-
-      const perpX = -dy / length;
-      const perpY = dx / length;
-
-      return {
-        x: midX + perpX * bend * 0.5,
-        y: midY + perpY * bend * 0.5,
-      };
-    };
-
-    const handleArrowStartDrag = (e: Konva.KonvaEventObject<DragEvent>) => {
-      if (!selectedArrow) return;
-      const node = e.target;
-      const imagePos = getImageCoords(node.x(), node.y());
-      const [, , endX, endY] = selectedArrow.points;
-      const newStartX = imagePos.x - selectedArrow.x;
-      const newStartY = imagePos.y - selectedArrow.y;
-      updateAnnotation(selectedArrow.id, {
-        points: [newStartX, newStartY, endX, endY],
-      });
-    };
-
-    const handleArrowEndDrag = (e: Konva.KonvaEventObject<DragEvent>) => {
-      if (!selectedArrow) return;
-      const node = e.target;
-      const imagePos = getImageCoords(node.x(), node.y());
-      const [startX, startY] = selectedArrow.points;
-      const newEndX = imagePos.x - selectedArrow.x;
-      const newEndY = imagePos.y - selectedArrow.y;
-      updateAnnotation(selectedArrow.id, {
-        points: [startX, startY, newEndX, newEndY],
-      });
-    };
-
-    const handleArrowMidDrag = (e: Konva.KonvaEventObject<DragEvent>) => {
-      if (!selectedArrow) return;
-      const node = e.target;
-      const imagePos = getImageCoords(node.x(), node.y());
-      const [startX, startY, endX, endY] = selectedArrow.points;
-
-      const midX = (startX + endX) / 2;
-      const midY = (startY + endY) / 2;
-
-      const dx = endX - startX;
-      const dy = endY - startY;
-      const length = Math.sqrt(dx * dx + dy * dy);
-      if (length === 0) return;
-
-      const perpX = -dy / length;
-      const perpY = dx / length;
-
-      const handleX = imagePos.x - selectedArrow.x;
-      const handleY = imagePos.y - selectedArrow.y;
-
-      const offsetX = handleX - midX;
-      const offsetY = handleY - midY;
-      const bend = (offsetX * perpX + offsetY * perpY) * 2;
-
-      updateAnnotation(selectedArrow.id, { bend });
-    };
-
-    const rotatePoint = (x: number, y: number, angleDeg: number) => {
-      const radians = (angleDeg * Math.PI) / 180;
-      const cos = Math.cos(radians);
-      const sin = Math.sin(radians);
-      return {
-        x: x * cos - y * sin,
-        y: x * sin + y * cos,
-      };
-    };
-
-    const CORNER_RADIUS_HANDLE_OFFSET = 16;
-
-    const getCornerRadiusHandlePosition = (rect: RectangleAnnotation) => {
-      const cornerRadius = rect.cornerRadius ?? 0;
-      const scaleX = rect.scaleX ?? 1;
-      const scaleY = rect.scaleY ?? 1;
-      const rotation = rect.rotation ?? 0;
-      const signX = Math.sign(rect.width) || 1;
-      const signY = Math.sign(rect.height) || 1;
-
-      const offset = cornerRadius + CORNER_RADIUS_HANDLE_OFFSET;
-      const scaledX = offset * scaleX * signX;
-      const scaledY = offset * scaleY * signY;
-
-      const rotated = rotatePoint(scaledX, scaledY, rotation);
-
-      return {
-        x: rect.x + rotated.x,
-        y: rect.y + rotated.y,
-      };
-    };
-
-    const cornerRadiusDragBoundFunc = (pos: { x: number; y: number }) => {
-      if (!selectedRectangle) return pos;
-
-      const imagePos = getImageCoords(pos.x, pos.y);
-      const rotation = selectedRectangle.rotation ?? 0;
-      const scaleX = selectedRectangle.scaleX ?? 1;
-      const scaleY = selectedRectangle.scaleY ?? 1;
-      const signX = Math.sign(selectedRectangle.width) || 1;
-      const signY = Math.sign(selectedRectangle.height) || 1;
-
-      const dx = imagePos.x - selectedRectangle.x;
-      const dy = imagePos.y - selectedRectangle.y;
-
-      const unrotated = rotatePoint(dx, dy, -rotation);
-      const localX = (unrotated.x / scaleX) * signX;
-      const localY = (unrotated.y / scaleY) * signY;
-
-      const maxRadius =
-        Math.min(Math.abs(selectedRectangle.width), Math.abs(selectedRectangle.height)) / 2;
-
-      const diagonalPos = (localX + localY) / 2;
-      const minOffset = CORNER_RADIUS_HANDLE_OFFSET;
-      const maxOffset = maxRadius + CORNER_RADIUS_HANDLE_OFFSET;
-      const clampedOffset = Math.max(minOffset, Math.min(diagonalPos, maxOffset));
-
-      const rotatedImage = rotatePoint(
-        clampedOffset * scaleX * signX,
-        clampedOffset * scaleY * signY,
-        rotation,
-      );
-
-      const clampedImagePos = {
-        x: selectedRectangle.x + rotatedImage.x,
-        y: selectedRectangle.y + rotatedImage.y,
-      };
-      return getStageCoords(clampedImagePos.x, clampedImagePos.y);
-    };
-
-    const handleCornerRadiusDrag = (e: Konva.KonvaEventObject<DragEvent>) => {
-      if (!selectedRectangle) return;
-
-      const node = e.target;
-      const imagePos = getImageCoords(node.x(), node.y());
-      const rotation = selectedRectangle.rotation ?? 0;
-      const scaleX = selectedRectangle.scaleX ?? 1;
-      const signX = Math.sign(selectedRectangle.width) || 1;
-
-      const dx = imagePos.x - selectedRectangle.x;
-      const dy = imagePos.y - selectedRectangle.y;
-
-      const unrotated = rotatePoint(dx, dy, -rotation);
-      const localOffset = (unrotated.x / scaleX) * signX;
-      const localRadius = localOffset - CORNER_RADIUS_HANDLE_OFFSET;
-
-      const maxRadius =
-        Math.min(Math.abs(selectedRectangle.width), Math.abs(selectedRectangle.height)) / 2;
-      const clampedRadius = Math.max(0, Math.min(localRadius, maxRadius));
-
-      updateAnnotation(selectedRectangle.id, { cornerRadius: Math.round(clampedRadius) });
-    };
-
-    const renderAnnotation = (annotation: Annotation) => {
-      const commonProps = {
-        id: annotation.id,
-        x: annotation.x,
-        y: annotation.y,
-        rotation: annotation.rotation ?? 0,
-        scaleX: annotation.scaleX ?? 1,
-        scaleY: annotation.scaleY ?? 1,
-        draggable: activeTool === "select",
-        onClick: (e: Konva.KonvaEventObject<MouseEvent>) => handleAnnotationClick(e, annotation),
-        onDragStart: handleDragStart,
-        onDragEnd: handleDragEnd,
-        onTransformStart: handleTransformStart,
-        onTransformEnd: handleTransformEnd,
-      };
-
-      switch (annotation.type) {
-        case "circle": {
-          if (annotation.sketchiness) {
-            const isBeingTransformed =
-              isTransformingAnnotation && selectedIds.includes(annotation.id);
-            const cacheKey = `${annotation.radius}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.fill}-${annotation.sketchiness}`;
-            const diameter = annotation.radius * 2;
-            return (
-              <Shape
-                key={annotation.id}
-                {...commonProps}
-                width={diameter}
-                height={diameter}
-                offsetX={annotation.radius}
-                offsetY={annotation.radius}
-                strokeScaleEnabled={false}
-                globalCompositeOperation={annotation.blendMode ?? "source-over"}
-                sceneFunc={(ctx) => {
-                  if (isBeingTransformed) {
-                    ctx.beginPath();
-                    ctx.arc(
-                      annotation.radius,
-                      annotation.radius,
-                      annotation.radius,
-                      0,
-                      Math.PI * 2,
-                    );
-                    ctx.strokeStyle = annotation.stroke;
-                    ctx.lineWidth = annotation.strokeWidth;
-                    if (annotation.fill) {
-                      ctx.fillStyle = annotation.fill;
-                      ctx.fill();
-                    }
-                    ctx.stroke();
-                  } else {
-                    const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) =>
-                      gen.ellipse(annotation.radius, annotation.radius, diameter, diameter, {
-                        stroke: annotation.stroke,
-                        strokeWidth: annotation.strokeWidth,
-                        fill: annotation.fill ?? undefined,
-                        fillStyle: annotation.fill ? "solid" : undefined,
-                        roughness: annotation.sketchiness,
-                        bowing: annotation.sketchiness,
-                      }),
-                    );
-                    drawRoughDrawable(ctx._context, drawable);
-                  }
-                }}
-                hitFunc={(ctx, shape) => {
-                  ctx.beginPath();
-                  ctx.arc(annotation.radius, annotation.radius, annotation.radius, 0, Math.PI * 2);
-                  ctx.closePath();
-                  ctx.fillStrokeShape(shape);
-                }}
-              />
-            );
-          }
-          return (
-            <Circle
-              key={annotation.id}
-              {...commonProps}
-              radius={annotation.radius}
-              stroke={annotation.stroke}
-              strokeWidth={annotation.strokeWidth}
-              strokeScaleEnabled={false}
-              fill={annotation.fill ?? undefined}
-              globalCompositeOperation={annotation.blendMode ?? "source-over"}
-            />
-          );
-        }
-        case "rectangle": {
-          if (annotation.sketchiness) {
-            const isBeingTransformed =
-              isTransformingAnnotation && selectedIds.includes(annotation.id);
-            const r = annotation.cornerRadius ?? 0;
-            const cacheKey = `${annotation.width}-${annotation.height}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.fill}-${annotation.sketchiness}-${r}`;
-            return (
-              <Shape
-                key={annotation.id}
-                {...commonProps}
-                width={annotation.width}
-                height={annotation.height}
-                strokeScaleEnabled={false}
-                globalCompositeOperation={annotation.blendMode ?? "source-over"}
-                sceneFunc={(ctx) => {
-                  if (isBeingTransformed) {
-                    ctx.beginPath();
-                    if (r > 0) {
-                      ctx.roundRect(0, 0, annotation.width, annotation.height, r);
-                    } else {
-                      ctx.rect(0, 0, annotation.width, annotation.height);
-                    }
-                    ctx.strokeStyle = annotation.stroke;
-                    ctx.lineWidth = annotation.strokeWidth;
-                    if (annotation.fill) {
-                      ctx.fillStyle = annotation.fill;
-                      ctx.fill();
-                    }
-                    ctx.stroke();
-                  } else {
-                    const w = annotation.width;
-                    const h = annotation.height;
-                    const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) => {
-                      if (r > 0) {
-                        const clampedR = Math.min(r, w / 2, h / 2);
-                        const path = `M ${clampedR},0 L ${w - clampedR},0 Q ${w},0 ${w},${clampedR} L ${w},${h - clampedR} Q ${w},${h} ${w - clampedR},${h} L ${clampedR},${h} Q 0,${h} 0,${h - clampedR} L 0,${clampedR} Q 0,0 ${clampedR},0 Z`;
-                        return gen.path(path, {
-                          stroke: annotation.stroke,
-                          strokeWidth: annotation.strokeWidth,
-                          fill: annotation.fill ?? undefined,
-                          fillStyle: annotation.fill ? "solid" : undefined,
-                          roughness: annotation.sketchiness,
-                          bowing: annotation.sketchiness,
-                        });
-                      }
-                      return gen.rectangle(0, 0, w, h, {
-                        stroke: annotation.stroke,
-                        strokeWidth: annotation.strokeWidth,
-                        fill: annotation.fill ?? undefined,
-                        fillStyle: annotation.fill ? "solid" : undefined,
-                        roughness: annotation.sketchiness,
-                        bowing: annotation.sketchiness,
-                      });
-                    });
-                    drawRoughDrawable(ctx._context, drawable);
-                  }
-                }}
-                hitFunc={(ctx, shape) => {
-                  ctx.beginPath();
-                  if (r > 0) {
-                    ctx.roundRect(0, 0, annotation.width, annotation.height, r);
-                  } else {
-                    ctx.rect(0, 0, annotation.width, annotation.height);
-                  }
-                  ctx.closePath();
-                  ctx.fillStrokeShape(shape);
-                }}
-              />
-            );
-          }
-          return (
-            <Rect
-              key={annotation.id}
-              {...commonProps}
-              width={annotation.width}
-              height={annotation.height}
-              stroke={annotation.stroke}
-              strokeWidth={annotation.strokeWidth}
-              strokeScaleEnabled={false}
-              fill={annotation.fill ?? undefined}
-              cornerRadius={annotation.cornerRadius}
-              globalCompositeOperation={annotation.blendMode ?? "source-over"}
-            />
-          );
-        }
-        case "arrow": {
-          const [startX, startY, endX, endY] = annotation.points;
-          const bend = annotation.bend ?? 0;
-          const basePointerLength = annotation.pointerLength ?? 10;
-          const basePointerWidth = annotation.pointerWidth ?? 10;
-          const pointerLength = basePointerLength + annotation.strokeWidth;
-          const pointerWidth = basePointerWidth + annotation.strokeWidth;
-          const isBeingTransformed =
-            isTransformingAnnotation && selectedIds.includes(annotation.id);
-
-          const arrowPadding = Math.max(pointerLength, pointerWidth, annotation.strokeWidth) + 5;
-          const boundPoints = [startX, startY, endX, endY];
-          if (bend !== 0) {
-            const midX = (startX + endX) / 2;
-            const midY = (startY + endY) / 2;
-            const dx = endX - startX;
-            const dy = endY - startY;
-            const len = Math.sqrt(dx * dx + dy * dy) || 1;
-            boundPoints.push(midX + (-dy / len) * bend, midY + (dx / len) * bend);
-          }
-          const arrowXs = boundPoints.filter((_, i) => i % 2 === 0);
-          const arrowYs = boundPoints.filter((_, i) => i % 2 === 1);
-          const arrowMinX = Math.min(...arrowXs) - arrowPadding;
-          const arrowMinY = Math.min(...arrowYs) - arrowPadding;
-          const arrowWidth = Math.max(...arrowXs) - Math.min(...arrowXs) + arrowPadding * 2;
-          const arrowHeight = Math.max(...arrowYs) - Math.min(...arrowYs) + arrowPadding * 2;
-
-          const arrowCommonProps = {
-            id: annotation.id,
-            x: annotation.x + arrowMinX,
-            y: annotation.y + arrowMinY,
-            width: arrowWidth,
-            height: arrowHeight,
-            rotation: annotation.rotation ?? 0,
-            scaleX: annotation.scaleX ?? 1,
-            scaleY: annotation.scaleY ?? 1,
-            draggable: activeTool === "select",
-            onClick: (e: Konva.KonvaEventObject<MouseEvent>) =>
-              handleAnnotationClick(e, annotation),
-            onDragStart: handleDragStart,
-            onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => {
-              const node = e.target;
-              updateAnnotation(node.id(), {
-                x: node.x() - arrowMinX,
-                y: node.y() - arrowMinY,
-              });
-              setIsTransformingAnnotation(false);
-            },
-            onTransformStart: handleTransformStart,
-            onTransformEnd: handleTransformEnd,
-          };
-
-          const arrowDrawOffset = { x: -arrowMinX, y: -arrowMinY };
-
-          if (annotation.sketchiness && !isBeingTransformed) {
-            const cacheKey = `${startX}-${startY}-${endX}-${endY}-${bend}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.sketchiness}`;
-
-            if (bend !== 0) {
-              const midX = (startX + endX) / 2;
-              const midY = (startY + endY) / 2;
-              const dx = endX - startX;
-              const dy = endY - startY;
-              const length = Math.sqrt(dx * dx + dy * dy) || 1;
-              const perpX = -dy / length;
-              const perpY = dx / length;
-              const ctrlX = midX + perpX * bend;
-              const ctrlY = midY + perpY * bend;
-
-              const tangentX = endX - ctrlX;
-              const tangentY = endY - ctrlY;
-              const angle = Math.atan2(tangentY, tangentX);
-
-              return (
-                <Shape
-                  key={annotation.id}
-                  {...arrowCommonProps}
-                  stroke={annotation.stroke}
-                  strokeWidth={Math.max(annotation.strokeWidth, 15)}
-                  globalCompositeOperation={annotation.blendMode ?? "source-over"}
-                  sceneFunc={(ctx) => {
-                    ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
-                    const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) =>
-                      gen.path(`M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}`, {
-                        stroke: annotation.stroke,
-                        strokeWidth: annotation.strokeWidth,
-                        roughness: annotation.sketchiness,
-                        bowing: annotation.sketchiness,
-                      }),
-                    );
-                    drawRoughDrawable(ctx._context, drawable);
-
-                    ctx.save();
-                    ctx.translate(endX, endY);
-                    ctx.rotate(angle);
-                    ctx.beginPath();
-                    ctx.moveTo(-pointerLength, -pointerWidth / 2);
-                    ctx.lineTo(0, 0);
-                    ctx.lineTo(-pointerLength, pointerWidth / 2);
-                    ctx.strokeStyle = annotation.stroke;
-                    ctx.lineWidth = annotation.strokeWidth;
-                    ctx.lineCap = "round";
-                    ctx.lineJoin = "round";
-                    ctx.stroke();
-                    ctx.restore();
-                  }}
-                  hitFunc={(ctx, shape) => {
-                    ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
-                    ctx.beginPath();
-                    ctx.moveTo(startX, startY);
-                    ctx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
-                    ctx.fillStrokeShape(shape);
-                  }}
-                />
-              );
-            }
-
-            const straightAngle = Math.atan2(endY - startY, endX - startX);
-
-            return (
-              <Shape
-                key={annotation.id}
-                {...arrowCommonProps}
-                stroke={annotation.stroke}
-                strokeWidth={Math.max(annotation.strokeWidth, 15)}
-                globalCompositeOperation={annotation.blendMode ?? "source-over"}
-                sceneFunc={(ctx) => {
-                  ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
-                  const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) =>
-                    gen.line(startX, startY, endX, endY, {
-                      stroke: annotation.stroke,
-                      strokeWidth: annotation.strokeWidth,
-                      roughness: annotation.sketchiness,
-                      bowing: annotation.sketchiness,
-                    }),
-                  );
-                  drawRoughDrawable(ctx._context, drawable);
-
-                  ctx.save();
-                  ctx.translate(endX, endY);
-                  ctx.rotate(straightAngle);
-                  ctx.beginPath();
-                  ctx.moveTo(-pointerLength, -pointerWidth / 2);
-                  ctx.lineTo(0, 0);
-                  ctx.lineTo(-pointerLength, pointerWidth / 2);
-                  ctx.strokeStyle = annotation.stroke;
-                  ctx.lineWidth = annotation.strokeWidth;
-                  ctx.lineCap = "round";
-                  ctx.lineJoin = "round";
-                  ctx.stroke();
-                  ctx.restore();
-                }}
-                hitFunc={(ctx, shape) => {
-                  ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
-                  ctx.beginPath();
-                  ctx.moveTo(startX, startY);
-                  ctx.lineTo(endX, endY);
-                  ctx.fillStrokeShape(shape);
-                }}
-              />
-            );
-          }
-
-          if (bend !== 0) {
-            const midX = (startX + endX) / 2;
-            const midY = (startY + endY) / 2;
-            const dx = endX - startX;
-            const dy = endY - startY;
-            const length = Math.sqrt(dx * dx + dy * dy) || 1;
-            const perpX = -dy / length;
-            const perpY = dx / length;
-            const ctrlX = midX + perpX * bend;
-            const ctrlY = midY + perpY * bend;
-
-            const tangentX = endX - ctrlX;
-            const tangentY = endY - ctrlY;
-            const tangentLen = Math.sqrt(tangentX * tangentX + tangentY * tangentY) || 1;
-            const normTangentX = tangentX / tangentLen;
-            const normTangentY = tangentY / tangentLen;
-            const angle = Math.atan2(tangentY, tangentX);
-
-            const shortenBy = annotation.strokeWidth / 2;
-            const shortenedEndX = endX - normTangentX * shortenBy;
-            const shortenedEndY = endY - normTangentY * shortenBy;
-
-            return (
-              <Shape
-                key={annotation.id}
-                {...arrowCommonProps}
-                stroke={annotation.stroke}
-                strokeWidth={Math.max(annotation.strokeWidth, 15)}
-                globalCompositeOperation={annotation.blendMode ?? "source-over"}
-                sceneFunc={(ctx) => {
-                  ctx.save();
-                  ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
-
-                  ctx.beginPath();
-                  ctx.moveTo(startX, startY);
-                  ctx.quadraticCurveTo(ctrlX, ctrlY, shortenedEndX, shortenedEndY);
-                  ctx.strokeStyle = annotation.stroke;
-                  ctx.lineWidth = annotation.strokeWidth;
-                  ctx.lineCap = "butt";
-                  ctx.lineJoin = "round";
-                  ctx.stroke();
-
-                  ctx.translate(endX, endY);
-                  ctx.rotate(angle);
-                  ctx.beginPath();
-                  ctx.moveTo(-pointerLength, -pointerWidth / 2);
-                  ctx.lineTo(0, 0);
-                  ctx.lineTo(-pointerLength, pointerWidth / 2);
-                  ctx.strokeStyle = annotation.stroke;
-                  ctx.lineWidth = annotation.strokeWidth;
-                  ctx.lineCap = "round";
-                  ctx.lineJoin = "round";
-                  ctx.stroke();
-
-                  ctx.restore();
-                }}
-                hitFunc={(ctx, shape) => {
-                  ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
-                  ctx.beginPath();
-                  ctx.moveTo(startX, startY);
-                  ctx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
-                  ctx.fillStrokeShape(shape);
-                }}
-              />
-            );
-          }
-
-          const straightDx = endX - startX;
-          const straightDy = endY - startY;
-          const straightLen = Math.sqrt(straightDx * straightDx + straightDy * straightDy) || 1;
-          const straightAngle = Math.atan2(straightDy, straightDx);
-          const straightShortenBy = annotation.strokeWidth / 2;
-          const straightEndX = endX - (straightDx / straightLen) * straightShortenBy;
-          const straightEndY = endY - (straightDy / straightLen) * straightShortenBy;
-
-          return (
-            <Shape
-              key={annotation.id}
-              {...arrowCommonProps}
-              stroke={annotation.stroke}
-              strokeWidth={Math.max(annotation.strokeWidth, 15)}
-              globalCompositeOperation={annotation.blendMode ?? "source-over"}
-              sceneFunc={(ctx) => {
-                ctx.save();
-                ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
-
-                ctx.beginPath();
-                ctx.moveTo(startX, startY);
-                ctx.lineTo(straightEndX, straightEndY);
-                ctx.strokeStyle = annotation.stroke;
-                ctx.lineWidth = annotation.strokeWidth;
-                ctx.lineCap = "round";
-                ctx.lineJoin = "round";
-                ctx.stroke();
-
-                ctx.translate(endX, endY);
-                ctx.rotate(straightAngle);
-                ctx.beginPath();
-                ctx.moveTo(-pointerLength, -pointerWidth / 2);
-                ctx.lineTo(0, 0);
-                ctx.lineTo(-pointerLength, pointerWidth / 2);
-                ctx.strokeStyle = annotation.stroke;
-                ctx.lineWidth = annotation.strokeWidth;
-                ctx.lineCap = "round";
-                ctx.lineJoin = "round";
-                ctx.stroke();
-
-                ctx.restore();
-              }}
-              hitFunc={(ctx, shape) => {
-                ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
-                ctx.beginPath();
-                ctx.moveTo(startX, startY);
-                ctx.lineTo(endX, endY);
-                ctx.fillStrokeShape(shape);
-              }}
-            />
-          );
-        }
-        case "text":
-          return (
-            <Text
-              key={annotation.id}
-              {...commonProps}
-              text={annotation.text}
-              fontSize={annotation.fontSize}
-              fontFamily={annotation.fontFamily}
-              fill={annotation.fill}
-              stroke={annotation.stroke ?? undefined}
-              strokeWidth={annotation.strokeWidth}
-              width={annotation.width}
-              align={annotation.align}
-              onDblClick={() => handleTextDblClick(annotation)}
-            />
-          );
-        case "freehand": {
-          const { path: pathData, bounds } = getFreehandStroke(annotation.points, {
-            size: annotation.strokeWidth * 2,
-          });
-          const padding = 2;
-          const offsetX = bounds.minX - padding;
-          const offsetY = bounds.minY - padding;
-          const shapeWidth = bounds.width + padding * 2;
-          const shapeHeight = bounds.height + padding * 2;
-
-          return (
-            <Shape
-              key={annotation.id}
-              id={annotation.id}
-              x={annotation.x + offsetX}
-              y={annotation.y + offsetY}
-              width={shapeWidth}
-              height={shapeHeight}
-              rotation={annotation.rotation ?? 0}
-              scaleX={annotation.scaleX ?? 1}
-              scaleY={annotation.scaleY ?? 1}
-              draggable={activeTool === "select"}
-              onClick={(e: Konva.KonvaEventObject<MouseEvent>) =>
-                handleAnnotationClick(e, annotation)
-              }
-              onDragStart={handleDragStart}
-              onDragEnd={(e: Konva.KonvaEventObject<DragEvent>) => {
-                const node = e.target;
-                updateAnnotation(node.id(), {
-                  x: node.x() - offsetX,
-                  y: node.y() - offsetY,
-                });
-                setIsTransformingAnnotation(false);
-              }}
-              onTransformStart={handleTransformStart}
-              onTransformEnd={handleTransformEnd}
-              sceneFunc={(ctx) => {
-                if (!pathData) return;
-                ctx.translate(-offsetX, -offsetY);
-                const path = new Path2D(pathData);
-                ctx.fillStyle = annotation.stroke;
-                ctx.fill(path);
-              }}
-              hitFunc={(ctx, shape) => {
-                ctx.beginPath();
-                ctx.rect(0, 0, shapeWidth, shapeHeight);
-                ctx.closePath();
-                ctx.fillStrokeShape(shape);
-              }}
-              globalCompositeOperation={annotation.blendMode ?? "source-over"}
-            />
-          );
-        }
-        case "highlighter":
-          return (
-            <Line
-              key={annotation.id}
-              {...commonProps}
-              points={annotation.points}
-              stroke={annotation.stroke}
-              strokeWidth={annotation.strokeWidth}
-              tension={annotation.tension}
-              opacity={annotation.opacity}
-              lineCap="butt"
-              lineJoin="miter"
-              globalCompositeOperation="multiply"
-            />
-          );
-        default:
-          return null;
-      }
-    };
-
     return (
       <div ref={containerRef} className="h-full w-full">
         <Stage
@@ -1389,7 +622,23 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           <Layer>
             <Image image={image} x={imageX} y={imageY} width={scaledWidth} height={scaledHeight} />
             <Group x={imageX} y={imageY} scaleX={imageScale} scaleY={imageScale}>
-              {annotations.map(renderAnnotation)}
+              {annotations.map((annotation) =>
+                renderAnnotation({
+                  annotation,
+                  activeTool,
+                  selectedIds,
+                  isTransformingAnnotation,
+                  getRoughDrawable,
+                  onAnnotationClick: handleAnnotationClick,
+                  onDragStart: handleDragStart,
+                  onDragEnd: handleDragEnd,
+                  onTransformStart: handleTransformStart,
+                  onTransformEnd: handleTransformEnd,
+                  onTextDblClick: handleTextDblClick,
+                  updateAnnotation,
+                  setIsTransformingAnnotation,
+                }),
+              )}
             </Group>
             {selectedId && !selectedArrow && (
               <Transformer
@@ -1417,77 +666,22 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                 fill="rgba(59, 130, 246, 0.1)"
               />
             )}
-            {selectedRectangle &&
-              activeTool === "select" &&
-              !isTransformingAnnotation &&
-              (() => {
-                const imagePos = getCornerRadiusHandlePosition(selectedRectangle);
-                const stagePos = getStageCoords(imagePos.x, imagePos.y);
-                return (
-                  <Circle
-                    x={stagePos.x}
-                    y={stagePos.y}
-                    radius={6}
-                    fill="#4F46E5"
-                    stroke="#fff"
-                    strokeWidth={2}
-                    draggable
-                    dragBoundFunc={cornerRadiusDragBoundFunc}
-                    onDragMove={handleCornerRadiusDrag}
-                    hitStrokeWidth={10}
-                  />
-                );
-              })()}
-            {selectedArrow &&
-              activeTool === "select" &&
-              !isTransformingAnnotation &&
-              (() => {
-                const [startX, startY, endX, endY] = selectedArrow.points;
-                const mid = getArrowCurveMidpoint(selectedArrow);
-                const startStage = getStageCoords(
-                  selectedArrow.x + startX,
-                  selectedArrow.y + startY,
-                );
-                const midStage = getStageCoords(selectedArrow.x + mid.x, selectedArrow.y + mid.y);
-                const endStage = getStageCoords(selectedArrow.x + endX, selectedArrow.y + endY);
-                return (
-                  <>
-                    <Circle
-                      x={startStage.x}
-                      y={startStage.y}
-                      radius={6}
-                      fill="#4F46E5"
-                      stroke="#fff"
-                      strokeWidth={2}
-                      draggable
-                      onDragMove={handleArrowStartDrag}
-                      hitStrokeWidth={10}
-                    />
-                    <Circle
-                      x={midStage.x}
-                      y={midStage.y}
-                      radius={6}
-                      fill="#10b981"
-                      stroke="#fff"
-                      strokeWidth={2}
-                      draggable
-                      onDragMove={handleArrowMidDrag}
-                      hitStrokeWidth={10}
-                    />
-                    <Circle
-                      x={endStage.x}
-                      y={endStage.y}
-                      radius={6}
-                      fill="#4F46E5"
-                      stroke="#fff"
-                      strokeWidth={2}
-                      draggable
-                      onDragMove={handleArrowEndDrag}
-                      hitStrokeWidth={10}
-                    />
-                  </>
-                );
-              })()}
+            {selectedRectangle && activeTool === "select" && !isTransformingAnnotation && (
+              <CornerRadiusHandle
+                rectangle={selectedRectangle}
+                getStageCoords={getStageCoords}
+                getImageCoords={getImageCoords}
+                updateAnnotation={updateAnnotation}
+              />
+            )}
+            {selectedArrow && activeTool === "select" && !isTransformingAnnotation && (
+              <ArrowHandles
+                arrow={selectedArrow}
+                getStageCoords={getStageCoords}
+                getImageCoords={getImageCoords}
+                updateAnnotation={updateAnnotation}
+              />
+            )}
           </Layer>
         </Stage>
       </div>
