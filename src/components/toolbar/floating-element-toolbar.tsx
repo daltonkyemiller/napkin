@@ -26,16 +26,27 @@ const BLEND_MODES: { value: BlendMode; label: string }[] = [
 
 interface FloatingElementToolbarProps {
   containerRef: React.RefObject<HTMLDivElement | null>;
+  image: HTMLImageElement | null;
 }
 
-export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarProps) {
+export function FloatingElementToolbar({ containerRef, image }: FloatingElementToolbarProps) {
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ left: 0, top: 0 });
   const [isVisible, setIsVisible] = useState(false);
   const [systemFonts, setSystemFonts] = useState<string[]>([]);
 
-  const { selectedIds } = useCanvasStore();
+  const { selectedIds, width: canvasWidth, height: canvasHeight } = useCanvasStore();
   const { annotations, updateAnnotation } = useAnnotationStore();
+
+  const imageTransform = useMemo(() => {
+    if (!image) return null;
+    const imageScale = Math.min(canvasWidth / image.width, canvasHeight / image.height, 1);
+    const scaledWidth = image.width * imageScale;
+    const scaledHeight = image.height * imageScale;
+    const imageX = (canvasWidth - scaledWidth) / 2;
+    const imageY = (canvasHeight - scaledHeight) / 2;
+    return { imageX, imageY, imageScale };
+  }, [image, canvasWidth, canvasHeight]);
 
   useEffect(() => {
     invoke<string[]>("get_system_fonts")
@@ -135,10 +146,12 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
   };
 
   const updatePosition = useCallback(() => {
-    if (!hasAnySelection || !containerRef.current || !toolbarRef.current) {
+    if (!hasAnySelection || !containerRef.current || !toolbarRef.current || !imageTransform) {
       setIsVisible(false);
       return;
     }
+
+    const { imageX, imageY, imageScale } = imageTransform;
 
     let minX = Infinity;
     let minY = Infinity;
@@ -190,6 +203,11 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
       return;
     }
 
+    const screenMinX = imageX + minX * imageScale;
+    const screenMinY = imageY + minY * imageScale;
+    const screenMaxX = imageX + maxX * imageScale;
+    const screenMaxY = imageY + maxY * imageScale;
+
     const containerRect = containerRef.current.getBoundingClientRect();
     const toolbarRect = toolbarRef.current.getBoundingClientRect();
     const toolbarHeight = toolbarRect.height || 44;
@@ -197,13 +215,13 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
     const gap = 36;
     const padding = 8;
 
-    const centerX = (minX + maxX) / 2;
+    const centerX = (screenMinX + screenMaxX) / 2;
 
     let left = centerX - toolbarWidth / 2;
-    let top = minY - toolbarHeight - gap;
+    let top = screenMinY - toolbarHeight - gap;
 
     if (top < padding) {
-      top = maxY + gap;
+      top = screenMaxY + gap;
     }
 
     left = Math.max(padding, Math.min(left, containerRect.width - toolbarWidth - padding));
@@ -211,7 +229,7 @@ export function FloatingElementToolbar({ containerRef }: FloatingElementToolbarP
 
     setPosition({ left, top });
     setIsVisible(true);
-  }, [hasAnySelection, selectedShapeAnnotations, selectedTextAnnotations, containerRef]);
+  }, [hasAnySelection, selectedShapeAnnotations, selectedTextAnnotations, containerRef, imageTransform]);
 
   useEffect(() => {
     updatePosition();

@@ -374,7 +374,7 @@ export default function App() {
               image={image}
               onOcrRegionSelected={handleOcrRegionSelected}
             />
-            <FloatingElementToolbar containerRef={canvasContainerRef} />
+            <FloatingElementToolbar containerRef={canvasContainerRef} image={image} />
           </div>
         </div>
       )}
