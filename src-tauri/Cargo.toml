@@ -29,4 +29,6 @@ base64 = "0.22"
 image = "0.25"
 rusty-tesseract = "1.1"
 font-kit = "0.14"
+serde_yaml = "0.9"
+dirs = "5"
 

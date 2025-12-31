@@ -1,3 +1,5 @@
+mod config;
+
 use base64::{engine::general_purpose::STANDARD, Engine};
 use clap::Parser;
 use font_kit::source::SystemSource;
@@ -120,73 +122,26 @@ fn get_system_fonts() -> Vec<String> {
 }
 
 #[tauri::command]
-fn save_theme_css(css: String, app_handle: tauri::AppHandle) -> Result<(), String> {
-    let app_data_dir = app_handle
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
-
-    std::fs::create_dir_all(&app_data_dir)
-        .map_err(|e| format!("Failed to create app data dir: {}", e))?;
-
-    let theme_path = app_data_dir.join("theme.css");
-    std::fs::write(&theme_path, css)
-        .map_err(|e| format!("Failed to write theme file: {}", e))?;
-
-    Ok(())
+fn save_theme_css(css: String) -> Result<(), String> {
+    let css_opt = if css.trim().is_empty() { None } else { Some(css) };
+    config::save_theme_custom_css(css_opt)
 }
 
 #[tauri::command]
-fn load_theme_css(app_handle: tauri::AppHandle) -> Result<Option<String>, String> {
-    let app_data_dir = app_handle
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
-
-    let theme_path = app_data_dir.join("theme.css");
-
-    if theme_path.exists() {
-        let css = std::fs::read_to_string(&theme_path)
-            .map_err(|e| format!("Failed to read theme file: {}", e))?;
-        Ok(Some(css))
-    } else {
-        Ok(None)
-    }
+fn load_theme_css() -> Result<Option<String>, String> {
+    let theme = config::load_theme()?;
+    Ok(theme.and_then(|t| t.custom_css))
 }
 
 #[tauri::command]
-fn save_theme_preference(preference: String, app_handle: tauri::AppHandle) -> Result<(), String> {
-    let app_data_dir = app_handle
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
-
-    std::fs::create_dir_all(&app_data_dir)
-        .map_err(|e| format!("Failed to create app data dir: {}", e))?;
-
-    let pref_path = app_data_dir.join("theme-preference.txt");
-    std::fs::write(&pref_path, preference)
-        .map_err(|e| format!("Failed to write preference file: {}", e))?;
-
-    Ok(())
+fn save_theme_preference(preference: String) -> Result<(), String> {
+    config::save_theme_mode(&preference)
 }
 
 #[tauri::command]
-fn load_theme_preference(app_handle: tauri::AppHandle) -> Result<Option<String>, String> {
-    let app_data_dir = app_handle
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
-
-    let pref_path = app_data_dir.join("theme-preference.txt");
-
-    if pref_path.exists() {
-        let pref = std::fs::read_to_string(&pref_path)
-            .map_err(|e| format!("Failed to read preference file: {}", e))?;
-        Ok(Some(pref.trim().to_string()))
-    } else {
-        Ok(None)
-    }
+fn load_theme_preference() -> Result<Option<String>, String> {
+    let theme = config::load_theme()?;
+    Ok(theme.and_then(|t| t.mode))
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -198,43 +153,42 @@ struct AppSettings {
     default_save_location: Option<String>,
 }
 
-#[tauri::command]
-fn save_settings(settings: AppSettings, app_handle: tauri::AppHandle) -> Result<(), String> {
-    let app_data_dir = app_handle
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+impl From<config::AppConfig> for AppSettings {
+    fn from(cfg: config::AppConfig) -> Self {
+        AppSettings {
+            stroke_width: cfg.stroke_width,
+            font_size: cfg.font_size,
+            sketchiness: cfg.sketchiness,
+            default_save_location: cfg.default_save_location,
+        }
+    }
+}
 
-    std::fs::create_dir_all(&app_data_dir)
-        .map_err(|e| format!("Failed to create app data dir: {}", e))?;
-
-    let settings_path = app_data_dir.join("settings.json");
-    let json = serde_json::to_string_pretty(&settings)
-        .map_err(|e| format!("Failed to serialize settings: {}", e))?;
-    std::fs::write(&settings_path, json)
-        .map_err(|e| format!("Failed to write settings file: {}", e))?;
-
-    Ok(())
+impl From<AppSettings> for config::AppConfig {
+    fn from(settings: AppSettings) -> Self {
+        config::AppConfig {
+            stroke_width: settings.stroke_width,
+            font_size: settings.font_size,
+            sketchiness: settings.sketchiness,
+            default_save_location: settings.default_save_location,
+        }
+    }
 }
 
 #[tauri::command]
-fn load_settings(app_handle: tauri::AppHandle) -> Result<Option<AppSettings>, String> {
-    let app_data_dir = app_handle
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+fn save_settings(settings: AppSettings) -> Result<(), String> {
+    config::save_config(&settings.into())
+}
 
-    let settings_path = app_data_dir.join("settings.json");
+#[tauri::command]
+fn load_settings() -> Result<Option<AppSettings>, String> {
+    let cfg = config::load_config()?;
+    Ok(cfg.map(|c| c.into()))
+}
 
-    if settings_path.exists() {
-        let json = std::fs::read_to_string(&settings_path)
-            .map_err(|e| format!("Failed to read settings file: {}", e))?;
-        let settings: AppSettings = serde_json::from_str(&json)
-            .map_err(|e| format!("Failed to parse settings: {}", e))?;
-        Ok(Some(settings))
-    } else {
-        Ok(None)
-    }
+#[tauri::command]
+fn get_config_dir() -> Result<String, String> {
+    config::get_config_dir().map(|p| p.to_string_lossy().to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -270,6 +224,12 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        .setup(|app| {
+            if let Ok(app_data_dir) = app.path().app_data_dir() {
+                let _ = config::migrate_from_app_data(&app_data_dir);
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             get_initial_image,
             get_output_filename,
@@ -281,7 +241,8 @@ pub fn run() {
             save_theme_preference,
             load_theme_preference,
             save_settings,
-            load_settings
+            load_settings,
+            get_config_dir
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
