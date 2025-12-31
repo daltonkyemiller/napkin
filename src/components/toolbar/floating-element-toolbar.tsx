@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback, useMemo } from "react";
+import { useRef, useEffect, useLayoutEffect, useState, useCallback, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { motion, type MotionProps } from "motion/react";
 import { Slider } from "@/components/ui/slider";
@@ -218,9 +218,8 @@ export function FloatingElementToolbar({ containerRef, image }: FloatingElementT
     const screenMaxY = imageY + maxY * imageScale;
 
     const containerRect = containerRef.current.getBoundingClientRect();
-    const toolbarRect = toolbarRef.current.getBoundingClientRect();
-    const toolbarHeight = toolbarRect.height || 44;
-    const toolbarWidth = toolbarRect.width || 200;
+    const toolbarHeight = toolbarRef.current.offsetHeight || 44;
+    const toolbarWidth = toolbarRef.current.offsetWidth || 200;
     const gap = 45;
     const padding = 8;
 
@@ -240,8 +239,21 @@ export function FloatingElementToolbar({ containerRef, image }: FloatingElementT
     setIsVisible(true);
   }, [hasAnySelection, selectedShapeAnnotations, selectedTextAnnotations, containerRef, imageTransform]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     updatePosition();
+    requestAnimationFrame(() => updatePosition());
+  }, [updatePosition]);
+
+  useEffect(() => {
+    const toolbar = toolbarRef.current;
+    if (!toolbar) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      updatePosition();
+    });
+    resizeObserver.observe(toolbar);
+
+    return () => resizeObserver.disconnect();
   }, [updatePosition]);
 
   useEffect(() => {
