@@ -129,7 +129,10 @@ export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogPro
             <div className="flex flex-col flex-1 min-w-0">
               <span className="text-sm font-medium">Default Save Location</span>
               {defaultSaveLocation ? (
-                <span className="text-xs text-muted-foreground truncate" title={defaultSaveLocation}>
+                <span
+                  className="text-xs text-muted-foreground truncate"
+                  title={defaultSaveLocation}
+                >
                   {defaultSaveLocation}
                 </span>
               ) : (
@@ -168,9 +171,7 @@ export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogPro
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
               <span className="text-sm font-medium">Custom Theme</span>
-              <span className="text-xs text-muted-foreground">
-                Paste a shadcn/ui theme CSS
-              </span>
+              <span className="text-xs text-muted-foreground">Paste a shadcn/ui theme CSS</span>
             </div>
             <Button variant="outline" size="sm" onClick={() => setCustomizerOpen(true)}>
               Customize

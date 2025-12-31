@@ -26,7 +26,7 @@ export interface ImageTransform {
 export function stageToImageCoords(
   stageX: number,
   stageY: number,
-  transform: ImageTransform
+  transform: ImageTransform,
 ): { x: number; y: number } {
   const { imageX, imageY, imageScale } = transform;
 
@@ -45,7 +45,7 @@ export function stageToImageCoords(
 export function imageToStageCoords(
   imageRelX: number,
   imageRelY: number,
-  transform: ImageTransform
+  transform: ImageTransform,
 ): { x: number; y: number } {
   const { imageX, imageY, imageScale } = transform;
 

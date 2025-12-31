@@ -174,7 +174,7 @@ export function ThemeCustomizerDialog({ open, onOpenChange }: ThemeCustomizerDia
   const handlePresetChange = (presetId: string | null) => {
     if (!presetId) return;
     setSelectedPreset(presetId);
-    const preset = THEME_PRESETS.find(p => p.id === presetId);
+    const preset = THEME_PRESETS.find((p) => p.id === presetId);
     if (preset) {
       setCssValue(preset.css);
       setError(null);
@@ -183,29 +183,29 @@ export function ThemeCustomizerDialog({ open, onOpenChange }: ThemeCustomizerDia
 
   const validateCss = (css: string): boolean => {
     if (!css.trim()) return true;
-    
+
     const hasRoot = css.includes(":root") || css.includes(".dark");
     if (!hasRoot) {
       setError("CSS should contain :root or .dark selectors with CSS variables");
       return false;
     }
-    
+
     const varPattern = /--[\w-]+\s*:/;
     if (!varPattern.test(css)) {
       setError("CSS should contain CSS custom properties (--variable-name)");
       return false;
     }
-    
+
     return true;
   };
 
   const handleApply = async () => {
     const trimmed = cssValue.trim();
-    
+
     if (!validateCss(trimmed)) {
       return;
     }
-    
+
     setError(null);
     await setCustomCss(trimmed || null);
     onOpenChange(false);
@@ -221,7 +221,7 @@ export function ThemeCustomizerDialog({ open, onOpenChange }: ThemeCustomizerDia
 
   const getSelectedPresetDisplay = () => {
     if (!selectedPreset) return null;
-    const preset = THEME_PRESETS.find(p => p.id === selectedPreset);
+    const preset = THEME_PRESETS.find((p) => p.id === selectedPreset);
     if (!preset) return null;
     return (
       <div className="flex flex-col items-start">
@@ -281,14 +281,12 @@ export function ThemeCustomizerDialog({ open, onOpenChange }: ThemeCustomizerDia
                 placeholder={EXAMPLE_CSS}
                 className={cn(
                   "h-72 font-mono text-xs",
-                  error && "border-destructive focus-visible:ring-destructive"
+                  error && "border-destructive focus-visible:ring-destructive",
                 )}
               />
             </div>
-            
-            {error && (
-              <p className="text-destructive text-xs">{error}</p>
-            )}
+
+            {error && <p className="text-destructive text-xs">{error}</p>}
 
             <div className="text-muted-foreground text-xs">
               Tip: You can generate themes at{" "}

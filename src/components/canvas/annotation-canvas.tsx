@@ -7,7 +7,18 @@ import {
   useMemo,
   useCallback,
 } from "react";
-import { Stage, Layer, Image, Transformer, Rect, Circle, Text, Line, Shape, Group } from "react-konva";
+import {
+  Stage,
+  Layer,
+  Image,
+  Transformer,
+  Rect,
+  Circle,
+  Text,
+  Line,
+  Shape,
+  Group,
+} from "react-konva";
 import type Konva from "konva";
 import rough from "roughjs";
 import type { RoughGenerator } from "roughjs/bin/generator";
@@ -116,17 +127,18 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
 
     const imageTransform: ImageTransform = useMemo(
       () => ({ imageX, imageY, imageScale }),
-      [imageX, imageY, imageScale]
+      [imageX, imageY, imageScale],
     );
 
     const getImageCoords = useCallback(
       (stageX: number, stageY: number) => stageToImageCoords(stageX, stageY, imageTransform),
-      [imageTransform]
+      [imageTransform],
     );
 
     const getStageCoords = useCallback(
-      (imageRelX: number, imageRelY: number) => imageToStageCoords(imageRelX, imageRelY, imageTransform),
-      [imageTransform]
+      (imageRelX: number, imageRelY: number) =>
+        imageToStageCoords(imageRelX, imageRelY, imageTransform),
+      [imageTransform],
     );
 
     useEffect(() => {
@@ -165,9 +177,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       const handleKeyDown = (e: KeyboardEvent) => {
         const target = e.target as HTMLElement;
         const isInputFocused =
-          target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable;
+          target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
 
         if ((e.ctrlKey || e.metaKey) && e.key === "a") {
           if (isInputFocused) return;
@@ -1434,7 +1444,10 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               (() => {
                 const [startX, startY, endX, endY] = selectedArrow.points;
                 const mid = getArrowCurveMidpoint(selectedArrow);
-                const startStage = getStageCoords(selectedArrow.x + startX, selectedArrow.y + startY);
+                const startStage = getStageCoords(
+                  selectedArrow.x + startX,
+                  selectedArrow.y + startY,
+                );
                 const midStage = getStageCoords(selectedArrow.x + mid.x, selectedArrow.y + mid.y);
                 const endStage = getStageCoords(selectedArrow.x + endX, selectedArrow.y + endY);
                 return (
