@@ -8,9 +8,9 @@ export function renderRectangle(
   commonProps: CommonProps,
   ctx: ShapeRenderContext,
 ) {
-  const { isTransformingAnnotation, selectedIds, getRoughDrawable } = ctx;
+  const { isDrawing, isTransformingAnnotation, selectedIds, getRoughDrawable } = ctx;
 
-  if (annotation.sketchiness) {
+  if (annotation.sketchiness && !isDrawing) {
     const isBeingTransformed = isTransformingAnnotation && selectedIds.includes(annotation.id);
     const r = annotation.cornerRadius ?? 0;
     const cacheKey = `${annotation.width}-${annotation.height}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.fill}-${annotation.sketchiness}-${r}`;

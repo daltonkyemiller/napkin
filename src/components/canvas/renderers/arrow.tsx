@@ -16,6 +16,7 @@ interface ArrowRenderContext extends ShapeRenderContext {
 
 export function renderArrow(annotation: ArrowAnnotation, ctx: ArrowRenderContext) {
   const {
+    isDrawing,
     isTransformingAnnotation,
     selectedIds,
     getRoughDrawable,
@@ -79,7 +80,7 @@ export function renderArrow(annotation: ArrowAnnotation, ctx: ArrowRenderContext
 
   const arrowDrawOffset = { x: -arrowMinX, y: -arrowMinY };
 
-  if (annotation.sketchiness && !isBeingTransformed) {
+  if (annotation.sketchiness && !isBeingTransformed && !isDrawing) {
     return renderSketchyArrow(
       annotation,
       arrowCommonProps,

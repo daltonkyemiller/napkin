@@ -19,6 +19,7 @@ export interface CommonProps {
 }
 
 export interface ShapeRenderContext {
+  isDrawing: boolean;
   isTransformingAnnotation: boolean;
   selectedIds: string[];
   getRoughDrawable: (
@@ -32,6 +33,7 @@ export interface AnnotationRendererProps {
   annotation: Annotation;
   activeTool: string;
   selectedIds: string[];
+  isDrawing: boolean;
   isTransformingAnnotation: boolean;
   getRoughDrawable: (
     id: string,

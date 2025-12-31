@@ -13,6 +13,7 @@ export function renderAnnotation(props: AnnotationRendererProps): React.ReactNod
     annotation,
     activeTool,
     selectedIds,
+    isDrawing,
     isTransformingAnnotation,
     getRoughDrawable,
     onAnnotationClick,
@@ -38,6 +39,7 @@ export function renderAnnotation(props: AnnotationRendererProps): React.ReactNod
   );
 
   const shapeCtx = {
+    isDrawing,
     isTransformingAnnotation,
     selectedIds,
     getRoughDrawable,

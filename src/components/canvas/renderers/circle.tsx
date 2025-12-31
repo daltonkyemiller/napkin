@@ -8,12 +8,12 @@ export function renderCircle(
   commonProps: CommonProps,
   ctx: ShapeRenderContext,
 ) {
-  const { isTransformingAnnotation, selectedIds, getRoughDrawable } = ctx;
+  const { isDrawing, isTransformingAnnotation, selectedIds, getRoughDrawable } = ctx;
   const { radiusX, radiusY } = annotation;
   const width = radiusX * 2;
   const height = radiusY * 2;
 
-  if (annotation.sketchiness) {
+  if (annotation.sketchiness && !isDrawing) {
     const isBeingTransformed = isTransformingAnnotation && selectedIds.includes(annotation.id);
     const cacheKey = `${radiusX}-${radiusY}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.fill}-${annotation.sketchiness}`;
     return (
