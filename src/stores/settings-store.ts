@@ -7,6 +7,8 @@ interface AppSettings {
   fontSize: number;
   sketchiness: number;
   defaultSaveLocation: string | null;
+  autoSaveToDefault: boolean;
+  closeAfterSave: boolean;
 }
 
 interface SettingsStore extends AppSettings {
@@ -15,6 +17,8 @@ interface SettingsStore extends AppSettings {
   setFontSize: (size: number) => Promise<void>;
   setSketchiness: (sketchiness: number) => Promise<void>;
   setDefaultSaveLocation: (location: string | null) => Promise<void>;
+  setAutoSaveToDefault: (enabled: boolean) => Promise<void>;
+  setCloseAfterSave: (enabled: boolean) => Promise<void>;
   loadSettings: () => Promise<void>;
 }
 
@@ -23,6 +27,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   fontSize: 24,
   sketchiness: 1.5,
   defaultSaveLocation: null,
+  autoSaveToDefault: false,
+  closeAfterSave: true,
 };
 
 async function persistSettings(settings: Partial<AppSettings>) {
@@ -32,6 +38,8 @@ async function persistSettings(settings: Partial<AppSettings>) {
     fontSize: settings.fontSize ?? currentState.fontSize,
     sketchiness: settings.sketchiness ?? currentState.sketchiness,
     defaultSaveLocation: settings.defaultSaveLocation ?? currentState.defaultSaveLocation,
+    autoSaveToDefault: settings.autoSaveToDefault ?? currentState.autoSaveToDefault,
+    closeAfterSave: settings.closeAfterSave ?? currentState.closeAfterSave,
   };
   await invoke("save_settings", { settings: fullSettings });
 }
@@ -60,6 +68,16 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     await persistSettings({ defaultSaveLocation });
   },
 
+  setAutoSaveToDefault: async (autoSaveToDefault) => {
+    set({ autoSaveToDefault });
+    await persistSettings({ autoSaveToDefault });
+  },
+
+  setCloseAfterSave: async (closeAfterSave) => {
+    set({ closeAfterSave });
+    await persistSettings({ closeAfterSave });
+  },
+
   loadSettings: async () => {
     try {
       const settings = await invoke<AppSettings | null>("load_settings");
@@ -72,6 +90,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
           fontSize,
           sketchiness: settings.sketchiness ?? DEFAULT_SETTINGS.sketchiness,
           defaultSaveLocation: settings.defaultSaveLocation ?? DEFAULT_SETTINGS.defaultSaveLocation,
+          autoSaveToDefault: settings.autoSaveToDefault ?? DEFAULT_SETTINGS.autoSaveToDefault,
+          closeAfterSave: settings.closeAfterSave ?? DEFAULT_SETTINGS.closeAfterSave,
           isLoaded: true,
         });
         

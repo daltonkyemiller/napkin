@@ -33,8 +33,8 @@ pub struct AppState {
 }
 
 fn convert_to_png_data_url(buffer: &[u8]) -> Result<String, String> {
-    let img = image::load_from_memory(buffer)
-        .map_err(|e| format!("Failed to decode image: {}", e))?;
+    let img =
+        image::load_from_memory(buffer).map_err(|e| format!("Failed to decode image: {}", e))?;
 
     let mut png_buffer = Cursor::new(Vec::new());
     img.write_to(&mut png_buffer, ImageFormat::Png)
@@ -123,7 +123,11 @@ fn get_system_fonts() -> Vec<String> {
 
 #[tauri::command]
 fn save_theme_css(css: String) -> Result<(), String> {
-    let css_opt = if css.trim().is_empty() { None } else { Some(css) };
+    let css_opt = if css.trim().is_empty() {
+        None
+    } else {
+        Some(css)
+    };
     config::save_theme_custom_css(css_opt)
 }
 
@@ -151,6 +155,8 @@ struct AppSettings {
     font_size: Option<u32>,
     sketchiness: Option<f64>,
     default_save_location: Option<String>,
+    auto_save_to_default: Option<bool>,
+    close_after_save: Option<bool>,
 }
 
 impl From<config::AppConfig> for AppSettings {
@@ -160,6 +166,8 @@ impl From<config::AppConfig> for AppSettings {
             font_size: cfg.font_size,
             sketchiness: cfg.sketchiness,
             default_save_location: cfg.default_save_location,
+            auto_save_to_default: cfg.auto_save_to_default,
+            close_after_save: cfg.close_after_save,
         }
     }
 }
@@ -171,6 +179,8 @@ impl From<AppSettings> for config::AppConfig {
             font_size: settings.font_size,
             sketchiness: settings.sketchiness,
             default_save_location: settings.default_save_location,
+            auto_save_to_default: settings.auto_save_to_default,
+            close_after_save: settings.close_after_save,
         }
     }
 }

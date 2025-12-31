@@ -54,7 +54,7 @@ export default function App() {
   const temporal = useAnnotationStore.temporal;
   const { strokeColor, fontSize } = useCanvasStore();
   const { loadTheme, applyTheme, mode } = useThemeStore();
-  const { loadSettings, defaultSaveLocation } = useSettingsStore();
+  const { loadSettings, defaultSaveLocation, autoSaveToDefault, closeAfterSave } = useSettingsStore();
 
   useEffect(() => {
     loadTheme().then(() => applyTheme());
@@ -196,14 +196,18 @@ export default function App() {
     let filePath: string | null = outputFilename;
 
     if (!filePath) {
-      const defaultPath = defaultSaveLocation
-        ? `${defaultSaveLocation}/annotated-image-${Date.now()}.png`
-        : `annotated-image-${Date.now()}.png`;
+      if (autoSaveToDefault && defaultSaveLocation) {
+        filePath = `${defaultSaveLocation}/annotated-image-${Date.now()}.png`;
+      } else {
+        const defaultPath = defaultSaveLocation
+          ? `${defaultSaveLocation}/annotated-image-${Date.now()}.png`
+          : `annotated-image-${Date.now()}.png`;
 
-      filePath = await save({
-        defaultPath,
-        filters: [{ name: "PNG Image", extensions: ["png"] }],
-      });
+        filePath = await save({
+          defaultPath,
+          filters: [{ name: "PNG Image", extensions: ["png"] }],
+        });
+      }
     }
 
     if (!filePath) return;
@@ -212,7 +216,11 @@ export default function App() {
     const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
 
     await writeFile(filePath, binaryData);
-  }, [outputFilename, defaultSaveLocation]);
+
+    if (closeAfterSave) {
+      await getCurrentWindow().close();
+    }
+  }, [outputFilename, defaultSaveLocation, autoSaveToDefault, closeAfterSave]);
 
   useHotkeys(
     "delete, backspace",

@@ -35,6 +35,10 @@ export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogPro
     setSketchiness,
     defaultSaveLocation,
     setDefaultSaveLocation,
+    autoSaveToDefault,
+    setAutoSaveToDefault,
+    closeAfterSave,
+    setCloseAfterSave,
   } = useSettingsStore();
   const { mode, setMode } = useThemeStore();
   const [customizerOpen, setCustomizerOpen] = useState(false);
@@ -150,6 +154,36 @@ export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogPro
                 Browse
               </Button>
             </div>
+          </div>
+
+          {defaultSaveLocation && (
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">Auto-save to default location</span>
+                <span className="text-xs text-muted-foreground">Skip the save dialog</span>
+              </div>
+              <Button
+                variant={autoSaveToDefault ? "default" : "outline"}
+                size="sm"
+                onClick={() => setAutoSaveToDefault(!autoSaveToDefault)}
+              >
+                {autoSaveToDefault ? "On" : "Off"}
+              </Button>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">Close after saving</span>
+              <span className="text-xs text-muted-foreground">Exit the app after save</span>
+            </div>
+            <Button
+              variant={closeAfterSave ? "default" : "outline"}
+              size="sm"
+              onClick={() => setCloseAfterSave(!closeAfterSave)}
+            >
+              {closeAfterSave ? "On" : "Off"}
+            </Button>
           </div>
 
           <div className="border-t pt-4 flex items-center justify-between">

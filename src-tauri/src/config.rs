@@ -49,6 +49,10 @@ pub struct AppConfig {
     pub sketchiness: Option<f64>,
     /// Default directory for saving images
     pub default_save_location: Option<String>,
+    /// Automatically save to default location without showing dialog
+    pub auto_save_to_default: Option<bool>,
+    /// Close the app after saving
+    pub close_after_save: Option<bool>,
 }
 
 /// Loads config.yml from the config directory.
@@ -63,8 +67,8 @@ pub fn load_config() -> Result<Option<AppConfig>, String> {
     let content = fs::read_to_string(&config_path)
         .map_err(|e| format!("Failed to read config.yml: {}", e))?;
 
-    let config: AppConfig = serde_yaml::from_str(&content)
-        .map_err(|e| format!("Failed to parse config.yml: {}", e))?;
+    let config: AppConfig =
+        serde_yaml::from_str(&content).map_err(|e| format!("Failed to parse config.yml: {}", e))?;
 
     Ok(Some(config))
 }
@@ -74,8 +78,8 @@ pub fn save_config(config: &AppConfig) -> Result<(), String> {
     let config_dir = ensure_config_dir()?;
     let config_path = config_dir.join("config.yml");
 
-    let yaml = serde_yaml::to_string(config)
-        .map_err(|e| format!("Failed to serialize config: {}", e))?;
+    let yaml =
+        serde_yaml::to_string(config).map_err(|e| format!("Failed to serialize config: {}", e))?;
 
     let header = "# Napkin Configuration\n\
                   # Edit this file to customize default settings.\n\
@@ -106,11 +110,11 @@ pub fn load_theme() -> Result<Option<ThemeConfig>, String> {
         return Ok(None);
     }
 
-    let content = fs::read_to_string(&theme_path)
-        .map_err(|e| format!("Failed to read theme.yml: {}", e))?;
+    let content =
+        fs::read_to_string(&theme_path).map_err(|e| format!("Failed to read theme.yml: {}", e))?;
 
-    let theme: ThemeConfig = serde_yaml::from_str(&content)
-        .map_err(|e| format!("Failed to parse theme.yml: {}", e))?;
+    let theme: ThemeConfig =
+        serde_yaml::from_str(&content).map_err(|e| format!("Failed to parse theme.yml: {}", e))?;
 
     Ok(Some(theme))
 }
@@ -120,8 +124,8 @@ pub fn save_theme(theme: &ThemeConfig) -> Result<(), String> {
     let theme_dir = ensure_config_dir()?;
     let theme_path = theme_dir.join("theme.yml");
 
-    let yaml = serde_yaml::to_string(theme)
-        .map_err(|e| format!("Failed to serialize theme: {}", e))?;
+    let yaml =
+        serde_yaml::to_string(theme).map_err(|e| format!("Failed to serialize theme: {}", e))?;
 
     let header = "# Napkin Theme Configuration\n\
                   # \n\
@@ -172,10 +176,23 @@ pub fn migrate_from_app_data(app_data_dir: &PathBuf) -> Result<(), String> {
         if let Ok(json) = fs::read_to_string(&old_settings) {
             if let Ok(settings) = serde_json::from_str::<serde_json::Value>(&json) {
                 let config = AppConfig {
-                    stroke_width: settings.get("strokeWidth").and_then(|v| v.as_u64()).map(|v| v as u32),
-                    font_size: settings.get("fontSize").and_then(|v| v.as_u64()).map(|v| v as u32),
+                    stroke_width: settings
+                        .get("strokeWidth")
+                        .and_then(|v| v.as_u64())
+                        .map(|v| v as u32),
+                    font_size: settings
+                        .get("fontSize")
+                        .and_then(|v| v.as_u64())
+                        .map(|v| v as u32),
                     sketchiness: settings.get("sketchiness").and_then(|v| v.as_f64()),
-                    default_save_location: settings.get("defaultSaveLocation").and_then(|v| v.as_str()).map(|s| s.to_string()),
+                    default_save_location: settings
+                        .get("defaultSaveLocation")
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.to_string()),
+                    auto_save_to_default: settings
+                        .get("autoSaveToDefault")
+                        .and_then(|v| v.as_bool()),
+                    close_after_save: settings.get("closeAfterSave").and_then(|v| v.as_bool()),
                 };
                 let _ = save_config(&config);
                 eprintln!("Migrated settings.json to {}", new_config.display());
@@ -187,8 +204,12 @@ pub fn migrate_from_app_data(app_data_dir: &PathBuf) -> Result<(), String> {
     let old_css = app_data_dir.join("theme.css");
     let new_theme = config_dir.join("theme.yml");
     if (old_pref.exists() || old_css.exists()) && !new_theme.exists() {
-        let mode = fs::read_to_string(&old_pref).ok().map(|s| s.trim().to_string());
-        let css = fs::read_to_string(&old_css).ok().filter(|s| !s.trim().is_empty());
+        let mode = fs::read_to_string(&old_pref)
+            .ok()
+            .map(|s| s.trim().to_string());
+        let css = fs::read_to_string(&old_css)
+            .ok()
+            .filter(|s| !s.trim().is_empty());
         let theme = ThemeConfig {
             mode,
             custom_css: css,
