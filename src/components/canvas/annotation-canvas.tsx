@@ -201,6 +201,29 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       startInlineEdit(annotation);
     };
 
+    const handleTextTransform = (e: any) => {
+      const node = e.target;
+      node.setAttrs({
+        width: Math.max(node.width() * node.scaleX(), 30),
+        scaleX: 1,
+        scaleY: 1,
+      });
+    };
+
+    const handleTextTransformEnd = (annotation: TextAnnotation, e: any) => {
+      const node = e.target;
+      updateAnnotation(annotation.id, {
+        width: node.width(),
+        x: node.x(),
+        y: node.y(),
+        rotation: node.rotation(),
+      });
+    };
+
+    const selectedText = selectedIds.length === 1
+      ? annotations.find((a) => a.id === selectedIds[0] && a.type === "text") as TextAnnotation | undefined
+      : undefined;
+
     return (
       <div ref={containerRef} className="h-full w-full">
         <Stage
@@ -228,6 +251,8 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                   onTransformStart: handleTransformStart,
                   onTransformEnd: handleTransformEnd,
                   onTextDblClick: handleTextDblClick,
+                  onTextTransform: handleTextTransform,
+                  onTextTransformEnd: handleTextTransformEnd,
                   updateAnnotation,
                   setIsTransformingAnnotation,
                 }),
@@ -245,6 +270,19 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                 anchorStroke="#4F46E5"
                 anchorStrokeWidth={2}
                 anchorCornerRadius={2}
+                enabledAnchors={
+                  selectedText
+                    ? ["middle-left", "middle-right"]
+                    : ["top-left", "top-center", "top-right", "middle-right", "bottom-right", "bottom-center", "bottom-left", "middle-left"]
+                }
+                boundBoxFunc={
+                  selectedText
+                    ? (_oldBox, newBox) => {
+                        newBox.width = Math.max(30, newBox.width);
+                        return newBox;
+                      }
+                    : undefined
+                }
               />
             )}
             {ocrSelectionRect && (

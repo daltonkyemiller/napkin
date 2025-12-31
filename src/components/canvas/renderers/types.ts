@@ -44,6 +44,8 @@ export interface AnnotationRendererProps {
   onTransformStart: () => void;
   onTransformEnd: (e: Konva.KonvaEventObject<Event>) => void;
   onTextDblClick: (annotation: TextAnnotation) => void;
+  onTextTransform: (e: Konva.KonvaEventObject<Event>) => void;
+  onTextTransformEnd: (annotation: TextAnnotation, e: Konva.KonvaEventObject<Event>) => void;
   updateAnnotation: (id: string, updates: Partial<Annotation>) => void;
   setIsTransformingAnnotation: (value: boolean) => void;
 }

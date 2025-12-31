@@ -38,16 +38,13 @@ export function useInlineTextEditing(
       const textarea = document.createElement("textarea");
       document.body.appendChild(textarea);
 
-      const effectiveScaleX = imageScale * textNode.scaleX();
-      const effectiveScaleY = imageScale * textNode.scaleY();
-
       textarea.value = textNode.text();
       textarea.style.position = "absolute";
       textarea.style.top = areaPosition.y + "px";
       textarea.style.left = areaPosition.x + "px";
-      textarea.style.width = Math.max(textNode.width() * effectiveScaleX, 100) + "px";
-      textarea.style.height = textNode.height() * effectiveScaleY + 5 + "px";
-      textarea.style.fontSize = textNode.fontSize() * effectiveScaleY + "px";
+      textarea.style.width = Math.max(textNode.width() * imageScale, 100) + "px";
+      textarea.style.height = textNode.height() * imageScale + 5 + "px";
+      textarea.style.fontSize = textNode.fontSize() * imageScale + "px";
       textarea.style.border = "none";
       textarea.style.padding = "0px";
       textarea.style.margin = "0px";

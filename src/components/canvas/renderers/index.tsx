@@ -21,6 +21,8 @@ export function renderAnnotation(props: AnnotationRendererProps): React.ReactNod
     onTransformStart,
     onTransformEnd,
     onTextDblClick,
+    onTextTransform,
+    onTextTransformEnd,
     updateAnnotation,
     setIsTransformingAnnotation,
   } = props;
@@ -61,7 +63,11 @@ export function renderAnnotation(props: AnnotationRendererProps): React.ReactNod
       });
 
     case "text":
-      return renderText(annotation, commonProps, { onTextDblClick });
+      return renderText(annotation, commonProps, {
+        onTextDblClick,
+        onTextTransform,
+        onTextTransformEnd,
+      });
 
     case "freehand":
       return renderFreehand(annotation, {
