@@ -352,7 +352,7 @@ export default function App() {
         <div className="flex h-full flex-col items-center justify-center gap-6">
           <div className="flex flex-col items-center gap-2 text-muted-foreground">
             <IconImageOutlineDuo18 className="size-24" />
-            <h1 className="text-2xl font-semibold text-foreground">Image Annotator</h1>
+            <h1 className="text-2xl font-semibold text-foreground">Napkin</h1>
             <p className="text-sm">Upload an image to start annotating</p>
           </div>
           <Button onClick={handleUploadClick} size="lg">
