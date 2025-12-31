@@ -239,7 +239,7 @@ export function ThemeCustomizerDialog({ open, onOpenChange }: ThemeCustomizerDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <NestedDialogContent className="sm:max-w-2xl" showCloseButton={false}>
+      <NestedDialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Customize Theme</DialogTitle>
           <DialogDescription>
@@ -247,7 +247,7 @@ export function ThemeCustomizerDialog({ open, onOpenChange }: ThemeCustomizerDia
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-1 min-h-0 flex-col gap-3">
           <div className="flex flex-col gap-2">
             <span className="text-sm font-medium">Preset Themes</span>
             <Select value={selectedPreset} onValueChange={handlePresetChange}>
@@ -273,7 +273,7 @@ export function ThemeCustomizerDialog({ open, onOpenChange }: ThemeCustomizerDia
             </Select>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-1 min-h-0 flex-col gap-2">
             <span className="text-sm font-medium">Custom CSS</span>
             <Textarea
               value={cssValue}
@@ -284,7 +284,7 @@ export function ThemeCustomizerDialog({ open, onOpenChange }: ThemeCustomizerDia
               }}
               placeholder={EXAMPLE_CSS}
               className={cn(
-                "h-72 font-mono text-xs",
+                "flex-1 min-h-0 font-mono text-xs resize-none",
                 error && "border-destructive focus-visible:ring-destructive",
               )}
             />

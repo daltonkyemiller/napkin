@@ -26,7 +26,7 @@ function DialogOverlay({ className, ...props }: DialogPrimitive.Backdrop.Props) 
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        "data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs fixed inset-0 isolate z-50",
+        "fixed inset-0 z-50 bg-black/20 transition-opacity duration-150 data-starting-style:opacity-0 data-ending-style:opacity-0",
         className,
       )}
       {...props}
@@ -34,16 +34,15 @@ function DialogOverlay({ className, ...props }: DialogPrimitive.Backdrop.Props) 
   );
 }
 
-const nestedDialogPopupStyles = `
-  [data-nested-dialog-open]::after {
-    content: '';
-    inset: 0;
-    position: absolute;
-    border-radius: inherit;
-    background-color: rgb(0 0 0 / 0.05);
-    pointer-events: none;
-  }
-`;
+const popupBaseStyles = [
+  "bg-background ring-foreground/10 fixed top-1/2 left-1/2 z-50 flex flex-col w-[32rem] h-[32rem] max-w-[calc(100vw-3rem)] max-h-[calc(100vh-3rem)] gap-6 rounded-lg p-6 text-sm ring-1 overflow-y-auto",
+  "transition-all duration-150",
+  "[transform:translate(-50%,-50%)_scale(calc(1-0.075*var(--nested-dialogs,0)))]",
+  "[translate:0_calc(2.5rem*var(--nested-dialogs,0))]",
+  "data-starting-style:opacity-0 data-starting-style:[transform:translate(-50%,-50%)_scale(0.9)]",
+  "data-ending-style:opacity-0 data-ending-style:[transform:translate(-50%,-50%)_scale(0.9)]",
+  "data-nested-dialog-open:after:pointer-events-none data-nested-dialog-open:after:absolute data-nested-dialog-open:after:inset-0 data-nested-dialog-open:after:rounded-[inherit] data-nested-dialog-open:after:bg-black/5",
+];
 
 function DialogContent({
   className,
@@ -55,18 +54,10 @@ function DialogContent({
 }) {
   return (
     <DialogPortal>
-      <style>{nestedDialogPopupStyles}</style>
       <DialogOverlay />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
-        className={cn(
-          "bg-background data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 ring-foreground/10 grid max-w-[calc(100%-2rem)] gap-6 rounded-xl p-6 text-sm ring-1 duration-100 sm:max-w-md fixed top-1/2 left-1/2 z-50 w-full outline-none transition-transform",
-          className,
-        )}
-        style={{
-          transform: `translate(-50%, -50%) scale(calc(1 - 0.05 * var(--nested-dialogs, 0)))`,
-          translate: `0 calc(0.75rem * var(--nested-dialogs, 0))`,
-        }}
+        className={cn(popupBaseStyles, className)}
         {...props}
       >
         {children}
@@ -96,10 +87,7 @@ function NestedDialogContent({
     <DialogPortal>
       <DialogPrimitive.Popup
         data-slot="dialog-content"
-        className={cn(
-          "bg-background data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 ring-foreground/10 grid max-w-[calc(100%-2rem)] gap-6 rounded-xl p-6 text-sm ring-1 duration-100 sm:max-w-md fixed top-1/2 left-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 outline-none",
-          className,
-        )}
+        className={cn(popupBaseStyles, className)}
         {...props}
       >
         {children}
