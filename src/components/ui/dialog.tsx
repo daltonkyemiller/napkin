@@ -35,7 +35,7 @@ function DialogOverlay({ className, ...props }: DialogPrimitive.Backdrop.Props) 
 }
 
 const popupBaseStyles = [
-  "bg-background ring-foreground/10 fixed top-1/2 left-1/2 z-50 flex flex-col w-[32rem] h-[32rem] max-w-[calc(100vw-3rem)] max-h-[calc(100vh-3rem)] gap-6 rounded-lg p-6 text-sm ring-1 overflow-y-auto",
+  "bg-background ring-foreground/10 fixed top-1/2 left-1/2 z-50 flex flex-col w-[32rem] h-[32rem] max-w-[calc(100vw-3rem)] max-h-[calc(100vh-3rem)] gap-6 rounded-lg p-6 text-sm ring-1",
   "transition-all duration-150",
   "[transform:translate(-50%,-50%)_scale(calc(1-0.075*var(--nested-dialogs,0)))]",
   "[translate:0_calc(2.5rem*var(--nested-dialogs,0))]",
