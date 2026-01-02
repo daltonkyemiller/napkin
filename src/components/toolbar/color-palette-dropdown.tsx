@@ -42,6 +42,15 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
     [onChange],
   );
 
+  const handleAddColor = useCallback(
+    (color: string) => {
+      if (!palette.includes(color)) {
+        setPalette([...palette, color]);
+      }
+    },
+    [palette, setPalette],
+  );
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -68,6 +77,15 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
         } else {
           setView("palette");
         }
+        return;
+      }
+
+      if (e.key === "Enter" && view === "custom" && isAddingToPalette) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleAddColor(value);
+        setIsAddingToPalette(false);
+        setView("customize");
         return;
       }
 
@@ -99,7 +117,7 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
 
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [open, view, palette, handleColorSelect, isAddingToPalette]);
+  }, [open, view, palette, value, handleColorSelect, handleAddColor, isAddingToPalette]);
 
   const handleCustomColorChange = (rgba: [number, number, number, number]) => {
     const [r, g, b, a] = rgba;
@@ -108,12 +126,6 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
         ? `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a})`
         : Color.rgb(r, g, b).hex();
     onChange(color);
-  };
-
-  const handleAddColor = (color: string) => {
-    if (!palette.includes(color)) {
-      setPalette([...palette, color]);
-    }
   };
 
   const handleRemoveColor = (color: string) => {
@@ -235,7 +247,7 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
               <Button
                 variant="default"
                 size="sm"
-                className="w-full"
+                className="w-full justify-between"
                 onClick={() => {
                   handleAddColor(value);
                   setIsAddingToPalette(false);
@@ -243,6 +255,7 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
                 }}
               >
                 Add to palette
+                <Kbd>Enter</Kbd>
               </Button>
             ) : (
               <div className="flex gap-2">
