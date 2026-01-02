@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { useCanvasStore } from "./canvas-store";
+import { STROKE_COLORS } from "@/constants";
 
 interface AppSettings {
   strokeWidth: number;
@@ -9,6 +10,7 @@ interface AppSettings {
   defaultSaveLocation: string | null;
   autoSaveToDefault: boolean;
   closeAfterSave: boolean;
+  palette: string[];
 }
 
 interface SettingsStore extends AppSettings {
@@ -19,6 +21,7 @@ interface SettingsStore extends AppSettings {
   setDefaultSaveLocation: (location: string | null) => Promise<void>;
   setAutoSaveToDefault: (enabled: boolean) => Promise<void>;
   setCloseAfterSave: (enabled: boolean) => Promise<void>;
+  setPalette: (palette: string[]) => Promise<void>;
   loadSettings: () => Promise<void>;
 }
 
@@ -29,6 +32,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   defaultSaveLocation: null,
   autoSaveToDefault: false,
   closeAfterSave: true,
+  palette: [...STROKE_COLORS],
 };
 
 async function persistSettings(settings: Partial<AppSettings>) {
@@ -40,6 +44,7 @@ async function persistSettings(settings: Partial<AppSettings>) {
     defaultSaveLocation: settings.defaultSaveLocation ?? currentState.defaultSaveLocation,
     autoSaveToDefault: settings.autoSaveToDefault ?? currentState.autoSaveToDefault,
     closeAfterSave: settings.closeAfterSave ?? currentState.closeAfterSave,
+    palette: settings.palette ?? currentState.palette,
   };
   await invoke("save_settings", { settings: fullSettings });
 }
@@ -78,6 +83,11 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     await persistSettings({ closeAfterSave });
   },
 
+  setPalette: async (palette) => {
+    set({ palette });
+    await persistSettings({ palette });
+  },
+
   loadSettings: async () => {
     try {
       const settings = await invoke<AppSettings | null>("load_settings");
@@ -92,6 +102,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
           defaultSaveLocation: settings.defaultSaveLocation ?? DEFAULT_SETTINGS.defaultSaveLocation,
           autoSaveToDefault: settings.autoSaveToDefault ?? DEFAULT_SETTINGS.autoSaveToDefault,
           closeAfterSave: settings.closeAfterSave ?? DEFAULT_SETTINGS.closeAfterSave,
+          palette: settings.palette ?? DEFAULT_SETTINGS.palette,
           isLoaded: true,
         });
         
