@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Icon } from "@/components/ui/icon";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIconStore } from "@/stores/icon-store";
 import { ICON_NAMES, type IconName } from "@/icons/types";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -247,7 +248,7 @@ export function IconCustomizerDialog({ open: isOpen, onOpenChange }: IconCustomi
         <div className="flex flex-1 min-h-0 gap-4">
           <div className="flex flex-col w-1/2 min-h-0">
             <div className="text-sm font-medium mb-2">Current Icons</div>
-            <div className="flex-1 min-h-0 overflow-y-auto border rounded-md">
+            <ScrollArea className="flex-1 min-h-0 border rounded-md">
               <div className="divide-y">
                 {ICON_NAMES.map((iconName) => {
                   const customPath = getEffectiveMapping(iconName);
@@ -300,7 +301,7 @@ export function IconCustomizerDialog({ open: isOpen, onOpenChange }: IconCustomi
                   );
                 })}
               </div>
-            </div>
+            </ScrollArea>
           </div>
 
           <div className="flex flex-col w-1/2 min-h-0">
@@ -321,7 +322,7 @@ export function IconCustomizerDialog({ open: isOpen, onOpenChange }: IconCustomi
               />
             )}
 
-            <div className="flex-1 min-h-0 overflow-y-auto border rounded-md">
+            <ScrollArea className="flex-1 min-h-0 border rounded-md">
               {!directoryPath ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm p-4 text-center">
                   Select a directory containing SVG icons to browse available icons.
@@ -362,7 +363,7 @@ export function IconCustomizerDialog({ open: isOpen, onOpenChange }: IconCustomi
                   ))}
                 </div>
               )}
-            </div>
+            </ScrollArea>
 
             {directoryPath && (
               <div className="text-xs text-muted-foreground mt-2 truncate" title={directoryPath}>
