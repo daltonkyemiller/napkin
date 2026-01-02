@@ -24,6 +24,17 @@ export const GRADIENT_PRESETS: GradientPreset[] = [
 
 export type BackgroundType = "none" | "gradient" | "image";
 
+export type AspectRatio = "auto" | "16:9" | "4:3" | "1:1" | "9:16" | "3:4";
+
+export const ASPECT_RATIOS: { id: AspectRatio; label: string; value: number | null }[] = [
+  { id: "auto", label: "Auto", value: null },
+  { id: "16:9", label: "16:9", value: 16 / 9 },
+  { id: "4:3", label: "4:3", value: 4 / 3 },
+  { id: "1:1", label: "1:1", value: 1 },
+  { id: "9:16", label: "9:16", value: 9 / 16 },
+  { id: "3:4", label: "3:4", value: 3 / 4 },
+];
+
 interface BackgroundStore {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
@@ -36,6 +47,8 @@ interface BackgroundStore {
   borderRadius: number;
   shadowSize: number;
   shadowColor: string;
+  aspectRatio: AspectRatio;
+  blur: number;
 
   setBackgroundType: (type: BackgroundType) => void;
   setGradientPreset: (preset: string) => void;
@@ -44,6 +57,8 @@ interface BackgroundStore {
   setBorderRadius: (radius: number) => void;
   setShadowSize: (size: number) => void;
   setShadowColor: (color: string) => void;
+  setAspectRatio: (ratio: AspectRatio) => void;
+  setBlur: (blur: number) => void;
   reset: () => void;
 }
 
@@ -55,6 +70,8 @@ const DEFAULT_STATE = {
   borderRadius: 12,
   shadowSize: 20,
   shadowColor: "rgba(0, 0, 0, 0.3)",
+  aspectRatio: "auto" as AspectRatio,
+  blur: 0,
 };
 
 export const useBackgroundStore = create<BackgroundStore>((set) => ({
@@ -72,5 +89,7 @@ export const useBackgroundStore = create<BackgroundStore>((set) => ({
   setBorderRadius: (borderRadius) => set({ borderRadius }),
   setShadowSize: (shadowSize) => set({ shadowSize }),
   setShadowColor: (shadowColor) => set({ shadowColor }),
+  setAspectRatio: (aspectRatio) => set({ aspectRatio }),
+  setBlur: (blur) => set({ blur }),
   reset: () => set(DEFAULT_STATE),
 }));
