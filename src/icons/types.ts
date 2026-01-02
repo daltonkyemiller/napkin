@@ -1,6 +1,8 @@
 export type IconName =
   | "arrow-left"
   | "arrow-right"
+  | "frame"
+  | "image-plus"
   | "bug"
   | "check"
   | "chevron-down"
@@ -31,6 +33,8 @@ export type IconName =
 export const ICON_NAMES: IconName[] = [
   "arrow-left",
   "arrow-right",
+  "frame",
+  "image-plus",
   "bug",
   "check",
   "chevron-down",
