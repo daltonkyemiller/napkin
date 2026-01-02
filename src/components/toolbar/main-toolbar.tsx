@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/icon";
 import { ColorPaletteDropdown } from "./color-palette-dropdown";
 import { useCanvasStore } from "@/stores/canvas-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
+import { useBackgroundStore } from "@/stores/background-store";
 import type { Tool } from "@/types";
 
 const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
@@ -32,6 +33,7 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
   const { annotations, deleteAnnotations, clearAnnotations, updateAnnotation } =
     useAnnotationStore();
   const temporal = useAnnotationStore.temporal;
+  const { sidebarOpen, toggleSidebar } = useBackgroundStore();
 
   const canUndo = temporal.getState().pastStates.length > 0;
   const canRedo = temporal.getState().futureStates.length > 0;
@@ -200,6 +202,26 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
         />
         <span className="w-8 text-xs tabular-nums text-muted-foreground">{strokeWidth}px</span>
       </div>
+
+      <div className="h-6 w-px bg-border" />
+
+      <Tooltip>
+        <TooltipTrigger
+          render={(props) => (
+            <Button
+              {...props}
+              variant={sidebarOpen ? "secondary" : "ghost"}
+              size="icon"
+              onClick={toggleSidebar}
+            >
+              <Icon name="frame" />
+            </Button>
+          )}
+        />
+        <TooltipContent side="bottom">
+          Background <Kbd>B</Kbd>
+        </TooltipContent>
+      </Tooltip>
 
       <div className="h-6 w-px bg-border" />
 
