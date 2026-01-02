@@ -1,21 +1,16 @@
-import Color from "color";
 import { Button } from "@/components/ui/button";
-import {
-  ColorPicker,
-  ColorPickerSelection,
-  ColorPickerHue,
-  ColorPickerAlpha,
-} from "@/components/ui/color-picker";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Kbd } from "@/components/ui/kbd";
+import { Icon } from "@/components/ui/icon";
+import { ColorPaletteDropdown } from "./color-palette-dropdown";
 import { useCanvasStore } from "@/stores/canvas-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
-
-import { STROKE_COLORS } from "@/constants";
 import type { Tool } from "@/types";
 
-import { Icon } from "@/components/ui/icon";
+const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+const modKey = isMac ? "⌘" : "Ctrl";
 
 interface MainToolbarProps {
   onDownload: () => void;
@@ -84,12 +79,30 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
   return (
     <div className="flex shrink-0 items-center justify-center gap-4 border-b bg-background p-3">
       <div className="flex gap-1">
-        <Button variant="ghost" size="icon" onClick={handleUndo} disabled={!canUndo} title="Undo">
-          <Icon name="undo" />
-        </Button>
-        <Button variant="ghost" size="icon" onClick={handleRedo} disabled={!canRedo} title="Redo">
-          <Icon name="redo" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={(props) => (
+              <Button {...props} variant="ghost" size="icon" onClick={handleUndo} disabled={!canUndo}>
+                <Icon name="undo" />
+              </Button>
+            )}
+          />
+          <TooltipContent side="bottom">
+            Undo <Kbd>{modKey}Z</Kbd>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            render={(props) => (
+              <Button {...props} variant="ghost" size="icon" onClick={handleRedo} disabled={!canRedo}>
+                <Icon name="redo" />
+              </Button>
+            )}
+          />
+          <TooltipContent side="bottom">
+            Redo <Kbd>{modKey}⇧Z</Kbd>
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       <div className="h-6 w-px bg-border" />
@@ -101,82 +114,75 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
           if (newValue) setActiveTool(newValue as Tool);
         }}
       >
-        <ToggleGroupItem value="select" title="Select">
-          <Icon name="cursor-default" />
-        </ToggleGroupItem>
-        <ToggleGroupItem value="circle" title="Circle">
-          <Icon name="shape-circle" />
-        </ToggleGroupItem>
-        <ToggleGroupItem value="rectangle" title="Rectangle">
-          <Icon name="shape-square" />
-        </ToggleGroupItem>
-        <ToggleGroupItem value="arrow" title="Arrow">
-          <Icon name="arrow-right" />
-        </ToggleGroupItem>
-        <ToggleGroupItem value="text" title="Text">
-          <Icon name="typography" />
-        </ToggleGroupItem>
-        <ToggleGroupItem value="freehand" title="Freehand">
-          <Icon name="pen" />
-        </ToggleGroupItem>
-        <ToggleGroupItem value="highlighter" title="Highlighter">
-          <Icon name="text-highlight" />
-        </ToggleGroupItem>
-        <ToggleGroupItem value="ocr" title="OCR Text Recognition">
-          <Icon name="scan-text" />
-        </ToggleGroupItem>
+        <Tooltip>
+          <TooltipTrigger render={(props) => (
+            <ToggleGroupItem {...props} value="select">
+              <Icon name="cursor-default" />
+            </ToggleGroupItem>
+          )} />
+          <TooltipContent side="bottom">Select <Kbd>V</Kbd></TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger render={(props) => (
+            <ToggleGroupItem {...props} value="circle">
+              <Icon name="shape-circle" />
+            </ToggleGroupItem>
+          )} />
+          <TooltipContent side="bottom">Circle <Kbd>C</Kbd></TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger render={(props) => (
+            <ToggleGroupItem {...props} value="rectangle">
+              <Icon name="shape-square" />
+            </ToggleGroupItem>
+          )} />
+          <TooltipContent side="bottom">Rectangle <Kbd>R</Kbd></TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger render={(props) => (
+            <ToggleGroupItem {...props} value="arrow">
+              <Icon name="arrow-right" />
+            </ToggleGroupItem>
+          )} />
+          <TooltipContent side="bottom">Arrow <Kbd>A</Kbd></TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger render={(props) => (
+            <ToggleGroupItem {...props} value="text">
+              <Icon name="typography" />
+            </ToggleGroupItem>
+          )} />
+          <TooltipContent side="bottom">Text <Kbd>T</Kbd></TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger render={(props) => (
+            <ToggleGroupItem {...props} value="freehand">
+              <Icon name="pen" />
+            </ToggleGroupItem>
+          )} />
+          <TooltipContent side="bottom">Freehand <Kbd>P</Kbd></TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger render={(props) => (
+            <ToggleGroupItem {...props} value="highlighter">
+              <Icon name="text-highlight" />
+            </ToggleGroupItem>
+          )} />
+          <TooltipContent side="bottom">Highlighter <Kbd>M</Kbd></TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger render={(props) => (
+            <ToggleGroupItem {...props} value="ocr">
+              <Icon name="scan-text" />
+            </ToggleGroupItem>
+          )} />
+          <TooltipContent side="bottom">OCR Text Recognition <Kbd>O</Kbd></TooltipContent>
+        </Tooltip>
       </ToggleGroup>
 
       <div className="h-6 w-px bg-border" />
 
-      <div className="flex items-center gap-1">
-        {STROKE_COLORS.map((color) => (
-          <button
-            type="button"
-            key={color}
-            className={`h-6 w-6 rounded-full border-2 transition-transform hover:scale-110 ${
-              strokeColor === color ? "border-ring ring-2 ring-ring/50" : "border-transparent"
-            }`}
-            style={{ backgroundColor: color }}
-            onClick={() => handleStrokeColorChange(color)}
-            title={`Color: ${color}`}
-          />
-        ))}
-        <Popover>
-          <PopoverTrigger
-            className={`flex h-6 w-6 items-center justify-center rounded-full border-2 transition-transform hover:scale-110 ${
-              !STROKE_COLORS.includes(strokeColor)
-                ? "border-ring ring-2 ring-ring/50"
-                : "border-muted-foreground/30 bg-muted"
-            }`}
-            style={
-              !STROKE_COLORS.includes(strokeColor) ? { backgroundColor: strokeColor } : undefined
-            }
-            title="Custom color"
-          >
-            {STROKE_COLORS.includes(strokeColor) && (
-              <Icon name="palette" className="text-muted-foreground" />
-            )}
-          </PopoverTrigger>
-          <PopoverContent className="w-64">
-            <ColorPicker
-              value={strokeColor}
-              onChange={(rgba) => {
-                const [r, g, b, a] = rgba as [number, number, number, number];
-                const color =
-                  a < 1
-                    ? `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a})`
-                    : Color.rgb(r, g, b).hex();
-                handleStrokeColorChange(color);
-              }}
-            >
-              <ColorPickerSelection className="h-32 rounded-md" />
-              <ColorPickerHue />
-              <ColorPickerAlpha />
-            </ColorPicker>
-          </PopoverContent>
-        </Popover>
-      </div>
+      <ColorPaletteDropdown value={strokeColor} onChange={handleStrokeColorChange} />
 
       <div className="h-6 w-px bg-border" />
 
@@ -198,24 +204,58 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
       <div className="h-6 w-px bg-border" />
 
       <div className="flex gap-1">
-        <Button variant="ghost" size="sm" onClick={onDownload} title="Download">
-          <Icon name="download" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleDelete}
-          disabled={selectedIds.length === 0}
-          title="Delete Selected"
-        >
-          <Icon name="trash" />
-        </Button>
-        <Button variant="destructive" size="sm" onClick={handleClear} title="Clear All">
-          Clear
-        </Button>
-        <Button variant="ghost" size="sm" onClick={onSettingsClick} title="Settings">
-          <Icon name="gear" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={(props) => (
+              <Button {...props} variant="ghost" size="sm" onClick={onDownload}>
+                <Icon name="download" />
+              </Button>
+            )}
+          />
+          <TooltipContent side="bottom">
+            Save <Kbd>{modKey}S</Kbd>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            render={(props) => (
+              <Button
+                {...props}
+                variant="ghost"
+                size="sm"
+                onClick={handleDelete}
+                disabled={selectedIds.length === 0}
+              >
+                <Icon name="trash" />
+              </Button>
+            )}
+          />
+          <TooltipContent side="bottom">
+            Delete Selected <Kbd>Del</Kbd>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            render={(props) => (
+              <Button {...props} variant="destructive" size="sm" onClick={handleClear}>
+                Clear
+              </Button>
+            )}
+          />
+          <TooltipContent side="bottom">Clear All Annotations</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            render={(props) => (
+              <Button {...props} variant="ghost" size="sm" onClick={onSettingsClick}>
+                <Icon name="gear" />
+              </Button>
+            )}
+          />
+          <TooltipContent side="bottom">
+            Settings <Kbd>{modKey},</Kbd>
+          </TooltipContent>
+        </Tooltip>
       </div>
     </div>
   );
