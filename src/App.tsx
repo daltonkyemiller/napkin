@@ -316,7 +316,7 @@ export default function App() {
       <motion.div
         initial={false}
         animate={{ height: sidebarOpen ? 0 : "auto" }}
-        transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+        transition={{ type: "spring", bounce: 0, duration: 0.3, delay: 0.3 }}
         className="overflow-hidden shrink-0"
       >
         <MainToolbar onDownload={handleDownload} onSettingsClick={() => setSettingsOpen(true)} />
@@ -326,7 +326,7 @@ export default function App() {
         <motion.div
           initial={false}
           animate={{ width: sidebarOpen ? 320 : 0 }}
-          transition={{ type: "spring", bounce: 0, duration: 0.3, delay: 0.3 }}
+          transition={{ type: "spring", bounce: 0, duration: 0.3 }}
           className="shrink-0 overflow-hidden border-r bg-background"
         >
           <BackgroundSidebar />
