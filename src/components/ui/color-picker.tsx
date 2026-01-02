@@ -290,7 +290,7 @@ export const ColorPickerEyeDropper = ({ className, ...props }: ColorPickerEyeDro
 
 export type ColorPickerOutputProps = ComponentProps<typeof SelectTrigger>;
 
-const formats = ["hex", "rgb", "css", "hsl"];
+const formats = ["hex", "rgb", "hsl"];
 
 export const ColorPickerOutput = ({ className, ...props }: ColorPickerOutputProps) => {
   const { mode, setMode } = useColorPicker();
@@ -311,21 +311,50 @@ export const ColorPickerOutput = ({ className, ...props }: ColorPickerOutputProp
   );
 };
 
-type PercentageInputProps = ComponentProps<typeof Input>;
+type PercentageInputProps = {
+  value: number;
+  onValueChange?: (value: number) => void;
+  className?: string;
+};
 
-const PercentageInput = ({ className, ...props }: PercentageInputProps) => {
+const PercentageInput = ({ className, value, onValueChange }: PercentageInputProps) => {
+  const [localValue, setLocalValue] = useState(String(Math.round(value)));
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalValue(String(Math.round(value)));
+    }
+  }, [value, isFocused]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const strValue = e.target.value;
+    setLocalValue(strValue);
+    const num = parseInt(strValue, 10);
+    if (!isNaN(num) && onValueChange) {
+      onValueChange(Math.max(0, Math.min(100, num)));
+    }
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    setLocalValue(String(Math.round(value)));
+  };
+
   return (
     <div className="relative">
       <Input
-        readOnly
         type="text"
-        {...(props as any)}
+        value={localValue}
+        onChange={handleChange}
+        onFocus={() => setIsFocused(true)}
+        onBlur={handleBlur}
         className={cn(
-          "h-8 w-[3.25rem] rounded-l-none bg-secondary px-2 text-xs shadow-none",
+          "h-8 w-[3.25rem] rounded-l-none bg-secondary px-2 pr-5 text-xs shadow-none",
           className,
         )}
       />
-      <span className="-translate-y-1/2 absolute top-1/2 right-2 text-muted-foreground text-xs">
+      <span className="-translate-y-1/2 absolute top-1/2 right-2 text-muted-foreground text-xs pointer-events-none">
         %
       </span>
     </div>
@@ -334,13 +363,101 @@ const PercentageInput = ({ className, ...props }: PercentageInputProps) => {
 
 export type ColorPickerFormatProps = HTMLAttributes<HTMLDivElement>;
 
+const HexInput = ({ className }: { className?: string }) => {
+  const { hue, saturation, lightness, setHue, setSaturation, setLightness } = useColorPicker();
+  const color = Color.hsl(hue, saturation, lightness);
+  const [localValue, setLocalValue] = useState(color.hex());
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalValue(color.hex());
+    }
+  }, [color, isFocused]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLocalValue(value);
+    try {
+      const parsed = Color(value.startsWith("#") ? value : `#${value}`);
+      const [h, s, l] = parsed.hsl().array();
+      setHue(h || 0);
+      setSaturation(s || 0);
+      setLightness(l || 0);
+    } catch {}
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    setLocalValue(color.hex());
+  };
+
+  return (
+    <Input
+      className={cn("h-8 flex-1 rounded-r-none bg-secondary px-2 text-xs shadow-none", className)}
+      type="text"
+      value={localValue}
+      onChange={handleChange}
+      onFocus={() => setIsFocused(true)}
+      onBlur={handleBlur}
+    />
+  );
+};
+
+const NumericInput = ({
+  value,
+  onChange,
+  min,
+  max,
+  className,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+  min: number;
+  max: number;
+  className?: string;
+}) => {
+  const [localValue, setLocalValue] = useState(String(Math.round(value)));
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalValue(String(Math.round(value)));
+    }
+  }, [value, isFocused]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const strValue = e.target.value;
+    setLocalValue(strValue);
+    const num = parseInt(strValue, 10);
+    if (!isNaN(num)) {
+      onChange(Math.max(min, Math.min(max, num)));
+    }
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    setLocalValue(String(Math.round(value)));
+  };
+
+  return (
+    <Input
+      className={cn("h-8 w-12 bg-secondary px-2 text-xs shadow-none", className)}
+      type="text"
+      value={localValue}
+      onChange={handleChange}
+      onFocus={() => setIsFocused(true)}
+      onBlur={handleBlur}
+    />
+  );
+};
+
 export const ColorPickerFormat = ({ className, ...props }: ColorPickerFormatProps) => {
-  const { hue, saturation, lightness, alpha, mode } = useColorPicker();
+  const { hue, saturation, lightness, alpha, mode, setHue, setSaturation, setLightness, setAlpha } =
+    useColorPicker();
   const color = Color.hsl(hue, saturation, lightness, alpha / 100);
 
   if (mode === "hex") {
-    const hex = color.hex();
-
     return (
       <div
         className={cn(
@@ -349,90 +466,84 @@ export const ColorPickerFormat = ({ className, ...props }: ColorPickerFormatProp
         )}
         {...(props as any)}
       >
-        <Input
-          className="h-8 rounded-r-none bg-secondary px-2 text-xs shadow-none"
-          readOnly
-          type="text"
-          value={hex}
-        />
-        <PercentageInput value={alpha} />
+        <HexInput />
+        <PercentageInput value={alpha} onValueChange={setAlpha} />
       </div>
     );
   }
 
   if (mode === "rgb") {
-    const rgb = color
-      .rgb()
-      .array()
-      .map((value) => Math.round(value));
+    const [r, g, b] = color.rgb().array().map((v) => Math.round(v));
+
+    const updateFromRgb = (newR: number, newG: number, newB: number) => {
+      try {
+        const parsed = Color.rgb(newR, newG, newB);
+        const [h, s, l] = parsed.hsl().array();
+        setHue(h || 0);
+        setSaturation(s || 0);
+        setLightness(l || 0);
+      } catch {}
+    };
 
     return (
       <div
         className={cn("flex items-center -space-x-px rounded-md shadow-sm", className)}
         {...(props as any)}
       >
-        {rgb.map((value, index) => (
-          <Input
-            className={cn(
-              "h-8 rounded-r-none bg-secondary px-2 text-xs shadow-none",
-              index && "rounded-l-none",
-              className,
-            )}
-            key={index}
-            readOnly
-            type="text"
-            value={value}
-          />
-        ))}
-        <PercentageInput value={alpha} />
-      </div>
-    );
-  }
-
-  if (mode === "css") {
-    const rgb = color
-      .rgb()
-      .array()
-      .map((value) => Math.round(value));
-
-    return (
-      <div className={cn("w-full rounded-md shadow-sm", className)} {...(props as any)}>
-        <Input
-          className="h-8 w-full bg-secondary px-2 text-xs shadow-none"
-          readOnly
-          type="text"
-          value={`rgba(${rgb.join(", ")}, ${alpha}%)`}
-          {...(props as any)}
+        <NumericInput
+          className="rounded-r-none"
+          value={r}
+          onChange={(v) => updateFromRgb(v, g, b)}
+          min={0}
+          max={255}
         />
+        <NumericInput
+          className="rounded-none"
+          value={g}
+          onChange={(v) => updateFromRgb(r, v, b)}
+          min={0}
+          max={255}
+        />
+        <NumericInput
+          className="rounded-none"
+          value={b}
+          onChange={(v) => updateFromRgb(r, g, v)}
+          min={0}
+          max={255}
+        />
+        <PercentageInput value={alpha} onValueChange={setAlpha} />
       </div>
     );
   }
 
   if (mode === "hsl") {
-    const hsl = color
-      .hsl()
-      .array()
-      .map((value) => Math.round(value));
-
     return (
       <div
         className={cn("flex items-center -space-x-px rounded-md shadow-sm", className)}
         {...(props as any)}
       >
-        {hsl.map((value, index) => (
-          <Input
-            className={cn(
-              "h-8 rounded-r-none bg-secondary px-2 text-xs shadow-none",
-              index && "rounded-l-none",
-              className,
-            )}
-            key={index}
-            readOnly
-            type="text"
-            value={value}
-          />
-        ))}
-        <PercentageInput value={alpha} />
+        <NumericInput
+          className="rounded-r-none"
+          value={hue}
+          onChange={(v) => setHue(((v % 360) + 360) % 360)}
+          min={0}
+          max={360}
+        />
+        <NumericInput
+          className="rounded-none"
+          value={saturation}
+          onChange={setSaturation}
+          min={0}
+          max={100}
+        />
+        <NumericInput
+          className="rounded-none"
+          value={lightness}
+          onChange={setLightness}
+          min={0}
+          max={100}
+        />
+        <PercentageInput value={alpha} onValueChange={setAlpha} />
       </div>
     );
   }
