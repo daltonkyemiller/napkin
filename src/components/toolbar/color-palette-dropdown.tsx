@@ -80,12 +80,16 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
         return;
       }
 
-      if (e.key === "Enter" && view === "custom" && isAddingToPalette) {
+      if (e.key === "Enter" && view === "custom") {
         e.preventDefault();
         e.stopPropagation();
-        handleAddColor(value);
-        setIsAddingToPalette(false);
-        setView("customize");
+        if (isAddingToPalette) {
+          handleAddColor(value);
+          setIsAddingToPalette(false);
+          setView("customize");
+        } else {
+          setOpen(false);
+        }
         return;
       }
 
@@ -267,8 +271,9 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
                 >
                   Add to palette
                 </Button>
-                <Button variant="default" size="sm" className="flex-1" onClick={() => setOpen(false)}>
+                <Button variant="default" size="sm" className="flex-1 justify-between" onClick={() => setOpen(false)}>
                   Done
+                  <Kbd>Enter</Kbd>
                 </Button>
               </div>
             )}
