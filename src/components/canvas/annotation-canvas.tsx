@@ -9,7 +9,7 @@ import { Stage, Layer, Image, Transformer, Rect, Group } from "react-konva";
 import type Konva from "konva";
 import { useCanvasStore } from "@/stores/canvas-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
-import { useBackgroundStore, GRADIENT_PRESETS } from "@/stores/background-store";
+import { useBackgroundStore, GRADIENT_PRESETS, ASPECT_RATIOS } from "@/stores/background-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useInlineTextEditing } from "@/hooks/use-inline-text-editing";
 import { renderAnnotation } from "./renderers";
@@ -72,6 +72,8 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       borderRadius,
       shadowSize,
       shadowColor,
+      aspectRatio,
+      blur,
     } = useBackgroundStore();
     const { getRoughDrawable } = useRoughGenerator();
     const {
@@ -220,9 +222,23 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           }
 
           const exportPadding = padding * pixelRatio;
-          const exportWidth = image.width + exportPadding * 2;
-          const exportHeight = image.height + exportPadding * 2;
+          let exportWidth = image.width + exportPadding * 2;
+          let exportHeight = image.height + exportPadding * 2;
           const exportBorderRadius = borderRadius * pixelRatio;
+
+          const ratioConfig = ASPECT_RATIOS.find((r) => r.id === aspectRatio);
+          const targetRatio = ratioConfig?.value;
+          if (targetRatio) {
+            const currentRatio = exportWidth / exportHeight;
+            if (currentRatio > targetRatio) {
+              exportHeight = exportWidth / targetRatio;
+            } else {
+              exportWidth = exportHeight * targetRatio;
+            }
+          }
+
+          const imageOffsetX = (exportWidth - image.width) / 2;
+          const imageOffsetY = (exportHeight - image.height) / 2;
 
           const canvas = document.createElement("canvas");
           canvas.width = exportWidth;
@@ -235,7 +251,11 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
             if (backgroundType === "image" && customImage) {
               const bgImg = new window.Image();
               bgImg.src = customImage;
-              ctx.drawImage(bgImg, 0, 0, exportWidth, exportHeight);
+              if (blur > 0) {
+                ctx.filter = `blur(${blur * pixelRatio}px)`;
+              }
+              ctx.drawImage(bgImg, -blur * pixelRatio, -blur * pixelRatio, exportWidth + blur * pixelRatio * 2, exportHeight + blur * pixelRatio * 2);
+              ctx.filter = "none";
             } else if (bgValue.includes("gradient")) {
               const gradientMatch = bgValue.match(/linear-gradient\((\d+)deg,\s*(.+)\)/);
               if (gradientMatch) {
@@ -270,7 +290,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           }
 
           ctx.beginPath();
-          ctx.roundRect(exportPadding, exportPadding, image.width, image.height, exportBorderRadius);
+          ctx.roundRect(imageOffsetX, imageOffsetY, image.width, image.height, exportBorderRadius);
           ctx.fillStyle = "#fff";
           ctx.fill();
           ctx.shadowColor = "transparent";
@@ -288,9 +308,9 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
             stageImg.onload = () => {
               ctx.save();
               ctx.beginPath();
-              ctx.roundRect(exportPadding, exportPadding, image.width, image.height, exportBorderRadius);
+              ctx.roundRect(imageOffsetX, imageOffsetY, image.width, image.height, exportBorderRadius);
               ctx.clip();
-              ctx.drawImage(stageImg, exportPadding, exportPadding);
+              ctx.drawImage(stageImg, imageOffsetX, imageOffsetY);
               ctx.restore();
               resolve(canvas.toDataURL("image/png"));
             };
@@ -298,7 +318,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           }) as unknown as string;
         },
       }),
-      [imageX, imageY, scaledWidth, scaledHeight, image.width, image.height, hasBackground, backgroundType, backgroundValue, customImage, padding, borderRadius, shadowSize, shadowColor],
+      [imageX, imageY, scaledWidth, scaledHeight, image.width, image.height, hasBackground, backgroundType, backgroundValue, customImage, padding, borderRadius, shadowSize, shadowColor, aspectRatio, blur],
     );
 
     const handleTextDblClick = (annotation: TextAnnotation) => {
@@ -331,23 +351,47 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
     const previewPadding = padding * imageScale;
     const previewBorderRadius = borderRadius * imageScale;
 
+    const getAspectRatioValue = () => {
+      const ratio = ASPECT_RATIOS.find((r) => r.id === aspectRatio);
+      return ratio?.value || null;
+    };
+
+    const aspectRatioValue = getAspectRatioValue();
+    const previewWidth = scaledWidth + previewPadding * 2;
+    const previewHeight = scaledHeight + previewPadding * 2;
+
+    let bgWidth = previewWidth;
+    let bgHeight = previewHeight;
+    if (aspectRatioValue && hasBackground) {
+      const currentRatio = previewWidth / previewHeight;
+      if (currentRatio > aspectRatioValue) {
+        bgHeight = previewWidth / aspectRatioValue;
+      } else {
+        bgWidth = previewHeight * aspectRatioValue;
+      }
+    }
+
+    const bgX = imageX - previewPadding - (bgWidth - previewWidth) / 2;
+    const bgY = imageY - previewPadding - (bgHeight - previewHeight) / 2;
+
     return (
       <div ref={containerRef} className="h-full w-full relative">
         {hasBackground && backgroundValue && (
           <div
-            className="absolute inset-0 pointer-events-none"
+            className="absolute inset-0 pointer-events-none overflow-hidden"
             style={{ background: backgroundType === "image" ? `url(${backgroundValue}) center/cover` : backgroundValue }}
           >
             <div
-              className="absolute bg-white"
+              className="absolute"
               style={{
-                left: imageX - previewPadding,
-                top: imageY - previewPadding,
-                width: scaledWidth + previewPadding * 2,
-                height: scaledHeight + previewPadding * 2,
+                left: bgX,
+                top: bgY,
+                width: bgWidth,
+                height: bgHeight,
                 background: backgroundValue,
                 backgroundSize: backgroundType === "image" ? "cover" : undefined,
                 backgroundPosition: "center",
+                filter: backgroundType === "image" && blur > 0 ? `blur(${blur}px)` : undefined,
               }}
             />
             <div
