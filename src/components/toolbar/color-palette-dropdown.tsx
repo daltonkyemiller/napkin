@@ -31,6 +31,7 @@ type View = "palette" | "custom" | "customize";
 export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownProps) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<View>("palette");
+  const [isAddingToPalette, setIsAddingToPalette] = useState(false);
   const { palette, setPalette } = useSettingsStore();
 
   const handleColorSelect = useCallback(
@@ -78,6 +79,7 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
       if (e.key === CUSTOM_KEY) {
         e.preventDefault();
         e.stopPropagation();
+        setIsAddingToPalette(false);
         setView("custom");
         return;
       }
@@ -93,12 +95,6 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [open, view, palette, handleColorSelect]);
-
-  useEffect(() => {
-    if (!open) {
-      setView("palette");
-    }
-  }, [open]);
 
   const handleCustomColorChange = (rgba: [number, number, number, number]) => {
     const [r, g, b, a] = rgba;
@@ -124,7 +120,13 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={setOpen}
+      onOpenChangeComplete={(open) => {
+        if (!open) setView("palette");
+      }}
+    >
       <Tooltip open={open ? false : undefined}>
         <TooltipTrigger
           render={(props) => (
@@ -139,7 +141,7 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
           Color Palette <Kbd>K</Kbd>
         </TooltipContent>
       </Tooltip>
-      <PopoverContent className="w-64 p-0" align="start">
+      <PopoverContent className="w-80 p-0" align="start">
         {view === "palette" && (
           <div className="flex flex-col">
             <div className="grid grid-cols-5 gap-2 p-3">
@@ -217,66 +219,90 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
                 <ColorPickerFormat className="flex-1" />
               </div>
             </ColorPicker>
-            <div className="flex gap-2">
+            {isAddingToPalette ? (
               <Button
-                variant="outline"
+                variant="default"
                 size="sm"
-                className="flex-1"
-                onClick={() => handleAddColor(value)}
+                className="w-full"
+                onClick={() => {
+                  handleAddColor(value);
+                  setIsAddingToPalette(false);
+                  setView("palette");
+                }}
               >
                 Add to palette
               </Button>
-              <Button variant="default" size="sm" className="flex-1" onClick={() => setOpen(false)}>
-                Done
-              </Button>
-            </div>
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => handleAddColor(value)}
+                >
+                  Add to palette
+                </Button>
+                <Button variant="default" size="sm" className="flex-1" onClick={() => setOpen(false)}>
+                  Done
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
         {view === "customize" && (
           <div className="flex flex-col gap-3 p-3">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setView("palette")}
+                >
+                  <Icon name="undo" className="h-4 w-4" />
+                </Button>
+                <span className="text-sm font-medium">Customize palette</span>
+              </div>
               <Button
                 variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={() => setView("palette")}
-              >
-                <Icon name="undo" className="h-4 w-4" />
-              </Button>
-              <span className="text-sm font-medium">Customize palette</span>
-            </div>
-            <div className="grid grid-cols-5 gap-2">
-              {palette.map((color) => (
-                <div key={color} className="group relative">
-                  <div
-                    className="h-8 w-8 rounded-md border border-border"
-                    style={{ backgroundColor: color }}
-                  />
-                  <button
-                    type="button"
-                    className="absolute -top-1 -right-1 hidden h-4 w-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground group-hover:flex"
-                    onClick={() => handleRemoveColor(color)}
-                    title="Remove color"
-                  >
-                    <Icon name="xmark" className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
                 size="sm"
-                className="flex-1"
-                onClick={() => setView("custom")}
+                className="h-6 px-2 text-xs text-muted-foreground"
+                onClick={handleResetPalette}
               >
-                Add color
-              </Button>
-              <Button variant="ghost" size="sm" onClick={handleResetPalette}>
                 Reset
               </Button>
             </div>
+            <div className="grid grid-cols-5 gap-1.5">
+              {palette.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => handleRemoveColor(color)}
+                  className="group relative h-10 w-full rounded-md border border-border transition-all hover:scale-105 hover:border-destructive"
+                  style={{ backgroundColor: color }}
+                  title={`Remove ${color}`}
+                >
+                  <span className="absolute inset-0 flex items-center justify-center rounded-md bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                    <Icon name="xmark" className="h-4 w-4 text-white" />
+                  </span>
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddingToPalette(true);
+                  setView("custom");
+                }}
+                className="flex h-10 w-full items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/30 text-muted-foreground transition-colors hover:border-muted-foreground hover:text-foreground"
+                title="Add color"
+              >
+                <span className="text-lg font-light">+</span>
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Click a color to remove it
+            </p>
           </div>
         )}
       </PopoverContent>

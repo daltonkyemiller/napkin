@@ -19,7 +19,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/ui/icon";
@@ -297,8 +296,8 @@ export const ColorPickerOutput = ({ className, ...props }: ColorPickerOutputProp
 
   return (
     <Select onValueChange={(value) => value && setMode(value)} value={mode}>
-      <SelectTrigger className="h-8 w-20 shrink-0 text-xs" {...(props as any)}>
-        <SelectValue />
+      <SelectTrigger className="h-8 w-16 shrink-0 text-xs" {...(props as any)}>
+        {mode.toUpperCase()}
       </SelectTrigger>
       <SelectContent>
         {formats.map((format) => (
