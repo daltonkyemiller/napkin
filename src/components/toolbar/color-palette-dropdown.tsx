@@ -58,7 +58,10 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
       const target = e.target as HTMLElement;
       const isInput =
         target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
-      if (isInput) return;
+      
+      // Allow Enter in custom view even when focused on inputs (sliders)
+      const allowEnterFromInput = e.key === "Enter" && view === "custom" && open;
+      if (isInput && !allowEnterFromInput) return;
 
       if (e.key === "k") {
         e.preventDefault();
