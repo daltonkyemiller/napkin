@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   forwardRef,
   useImperativeHandle,
@@ -8,6 +9,7 @@ import { Stage, Layer, Image, Transformer, Rect, Group } from "react-konva";
 import type Konva from "konva";
 import { useCanvasStore } from "@/stores/canvas-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
+import { useBackgroundStore, GRADIENT_PRESETS } from "@/stores/background-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useInlineTextEditing } from "@/hooks/use-inline-text-editing";
 import { renderAnnotation } from "./renderers";
@@ -32,7 +34,7 @@ interface AnnotationCanvasProps {
 }
 
 export interface AnnotationCanvasHandle {
-  exportImage: () => string | null;
+  exportImage: () => string | Promise<string> | null;
 }
 
 export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCanvasProps>(
@@ -62,6 +64,15 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
 
     const { annotations, addAnnotation, updateAnnotation } = useAnnotationStore();
     const { sketchiness: defaultSketchiness } = useSettingsStore();
+    const {
+      backgroundType,
+      gradientPreset,
+      customImage,
+      padding,
+      borderRadius,
+      shadowSize,
+      shadowColor,
+    } = useBackgroundStore();
     const { getRoughDrawable } = useRoughGenerator();
     const {
       imageScale,
@@ -175,6 +186,18 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       addAnnotation,
     });
 
+    const backgroundValue = useMemo(() => {
+      if (backgroundType === "none") return null;
+      if (backgroundType === "image" && customImage) return customImage;
+      if (backgroundType === "gradient") {
+        const preset = GRADIENT_PRESETS.find((p) => p.id === gradientPreset);
+        return preset?.value || null;
+      }
+      return null;
+    }, [backgroundType, customImage, gradientPreset]);
+
+    const hasBackground = backgroundType !== "none";
+
     useImperativeHandle(
       ref,
       () => ({
@@ -184,18 +207,98 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           transformerRef.current?.nodes([]);
           stageRef.current.batchDraw();
 
-          const dataURL = stageRef.current.toDataURL({
+          const pixelRatio = image.width / scaledWidth;
+
+          if (!hasBackground) {
+            return stageRef.current.toDataURL({
+              x: imageX,
+              y: imageY,
+              width: scaledWidth,
+              height: scaledHeight,
+              pixelRatio,
+            });
+          }
+
+          const exportPadding = padding * pixelRatio;
+          const exportWidth = image.width + exportPadding * 2;
+          const exportHeight = image.height + exportPadding * 2;
+          const exportBorderRadius = borderRadius * pixelRatio;
+
+          const canvas = document.createElement("canvas");
+          canvas.width = exportWidth;
+          canvas.height = exportHeight;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return null;
+
+          const bgValue = backgroundValue;
+          if (bgValue) {
+            if (backgroundType === "image" && customImage) {
+              const bgImg = new window.Image();
+              bgImg.src = customImage;
+              ctx.drawImage(bgImg, 0, 0, exportWidth, exportHeight);
+            } else if (bgValue.includes("gradient")) {
+              const gradientMatch = bgValue.match(/linear-gradient\((\d+)deg,\s*(.+)\)/);
+              if (gradientMatch) {
+                const angle = parseInt(gradientMatch[1]) * (Math.PI / 180);
+                const centerX = exportWidth / 2;
+                const centerY = exportHeight / 2;
+                const length = Math.sqrt(exportWidth ** 2 + exportHeight ** 2) / 2;
+                const x1 = centerX - Math.cos(angle) * length;
+                const y1 = centerY - Math.sin(angle) * length;
+                const x2 = centerX + Math.cos(angle) * length;
+                const y2 = centerY + Math.sin(angle) * length;
+
+                const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+                const colorStops = gradientMatch[2].split(/,(?![^(]*\))/);
+                colorStops.forEach((stop: string) => {
+                  const match = stop.trim().match(/(.+?)\s+(\d+)%/);
+                  if (match) {
+                    gradient.addColorStop(parseFloat(match[2]) / 100, match[1]);
+                  }
+                });
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, exportWidth, exportHeight);
+              }
+            }
+          }
+
+          if (shadowSize > 0) {
+            ctx.shadowColor = shadowColor;
+            ctx.shadowBlur = shadowSize * pixelRatio;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = shadowSize * pixelRatio * 0.5;
+          }
+
+          ctx.beginPath();
+          ctx.roundRect(exportPadding, exportPadding, image.width, image.height, exportBorderRadius);
+          ctx.fillStyle = "#fff";
+          ctx.fill();
+          ctx.shadowColor = "transparent";
+
+          const stageDataURL = stageRef.current.toDataURL({
             x: imageX,
             y: imageY,
             width: scaledWidth,
             height: scaledHeight,
-            pixelRatio: image.width / scaledWidth,
+            pixelRatio,
           });
 
-          return dataURL;
+          return new Promise<string>((resolve) => {
+            const stageImg = new window.Image();
+            stageImg.onload = () => {
+              ctx.save();
+              ctx.beginPath();
+              ctx.roundRect(exportPadding, exportPadding, image.width, image.height, exportBorderRadius);
+              ctx.clip();
+              ctx.drawImage(stageImg, exportPadding, exportPadding);
+              ctx.restore();
+              resolve(canvas.toDataURL("image/png"));
+            };
+            stageImg.src = stageDataURL;
+          }) as unknown as string;
         },
       }),
-      [imageX, imageY, scaledWidth, scaledHeight, image.width],
+      [imageX, imageY, scaledWidth, scaledHeight, image.width, image.height, hasBackground, backgroundType, backgroundValue, customImage, padding, borderRadius, shadowSize, shadowColor],
     );
 
     const handleTextDblClick = (annotation: TextAnnotation) => {
@@ -225,8 +328,41 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       ? annotations.find((a) => a.id === selectedIds[0] && a.type === "text") as TextAnnotation | undefined
       : undefined;
 
+    const previewPadding = padding * imageScale;
+    const previewBorderRadius = borderRadius * imageScale;
+
     return (
-      <div ref={containerRef} className="h-full w-full">
+      <div ref={containerRef} className="h-full w-full relative">
+        {hasBackground && backgroundValue && (
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: backgroundType === "image" ? `url(${backgroundValue}) center/cover` : backgroundValue }}
+          >
+            <div
+              className="absolute bg-white"
+              style={{
+                left: imageX - previewPadding,
+                top: imageY - previewPadding,
+                width: scaledWidth + previewPadding * 2,
+                height: scaledHeight + previewPadding * 2,
+                background: backgroundValue,
+                backgroundSize: backgroundType === "image" ? "cover" : undefined,
+                backgroundPosition: "center",
+              }}
+            />
+            <div
+              className="absolute overflow-hidden"
+              style={{
+                left: imageX,
+                top: imageY,
+                width: scaledWidth,
+                height: scaledHeight,
+                borderRadius: previewBorderRadius,
+                boxShadow: shadowSize > 0 ? `0 ${shadowSize * 0.5}px ${shadowSize}px ${shadowColor}` : undefined,
+              }}
+            />
+          </div>
+        )}
         <Stage
           ref={stageRef}
           width={width}
@@ -237,7 +373,14 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           onMouseLeave={handleStageMouseUp}
         >
           <Layer>
-            <Image image={image} x={imageX} y={imageY} width={scaledWidth} height={scaledHeight} />
+            <Image
+              image={image}
+              x={imageX}
+              y={imageY}
+              width={scaledWidth}
+              height={scaledHeight}
+              cornerRadius={hasBackground ? previewBorderRadius : 0}
+            />
             <Group x={imageX} y={imageY} scaleX={imageScale} scaleY={imageScale}>
               {annotations.map((annotation) =>
                 renderAnnotation({

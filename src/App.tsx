@@ -1,7 +1,9 @@
+import { motion, AnimatePresence } from "motion/react";
 import {
   AnnotationCanvas,
   type AnnotationCanvasHandle,
 } from "@/components/canvas/annotation-canvas";
+import { BackgroundSidebar } from "@/components/background/background-sidebar";
 import { OcrResultDialog } from "@/components/ocr/ocr-result-dialog";
 import { SettingsDialog } from "@/components/settings/settings-dialog";
 import { FloatingElementToolbar } from "@/components/toolbar/floating-element-toolbar";
@@ -9,6 +11,7 @@ import { MainToolbar } from "@/components/toolbar/main-toolbar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DEFAULT_FONT_FAMILY } from "@/constants";
 import { useAnnotationStore } from "@/stores/annotation-store";
+import { useBackgroundStore } from "@/stores/background-store";
 import { useCanvasStore } from "@/stores/canvas-store";
 import { useIconStore } from "@/stores/icon-store";
 import { useSettingsStore } from "@/stores/settings-store";
@@ -54,6 +57,7 @@ export default function App() {
   const { loadTheme, applyTheme, mode } = useThemeStore();
   const { loadSettings, defaultSaveLocation, autoSaveToDefault, closeAfterSave } = useSettingsStore();
   const { loadIconMapping } = useIconStore();
+  const { sidebarOpen, toggleSidebar } = useBackgroundStore();
 
   useEffect(() => {
     loadTheme().then(() => applyTheme());
@@ -154,7 +158,9 @@ export default function App() {
   }, [imageUrl]);
 
   const handleDownload = useCallback(async () => {
-    const dataURL = canvasRef.current?.exportImage();
+    const result = canvasRef.current?.exportImage();
+    if (!result) return;
+    const dataURL = await Promise.resolve(result);
     if (!dataURL) return;
 
     let filePath: string | null = outputFilename;
@@ -252,6 +258,7 @@ export default function App() {
   useHotkeys("mod+comma", () => setSettingsOpen(true), { preventDefault: true });
   useHotkeys("mod+s", () => handleDownload(), { preventDefault: true });
   useHotkeys("o", () => setActiveTool("ocr"));
+  useHotkeys("b", () => toggleSidebar());
 
   const handleOcrRegionSelected = useCallback(async (imageData: string, x: number, y: number) => {
     setOcrDialogOpen(true);
@@ -305,9 +312,21 @@ export default function App() {
         selectionPosition={ocrSelectionPosition}
       />
 
-      <MainToolbar onDownload={handleDownload} onSettingsClick={() => setSettingsOpen(true)} />
+      <AnimatePresence>
+        {!sidebarOpen && (
+          <motion.div
+            initial={{ y: -60, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -60, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          >
+            <MainToolbar onDownload={handleDownload} onSettingsClick={() => setSettingsOpen(true)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div ref={canvasContainerRef} className="relative flex-1 overflow-hidden">
+        <BackgroundSidebar />
         {isLoading || !image ? (
           <div className="flex h-full items-center justify-center">
             <Skeleton className="h-3/4 w-3/4 bg-background" />
