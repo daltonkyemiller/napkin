@@ -62,7 +62,12 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
       if (e.key === "Backspace" && view !== "palette") {
         e.preventDefault();
         e.stopPropagation();
-        setView("palette");
+        if (view === "custom" && isAddingToPalette) {
+          setIsAddingToPalette(false);
+          setView("customize");
+        } else {
+          setView("palette");
+        }
         return;
       }
 
@@ -94,7 +99,7 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
 
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [open, view, palette, handleColorSelect]);
+  }, [open, view, palette, handleColorSelect, isAddingToPalette]);
 
   const handleCustomColorChange = (rgba: [number, number, number, number]) => {
     const [r, g, b, a] = rgba;
@@ -201,11 +206,18 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6"
-                onClick={() => setView("palette")}
+                onClick={() => {
+                  if (isAddingToPalette) {
+                    setIsAddingToPalette(false);
+                    setView("customize");
+                  } else {
+                    setView("palette");
+                  }
+                }}
               >
                 <Icon name="arrow-left" className="h-4 w-4" />
               </Button>
-              <span className="text-sm font-medium">Custom color</span>
+              <span className="text-sm font-medium">{isAddingToPalette ? "Add color" : "Custom color"}</span>
             </div>
             <ColorPicker
               value={value}
@@ -227,7 +239,7 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
                 onClick={() => {
                   handleAddColor(value);
                   setIsAddingToPalette(false);
-                  setView("palette");
+                  setView("customize");
                 }}
               >
                 Add to palette
