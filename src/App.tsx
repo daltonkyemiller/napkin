@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import {
   AnnotationCanvas,
   type AnnotationCanvasHandle,
@@ -55,7 +55,8 @@ export default function App() {
   const temporal = useAnnotationStore.temporal;
   const { strokeColor, fontSize } = useCanvasStore();
   const { loadTheme, applyTheme, mode } = useThemeStore();
-  const { loadSettings, defaultSaveLocation, autoSaveToDefault, closeAfterSave } = useSettingsStore();
+  const { loadSettings, defaultSaveLocation, autoSaveToDefault, closeAfterSave } =
+    useSettingsStore();
   const { loadIconMapping } = useIconStore();
   const { sidebarOpen, toggleSidebar } = useBackgroundStore();
 
@@ -312,35 +313,41 @@ export default function App() {
         selectionPosition={ocrSelectionPosition}
       />
 
-      <AnimatePresence>
-        {!sidebarOpen && (
-          <motion.div
-            initial={{ y: -60, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -60, opacity: 0 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          >
-            <MainToolbar onDownload={handleDownload} onSettingsClick={() => setSettingsOpen(true)} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <motion.div
+        initial={false}
+        animate={{ height: sidebarOpen ? 0 : "auto" }}
+        transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+        className="overflow-hidden shrink-0"
+      >
+        <MainToolbar onDownload={handleDownload} onSettingsClick={() => setSettingsOpen(true)} />
+      </motion.div>
 
-      <div ref={canvasContainerRef} className="relative flex-1 overflow-hidden">
-        <BackgroundSidebar />
-        {isLoading || !image ? (
-          <div className="flex h-full items-center justify-center">
-            <Skeleton className="h-3/4 w-3/4 bg-background" />
-          </div>
-        ) : (
-          <>
-            <AnnotationCanvas
-              ref={canvasRef}
-              image={image}
-              onOcrRegionSelected={handleOcrRegionSelected}
-            />
-            <FloatingElementToolbar containerRef={canvasContainerRef} image={image} />
-          </>
-        )}
+      <div className="flex flex-1 overflow-hidden">
+        <motion.div
+          initial={false}
+          animate={{ width: sidebarOpen ? 320 : 0 }}
+          transition={{ type: "spring", bounce: 0, duration: 0.3, delay: 0.3 }}
+          className="shrink-0 overflow-hidden border-r bg-background"
+        >
+          <BackgroundSidebar />
+        </motion.div>
+
+        <div ref={canvasContainerRef} className="relative flex-1 overflow-hidden">
+          {isLoading || !image ? (
+            <div className="flex h-full items-center justify-center">
+              <Skeleton className="h-3/4 w-3/4 bg-background" />
+            </div>
+          ) : (
+            <>
+              <AnnotationCanvas
+                ref={canvasRef}
+                image={image}
+                onOcrRegionSelected={handleOcrRegionSelected}
+              />
+              <FloatingElementToolbar containerRef={canvasContainerRef} image={image} />
+            </>
+          )}
+        </div>
       </div>
 
       <Toaster position="top-right" richColors />
