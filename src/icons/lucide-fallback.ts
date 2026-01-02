@@ -1,4 +1,5 @@
 import {
+  ArrowLeft,
   ArrowRight,
   Bug,
   Check,
@@ -31,6 +32,7 @@ import type { IconName } from './types';
 import type { LucideIcon } from 'lucide-react';
 
 export const lucideFallbackMap: Record<IconName, LucideIcon> = {
+  'arrow-left': ArrowLeft,
   'arrow-right': ArrowRight,
   'bug': Bug,
   'check': Check,

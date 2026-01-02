@@ -203,7 +203,7 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
                 className="h-6 w-6"
                 onClick={() => setView("palette")}
               >
-                <Icon name="undo" className="h-4 w-4" />
+                <Icon name="arrow-left" className="h-4 w-4" />
               </Button>
               <span className="text-sm font-medium">Custom color</span>
             </div>
@@ -260,7 +260,7 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
                   className="h-6 w-6"
                   onClick={() => setView("palette")}
                 >
-                  <Icon name="undo" className="h-4 w-4" />
+                  <Icon name="arrow-left" className="h-4 w-4" />
                 </Button>
                 <span className="text-sm font-medium">Customize palette</span>
               </div>
