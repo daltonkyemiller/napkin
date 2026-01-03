@@ -62,15 +62,13 @@ export const ColorPicker = ({
   ...props
 }: ColorPickerProps) => {
   const selectedColor = Color(value || defaultValue);
-  const defaultColor = Color(defaultValue);
 
-  const [hue, setHue] = useState(selectedColor.hue() || defaultColor.hue() || 0);
-  const [saturation, setSaturation] = useState(
-    selectedColor.saturationl() || defaultColor.saturationl() || 100,
-  );
-  const [lightness, setLightness] = useState(
-    selectedColor.lightness() || defaultColor.lightness() || 50,
-  );
+  const [hue, setHue] = useState(() => {
+    const h = selectedColor.hue();
+    return Number.isNaN(h) ? 0 : h;
+  });
+  const [saturation, setSaturation] = useState(() => selectedColor.saturationl());
+  const [lightness, setLightness] = useState(() => selectedColor.lightness());
   const [alpha, setAlpha] = useState((selectedColor.alpha() ?? 1) * 100);
   const [mode, setMode] = useState("hex");
 
