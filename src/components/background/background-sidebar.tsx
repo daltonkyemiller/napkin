@@ -192,7 +192,7 @@ export function BackgroundSidebar() {
                 value={[localBlur]}
                 onValueChange={(v) => handleBlurChange(Array.isArray(v) ? v[0] : v)}
                 min={0}
-                max={100}
+                max={150}
                 step={1}
               />
             </div>
