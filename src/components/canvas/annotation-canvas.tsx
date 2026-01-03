@@ -108,6 +108,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       shadowColor,
       aspectRatio,
       blur,
+      imageHasTransparency,
     } = useBackgroundStore();
     const { getRoughDrawable } = useRoughGenerator();
 
@@ -187,6 +188,23 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       const imageOffsetX = (bgWidth - image.width) / 2;
       const imageOffsetY = (bgHeight - image.height) / 2;
 
+      let bgImageScale = 1;
+      let bgImageX = 0;
+      let bgImageY = 0;
+
+      if (bgImageElement) {
+        const bgImgRatio = bgImageElement.width / bgImageElement.height;
+        const targetRatio = bgWidth / bgHeight;
+
+        if (bgImgRatio > targetRatio) {
+          bgImageScale = bgHeight / bgImageElement.height;
+          bgImageX = (bgWidth - bgImageElement.width * bgImageScale) / 2;
+        } else {
+          bgImageScale = bgWidth / bgImageElement.width;
+          bgImageY = (bgHeight - bgImageElement.height * bgImageScale) / 2;
+        }
+      }
+
       return {
         scale,
         bgWidth,
@@ -199,8 +217,11 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
         scaledHeight: scaledTotal.height,
         contentWidth,
         contentHeight,
+        bgImageScale,
+        bgImageX,
+        bgImageY,
       };
-    }, [image.width, image.height, padding, aspectRatio, hasBackground, containerWidth, containerHeight]);
+    }, [image.width, image.height, padding, aspectRatio, hasBackground, containerWidth, containerHeight, bgImageElement]);
 
     const gradientConfig = useMemo(() => {
       if (backgroundType !== "gradient" || !backgroundValue) return null;
@@ -398,29 +419,50 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
         >
           <Layer>
             {hasBackground && (
-              <Group x={layout.stageX} y={layout.stageY}>
+              <Group x={layout.stageX} y={layout.stageY} scaleX={layout.scale} scaleY={layout.scale}>
                 {backgroundType === "gradient" && gradientConfig && (
                   <Rect
-                    width={layout.bgWidth * layout.scale}
-                    height={layout.bgHeight * layout.scale}
+                    width={layout.bgWidth}
+                    height={layout.bgHeight}
                     fillLinearGradientStartPoint={gradientConfig.startPoint}
                     fillLinearGradientEndPoint={gradientConfig.endPoint}
                     fillLinearGradientColorStops={gradientConfig.colorStops}
-                    scaleX={layout.scale}
-                    scaleY={layout.scale}
                   />
                 )}
                 {backgroundType === "image" && bgImageElement && (
-                  <Image
-                    ref={bgImageRef}
-                    image={bgImageElement}
-                    width={layout.bgWidth}
-                    height={layout.bgHeight}
-                    scaleX={layout.scale}
-                    scaleY={layout.scale}
-                  />
+                  <Group
+                    clipFunc={(ctx) => {
+                      ctx.beginPath();
+                      ctx.rect(0, 0, layout.bgWidth, layout.bgHeight);
+                      ctx.closePath();
+                    }}
+                  >
+                    <Image
+                      ref={bgImageRef}
+                      image={bgImageElement}
+                      x={layout.bgImageX}
+                      y={layout.bgImageY}
+                      scaleX={layout.bgImageScale}
+                      scaleY={layout.bgImageScale}
+                    />
+                  </Group>
                 )}
               </Group>
+            )}
+
+            {hasBackground && shadowSize > 0 && !imageHasTransparency && (
+              <Rect
+                x={layout.stageX + layout.imageOffsetX * layout.scale + 1}
+                y={layout.stageY + layout.imageOffsetY * layout.scale + 1}
+                width={image.width * layout.scale - 2}
+                height={image.height * layout.scale - 2}
+                cornerRadius={Math.max(0, scaledBorderRadius - 1)}
+                fill="#fff"
+                shadowColor={shadowColor}
+                shadowBlur={shadowSize * layout.scale}
+                shadowOffsetY={shadowSize * layout.scale * 0.3}
+                shadowEnabled={true}
+              />
             )}
 
             <Group
@@ -431,10 +473,6 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                 ctx.roundRect(0, 0, image.width * layout.scale, image.height * layout.scale, scaledBorderRadius);
                 ctx.closePath();
               } : undefined}
-              shadowColor={hasBackground && shadowSize > 0 ? shadowColor : undefined}
-              shadowBlur={hasBackground ? shadowSize * layout.scale : 0}
-              shadowOffsetY={hasBackground ? shadowSize * layout.scale * 0.3 : 0}
-              shadowEnabled={hasBackground && shadowSize > 0}
             >
               <Image
                 image={image}

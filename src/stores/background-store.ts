@@ -49,6 +49,7 @@ interface BackgroundStore {
   shadowColor: string;
   aspectRatio: AspectRatio;
   blur: number;
+  imageHasTransparency: boolean;
 
   setBackgroundType: (type: BackgroundType) => void;
   setGradientPreset: (preset: string) => void;
@@ -59,6 +60,7 @@ interface BackgroundStore {
   setShadowColor: (color: string) => void;
   setAspectRatio: (ratio: AspectRatio) => void;
   setBlur: (blur: number) => void;
+  setImageHasTransparency: (hasTransparency: boolean) => void;
   reset: () => void;
 }
 
@@ -72,6 +74,7 @@ const DEFAULT_STATE = {
   shadowColor: "rgba(0, 0, 0, 0.3)",
   aspectRatio: "auto" as AspectRatio,
   blur: 0,
+  imageHasTransparency: false,
 };
 
 export const useBackgroundStore = create<BackgroundStore>((set) => ({
@@ -91,5 +94,6 @@ export const useBackgroundStore = create<BackgroundStore>((set) => ({
   setShadowColor: (shadowColor) => set({ shadowColor }),
   setAspectRatio: (aspectRatio) => set({ aspectRatio }),
   setBlur: (blur) => set({ blur }),
+  setImageHasTransparency: (imageHasTransparency) => set({ imageHasTransparency }),
   reset: () => set(DEFAULT_STATE),
 }));

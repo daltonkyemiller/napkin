@@ -1,8 +1,10 @@
+import { useState, useEffect, useRef } from "react";
 import Color from "color";
 import { open } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import {
   Select,
@@ -37,6 +39,7 @@ export function BackgroundSidebar() {
     shadowColor,
     aspectRatio,
     blur,
+    imageHasTransparency,
     setBackgroundType,
     setGradientPreset,
     setCustomImage,
@@ -78,6 +81,19 @@ export function BackgroundSidebar() {
 
   const hasImageBackground = backgroundType === "image" && customImage;
 
+  const [localBlur, setLocalBlur] = useState(blur);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setLocalBlur(blur);
+  }, [blur]);
+
+  const handleBlurChange = (value: number) => {
+    setLocalBlur(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setBlur(value), 150);
+  };
+
   return (
     <div className="flex h-full w-80 flex-col">
       <div className="flex items-center justify-between border-b p-4">
@@ -92,8 +108,8 @@ export function BackgroundSidebar() {
         </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="space-y-6">
+      <ScrollArea className="flex-1 overflow-y-auto">
+        <div className="space-y-6 p-4">
           <div className="space-y-3">
             <span className="text-xs font-medium text-muted-foreground">Presets</span>
             <div className="grid grid-cols-4 gap-2">
@@ -140,13 +156,13 @@ export function BackgroundSidebar() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">Blur</span>
-                <span className="text-xs tabular-nums text-muted-foreground">{blur}px</span>
+                <span className="text-xs tabular-nums text-muted-foreground">{localBlur}px</span>
               </div>
               <Slider
-                value={[blur]}
-                onValueChange={(v) => setBlur(Array.isArray(v) ? v[0] : v)}
+                value={[localBlur]}
+                onValueChange={(v) => handleBlurChange(Array.isArray(v) ? v[0] : v)}
                 min={0}
-                max={50}
+                max={100}
                 step={1}
               />
             </div>
@@ -179,7 +195,7 @@ export function BackgroundSidebar() {
               value={[padding]}
               onValueChange={(v) => setPadding(Array.isArray(v) ? v[0] : v)}
               min={0}
-              max={100}
+              max={200}
               step={1}
             />
           </div>
@@ -193,28 +209,31 @@ export function BackgroundSidebar() {
               value={[borderRadius]}
               onValueChange={(v) => setBorderRadius(Array.isArray(v) ? v[0] : v)}
               min={0}
-              max={48}
+              max={96}
               step={1}
             />
           </div>
 
           <div className="h-px bg-border" />
 
-          <div className="space-y-3">
+          <div className={cn("space-y-3", imageHasTransparency && "opacity-50 pointer-events-none")}>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Shadow</span>
+              <span className="text-xs font-medium text-muted-foreground">
+                Shadow {imageHasTransparency && "(transparent image)"}
+              </span>
               <span className="text-xs tabular-nums text-muted-foreground">{shadowSize}px</span>
             </div>
             <Slider
               value={[shadowSize]}
               onValueChange={(v) => setShadowSize(Array.isArray(v) ? v[0] : v)}
               min={0}
-              max={100}
+              max={150}
               step={1}
+              disabled={imageHasTransparency}
             />
           </div>
 
-          <div className="space-y-3">
+          <div className={cn("space-y-3", imageHasTransparency && "opacity-50 pointer-events-none")}>
             <span className="text-xs font-medium text-muted-foreground">Shadow Color</span>
             <Popover>
               <PopoverTrigger
@@ -222,7 +241,8 @@ export function BackgroundSidebar() {
                   <button
                     {...props}
                     type="button"
-                    className="flex h-9 w-full items-center gap-2 rounded-md border border-input bg-background px-3 text-sm hover:bg-accent"
+                    disabled={imageHasTransparency}
+                    className="flex h-9 w-full items-center gap-2 rounded-md border border-input bg-background px-3 text-sm hover:bg-accent disabled:pointer-events-none"
                   >
                     <div
                       className="h-5 w-5 rounded border"
@@ -248,7 +268,7 @@ export function BackgroundSidebar() {
             </Popover>
           </div>
         </div>
-      </div>
+      </ScrollArea>
     </div>
   );
 }

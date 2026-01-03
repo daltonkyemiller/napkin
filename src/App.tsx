@@ -58,7 +58,7 @@ export default function App() {
   const { loadSettings, defaultSaveLocation, autoSaveToDefault, closeAfterSave } =
     useSettingsStore();
   const { loadIconMapping } = useIconStore();
-  const { sidebarOpen, toggleSidebar } = useBackgroundStore();
+  const { sidebarOpen, toggleSidebar, setImageHasTransparency } = useBackgroundStore();
 
   useEffect(() => {
     loadTheme().then(() => applyTheme());
@@ -154,9 +154,29 @@ export default function App() {
 
     const img = new window.Image();
     img.crossOrigin = "anonymous";
-    img.onload = () => setImage(img);
+    img.onload = () => {
+      setImage(img);
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, img.width, img.height);
+        const data = imageData.data;
+        let hasTransparency = false;
+        for (let i = 3; i < data.length; i += 4) {
+          if (data[i] < 255) {
+            hasTransparency = true;
+            break;
+          }
+        }
+        setImageHasTransparency(hasTransparency);
+      }
+    };
     img.src = imageUrl;
-  }, [imageUrl]);
+  }, [imageUrl, setImageHasTransparency]);
 
   const handleDownload = useCallback(async () => {
     const result = canvasRef.current?.exportImage();
@@ -313,14 +333,7 @@ export default function App() {
         selectionPosition={ocrSelectionPosition}
       />
 
-      <motion.div
-        initial={false}
-        animate={{ height: sidebarOpen ? 0 : "auto" }}
-        transition={{ type: "spring", bounce: 0, duration: 0.3, delay: 0.3 }}
-        className="overflow-hidden shrink-0"
-      >
         <MainToolbar onDownload={handleDownload} onSettingsClick={() => setSettingsOpen(true)} />
-      </motion.div>
 
       <div className="flex flex-1 overflow-hidden">
         <motion.div
