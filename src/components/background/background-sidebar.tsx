@@ -109,6 +109,7 @@ export function BackgroundSidebar() {
   };
 
   const hasImageBackground = backgroundType === "image" && customImage;
+  const isNoneSelected = backgroundType === "none";
 
   const [localBlur, setLocalBlur] = useState(blur);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -197,104 +198,108 @@ export function BackgroundSidebar() {
             </div>
           )}
 
-          <div className="h-px bg-border" />
+          <div className={cn("space-y-6", isNoneSelected && "opacity-50 pointer-events-none")}>
+            <div className="h-px bg-border" />
 
-          <div className="space-y-3">
-            <span className="text-xs font-medium text-muted-foreground">Ratio</span>
-            <Select value={aspectRatio} onValueChange={(v) => setAspectRatio(v as typeof aspectRatio)}>
-              <SelectTrigger className="w-full">
-                {ASPECT_RATIOS.find((r) => r.id === aspectRatio)?.label || "Auto"}
-              </SelectTrigger>
-              <SelectContent>
-                {ASPECT_RATIOS.map((ratio) => (
-                  <SelectItem key={ratio.id} value={ratio.id}>
-                    {ratio.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Padding</span>
-              <span className="text-xs tabular-nums text-muted-foreground">{padding}px</span>
+            <div className="space-y-3">
+              <span className="text-xs font-medium text-muted-foreground">Ratio</span>
+              <Select value={aspectRatio} onValueChange={(v) => setAspectRatio(v as typeof aspectRatio)} disabled={isNoneSelected}>
+                <SelectTrigger className="w-full">
+                  {ASPECT_RATIOS.find((r) => r.id === aspectRatio)?.label || "Auto"}
+                </SelectTrigger>
+                <SelectContent>
+                  {ASPECT_RATIOS.map((ratio) => (
+                    <SelectItem key={ratio.id} value={ratio.id}>
+                      {ratio.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <Slider
-              value={[padding]}
-              onValueChange={(v) => setPadding(Array.isArray(v) ? v[0] : v)}
-              min={0}
-              max={300}
-              step={1}
-            />
-          </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Rounding</span>
-              <span className="text-xs tabular-nums text-muted-foreground">{borderRadius}px</span>
-            </div>
-            <Slider
-              value={[borderRadius]}
-              onValueChange={(v) => setBorderRadius(Array.isArray(v) ? v[0] : v)}
-              min={0}
-              max={96}
-              step={1}
-            />
-          </div>
-
-          <div className="h-px bg-border" />
-
-          <div className={cn("space-y-3", imageHasTransparency && "opacity-50 pointer-events-none")}>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">
-                Shadow {imageHasTransparency && "(transparent image)"}
-              </span>
-              <span className="text-xs tabular-nums text-muted-foreground">{shadowSize}px</span>
-            </div>
-            <Slider
-              value={[shadowSize]}
-              onValueChange={(v) => setShadowSize(Array.isArray(v) ? v[0] : v)}
-              min={0}
-              max={150}
-              step={1}
-              disabled={imageHasTransparency}
-            />
-          </div>
-
-          <div className={cn("space-y-3", imageHasTransparency && "opacity-50 pointer-events-none")}>
-            <span className="text-xs font-medium text-muted-foreground">Shadow Color</span>
-            <Popover>
-              <PopoverTrigger
-                render={(props) => (
-                  <button
-                    {...props}
-                    type="button"
-                    disabled={imageHasTransparency}
-                    className="flex h-9 w-full items-center gap-2 rounded-md border border-input bg-background px-3 text-sm hover:bg-accent disabled:pointer-events-none"
-                  >
-                    <div
-                      className="h-5 w-5 rounded border"
-                      style={{ backgroundColor: shadowColor }}
-                    />
-                    <span className="text-muted-foreground">{parseShadowColor()}</span>
-                  </button>
-                )}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">Padding</span>
+                <span className="text-xs tabular-nums text-muted-foreground">{padding}px</span>
+              </div>
+              <Slider
+                value={[padding]}
+                onValueChange={(v) => setPadding(Array.isArray(v) ? v[0] : v)}
+                min={0}
+                max={300}
+                step={1}
+                disabled={isNoneSelected}
               />
-              <PopoverContent className="w-64 p-3" align="start">
-                <ColorPicker
-                  value={shadowColor}
-                  onChange={(rgba) =>
-                    handleShadowColorChange(rgba as [number, number, number, number])
-                  }
-                >
-                  <ColorPickerSelection className="h-32 rounded-md" />
-                  <ColorPickerHue />
-                  <ColorPickerAlpha />
-                  <ColorPickerOutput />
-                </ColorPicker>
-              </PopoverContent>
-            </Popover>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">Rounding</span>
+                <span className="text-xs tabular-nums text-muted-foreground">{borderRadius}px</span>
+              </div>
+              <Slider
+                value={[borderRadius]}
+                onValueChange={(v) => setBorderRadius(Array.isArray(v) ? v[0] : v)}
+                min={0}
+                max={96}
+                step={1}
+                disabled={isNoneSelected}
+              />
+            </div>
+
+            <div className="h-px bg-border" />
+
+            <div className={cn("space-y-3", imageHasTransparency && "opacity-50 pointer-events-none")}>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">
+                  Shadow {imageHasTransparency && "(transparent image)"}
+                </span>
+                <span className="text-xs tabular-nums text-muted-foreground">{shadowSize}px</span>
+              </div>
+              <Slider
+                value={[shadowSize]}
+                onValueChange={(v) => setShadowSize(Array.isArray(v) ? v[0] : v)}
+                min={0}
+                max={150}
+                step={1}
+                disabled={isNoneSelected || imageHasTransparency}
+              />
+            </div>
+
+            <div className={cn("space-y-3", imageHasTransparency && "opacity-50 pointer-events-none")}>
+              <span className="text-xs font-medium text-muted-foreground">Shadow Color</span>
+              <Popover>
+                <PopoverTrigger
+                  render={(props) => (
+                    <button
+                      {...props}
+                      type="button"
+                      disabled={isNoneSelected || imageHasTransparency}
+                      className="flex h-9 w-full items-center gap-2 rounded-md border border-input bg-background px-3 text-sm hover:bg-accent disabled:pointer-events-none"
+                    >
+                      <div
+                        className="h-5 w-5 rounded border"
+                        style={{ backgroundColor: shadowColor }}
+                      />
+                      <span className="text-muted-foreground">{parseShadowColor()}</span>
+                    </button>
+                  )}
+                />
+                <PopoverContent className="w-64 p-3" align="start">
+                  <ColorPicker
+                    value={shadowColor}
+                    onChange={(rgba) =>
+                      handleShadowColorChange(rgba as [number, number, number, number])
+                    }
+                  >
+                    <ColorPickerSelection className="h-32 rounded-md" />
+                    <ColorPickerHue />
+                    <ColorPickerAlpha />
+                    <ColorPickerOutput />
+                  </ColorPicker>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
         </div>
       </ScrollArea>

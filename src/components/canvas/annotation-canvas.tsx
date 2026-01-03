@@ -185,8 +185,8 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       const stageX = (containerWidth - scaledTotal.width) / 2;
       const stageY = (containerHeight - scaledTotal.height) / 2;
 
-      const imageOffsetX = (bgWidth - image.width) / 2;
-      const imageOffsetY = (bgHeight - image.height) / 2;
+      const imageOffsetX = hasBackground ? (bgWidth - image.width) / 2 : 0;
+      const imageOffsetY = hasBackground ? (bgHeight - image.height) / 2 : 0;
 
       let bgImageScale = 1;
       let bgImageX = 0;
