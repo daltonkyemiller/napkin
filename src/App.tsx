@@ -21,9 +21,15 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
+import {
+  isPermissionGranted,
+  requestPermission,
+  sendNotification,
+} from "@tauri-apps/plugin-notification";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-import { Toaster } from "sonner";
+import { toast, Toaster } from "sonner";
 
 const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -210,6 +216,31 @@ export default function App() {
     const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
 
     await writeFile(filePath, binaryData);
+
+    const fileName = filePath.split("/").pop() || filePath.split("\\").pop() || "image";
+    const savedFilePath = filePath;
+
+    let permissionGranted = await isPermissionGranted();
+    if (!permissionGranted) {
+      const permission = await requestPermission();
+      permissionGranted = permission === "granted";
+    }
+    if (permissionGranted) {
+      sendNotification({
+        title: "Image Saved",
+        body: fileName,
+      });
+    }
+
+    if (!closeAfterSave) {
+      toast.success("Image saved", {
+        description: fileName,
+        action: {
+          label: "Show in Folder",
+          onClick: () => revealItemInDir(savedFilePath),
+        },
+      });
+    }
 
     if (closeAfterSave) {
       await getCurrentWindow().close();
