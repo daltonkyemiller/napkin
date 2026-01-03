@@ -60,8 +60,37 @@ export function BackgroundSidebar() {
     if (selected) {
       const bytes = await readFile(selected);
       const blob = new Blob([bytes]);
-      const url = URL.createObjectURL(blob);
-      setCustomImage(url);
+      const originalUrl = URL.createObjectURL(blob);
+
+      const img = new Image();
+      img.onload = () => {
+        const MAX_SIZE = 1920;
+        const { width, height } = img;
+
+        if (width <= MAX_SIZE && height <= MAX_SIZE) {
+          setCustomImage(originalUrl);
+          return;
+        }
+
+        const scale = Math.min(MAX_SIZE / width, MAX_SIZE / height);
+        const newWidth = Math.round(width * scale);
+        const newHeight = Math.round(height * scale);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, newWidth, newHeight);
+          canvas.toBlob((resizedBlob) => {
+            if (resizedBlob) {
+              URL.revokeObjectURL(originalUrl);
+              setCustomImage(URL.createObjectURL(resizedBlob));
+            }
+          }, "image/jpeg", 0.9);
+        }
+      };
+      img.src = originalUrl;
     }
   };
 
