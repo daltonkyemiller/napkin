@@ -34,7 +34,7 @@ interface AnnotationCanvasProps {
 }
 
 export interface AnnotationCanvasHandle {
-  exportImage: () => string | null;
+  exportImage: (format?: "png" | "jpg") => string | null;
 }
 
 function parseGradient(gradientStr: string, width: number, height: number) {
@@ -347,12 +347,14 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
     useImperativeHandle(
       ref,
       () => ({
-        exportImage: () => {
+        exportImage: (format: "png" | "jpg" = "png") => {
           if (!stageRef.current) return null;
 
           transformerRef.current?.nodes([]);
           stageRef.current.batchDraw();
 
+          const mimeType = format === "jpg" ? "image/jpeg" : "image/png";
+          const quality = format === "jpg" ? 0.92 : undefined;
           const pixelRatio = image.width / (image.width * layout.scale);
 
           if (!hasBackground) {
@@ -362,6 +364,8 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
               width: image.width * layout.scale,
               height: image.height * layout.scale,
               pixelRatio,
+              mimeType,
+              quality,
             });
           }
 
@@ -371,6 +375,8 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
             width: layout.scaledWidth,
             height: layout.scaledHeight,
             pixelRatio: layout.bgWidth / layout.scaledWidth,
+            mimeType,
+            quality,
           });
         },
       }),

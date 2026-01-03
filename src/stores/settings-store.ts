@@ -3,6 +3,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { useCanvasStore } from "./canvas-store";
 import { STROKE_COLORS } from "@/constants";
 
+export type SaveFormat = "png" | "jpg";
+
 interface AppSettings {
   strokeWidth: number;
   fontSize: number;
@@ -11,6 +13,7 @@ interface AppSettings {
   autoSaveToDefault: boolean;
   closeAfterSave: boolean;
   palette: string[];
+  defaultSaveFormat: SaveFormat;
 }
 
 interface SettingsStore extends AppSettings {
@@ -22,6 +25,7 @@ interface SettingsStore extends AppSettings {
   setAutoSaveToDefault: (enabled: boolean) => Promise<void>;
   setCloseAfterSave: (enabled: boolean) => Promise<void>;
   setPalette: (palette: string[]) => Promise<void>;
+  setDefaultSaveFormat: (format: SaveFormat) => Promise<void>;
   loadSettings: () => Promise<void>;
 }
 
@@ -33,6 +37,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   autoSaveToDefault: false,
   closeAfterSave: true,
   palette: [...STROKE_COLORS],
+  defaultSaveFormat: "png",
 };
 
 async function persistSettings(settings: Partial<AppSettings>) {
@@ -45,6 +50,7 @@ async function persistSettings(settings: Partial<AppSettings>) {
     autoSaveToDefault: settings.autoSaveToDefault ?? currentState.autoSaveToDefault,
     closeAfterSave: settings.closeAfterSave ?? currentState.closeAfterSave,
     palette: settings.palette ?? currentState.palette,
+    defaultSaveFormat: settings.defaultSaveFormat ?? currentState.defaultSaveFormat,
   };
   await invoke("save_settings", { settings: fullSettings });
 }
@@ -88,6 +94,11 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     await persistSettings({ palette });
   },
 
+  setDefaultSaveFormat: async (defaultSaveFormat) => {
+    set({ defaultSaveFormat });
+    await persistSettings({ defaultSaveFormat });
+  },
+
   loadSettings: async () => {
     try {
       const settings = await invoke<AppSettings | null>("load_settings");
@@ -103,6 +114,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
           autoSaveToDefault: settings.autoSaveToDefault ?? DEFAULT_SETTINGS.autoSaveToDefault,
           closeAfterSave: settings.closeAfterSave ?? DEFAULT_SETTINGS.closeAfterSave,
           palette: settings.palette ?? DEFAULT_SETTINGS.palette,
+          defaultSaveFormat: settings.defaultSaveFormat ?? DEFAULT_SETTINGS.defaultSaveFormat,
           isLoaded: true,
         });
         

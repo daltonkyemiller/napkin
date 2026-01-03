@@ -159,6 +159,7 @@ struct AppSettings {
     auto_save_to_default: Option<bool>,
     close_after_save: Option<bool>,
     palette: Option<Vec<String>>,
+    default_save_format: Option<String>,
 }
 
 impl From<config::AppConfig> for AppSettings {
@@ -171,6 +172,7 @@ impl From<config::AppConfig> for AppSettings {
             auto_save_to_default: cfg.auto_save_to_default,
             close_after_save: cfg.close_after_save,
             palette: cfg.palette,
+            default_save_format: cfg.default_save_format,
         }
     }
 }
@@ -185,6 +187,7 @@ impl From<AppSettings> for config::AppConfig {
             auto_save_to_default: settings.auto_save_to_default,
             close_after_save: settings.close_after_save,
             palette: settings.palette,
+            default_save_format: settings.default_save_format,
         }
     }
 }

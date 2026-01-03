@@ -14,7 +14,7 @@ import { useAnnotationStore } from "@/stores/annotation-store";
 import { useBackgroundStore } from "@/stores/background-store";
 import { useCanvasStore } from "@/stores/canvas-store";
 import { useIconStore } from "@/stores/icon-store";
-import { useSettingsStore } from "@/stores/settings-store";
+import { useSettingsStore, type SaveFormat } from "@/stores/settings-store";
 import { useThemeStore } from "@/stores/theme-store";
 import type { TextAnnotation } from "@/types";
 import { invoke } from "@tauri-apps/api/core";
@@ -55,7 +55,7 @@ export default function App() {
   const temporal = useAnnotationStore.temporal;
   const { strokeColor, fontSize } = useCanvasStore();
   const { loadTheme, applyTheme, mode } = useThemeStore();
-  const { loadSettings, defaultSaveLocation, autoSaveToDefault, closeAfterSave } =
+  const { loadSettings, defaultSaveLocation, autoSaveToDefault, closeAfterSave, defaultSaveFormat } =
     useSettingsStore();
   const { loadIconMapping } = useIconStore();
   const { sidebarOpen, toggleSidebar, setImageHasTransparency } = useBackgroundStore();
@@ -178,32 +178,35 @@ export default function App() {
     img.src = imageUrl;
   }, [imageUrl, setImageHasTransparency]);
 
-  const handleDownload = useCallback(async () => {
-    const result = canvasRef.current?.exportImage();
+  const handleDownload = useCallback(async (format: SaveFormat) => {
+    const result = canvasRef.current?.exportImage(format);
     if (!result) return;
     const dataURL = await Promise.resolve(result);
     if (!dataURL) return;
+
+    const ext = format === "jpg" ? "jpg" : "png";
+    const filterName = format === "jpg" ? "JPEG Image" : "PNG Image";
 
     let filePath: string | null = outputFilename;
 
     if (!filePath) {
       if (autoSaveToDefault && defaultSaveLocation) {
-        filePath = `${defaultSaveLocation}/annotated-image-${Date.now()}.png`;
+        filePath = `${defaultSaveLocation}/annotated-image-${Date.now()}.${ext}`;
       } else {
         const defaultPath = defaultSaveLocation
-          ? `${defaultSaveLocation}/annotated-image-${Date.now()}.png`
-          : `annotated-image-${Date.now()}.png`;
+          ? `${defaultSaveLocation}/annotated-image-${Date.now()}.${ext}`
+          : `annotated-image-${Date.now()}.${ext}`;
 
         filePath = await save({
           defaultPath,
-          filters: [{ name: "PNG Image", extensions: ["png"] }],
+          filters: [{ name: filterName, extensions: [ext] }],
         });
       }
     }
 
     if (!filePath) return;
 
-    const base64Data = dataURL.replace(/^data:image\/png;base64,/, "");
+    const base64Data = dataURL.replace(/^data:image\/(png|jpeg);base64,/, "");
     const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
 
     await writeFile(filePath, binaryData);
@@ -277,7 +280,7 @@ export default function App() {
   useHotkeys("shift+right, shift+l", () => moveSelected(10, 0), { preventDefault: true });
 
   useHotkeys("mod+comma", () => setSettingsOpen(true), { preventDefault: true });
-  useHotkeys("mod+s", () => handleDownload(), { preventDefault: true });
+  useHotkeys("mod+s", () => handleDownload(defaultSaveFormat), { preventDefault: true });
   useHotkeys("o", () => setActiveTool("ocr"));
   useHotkeys("b", () => toggleSidebar());
 

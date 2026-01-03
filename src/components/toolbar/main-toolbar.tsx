@@ -2,19 +2,21 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Kbd } from "@/components/ui/kbd";
 import { Icon } from "@/components/ui/icon";
 import { ColorPaletteDropdown } from "./color-palette-dropdown";
 import { useCanvasStore } from "@/stores/canvas-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
 import { useBackgroundStore } from "@/stores/background-store";
+import type { SaveFormat } from "@/stores/settings-store";
 import type { Tool } from "@/types";
 
 const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
 const modKey = isMac ? "⌘" : "Ctrl";
 
 interface MainToolbarProps {
-  onDownload: () => void;
+  onDownload: (format: SaveFormat) => void;
   onSettingsClick: () => void;
 }
 
@@ -226,18 +228,42 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
       <div className="h-6 w-px bg-border" />
 
       <div className="flex gap-1">
-        <Tooltip>
-          <TooltipTrigger
-            render={(props) => (
-              <Button {...props} variant="ghost" size="sm" onClick={onDownload}>
-                <Icon name="download" />
-              </Button>
-            )}
-          />
-          <TooltipContent side="bottom">
-            Save <Kbd>{modKey}+S</Kbd>
-          </TooltipContent>
-        </Tooltip>
+        <Popover>
+          <Tooltip>
+            <PopoverTrigger
+              render={(props) => (
+                <TooltipTrigger
+                  {...props}
+                  render={(tooltipProps) => (
+                    <Button {...tooltipProps} variant="ghost" size="sm">
+                      <Icon name="download" />
+                      <Icon name="chevron-down" className="h-3 w-3 ml-0.5" />
+                    </Button>
+                  )}
+                />
+              )}
+            />
+            <TooltipContent side="bottom">
+              Save <Kbd>{modKey}+S</Kbd>
+            </TooltipContent>
+          </Tooltip>
+          <PopoverContent align="end" className="w-32 p-1 gap-0">
+            <button
+              type="button"
+              className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+              onClick={() => onDownload("png")}
+            >
+              Save as PNG
+            </button>
+            <button
+              type="button"
+              className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+              onClick={() => onDownload("jpg")}
+            >
+              Save as JPG
+            </button>
+          </PopoverContent>
+        </Popover>
         <Tooltip>
           <TooltipTrigger
             render={(props) => (

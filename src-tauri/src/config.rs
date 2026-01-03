@@ -55,6 +55,8 @@ pub struct AppConfig {
     pub close_after_save: Option<bool>,
     /// User's color palette (hex colors)
     pub palette: Option<Vec<String>>,
+    /// Default save format ("png" or "jpg")
+    pub default_save_format: Option<String>,
 }
 
 /// Loads config.yml from the config directory.
@@ -196,6 +198,7 @@ pub fn migrate_from_app_data(app_data_dir: &PathBuf) -> Result<(), String> {
                         .and_then(|v| v.as_bool()),
                     close_after_save: settings.get("closeAfterSave").and_then(|v| v.as_bool()),
                     palette: None,
+                    default_save_format: None,
                 };
                 let _ = save_config(&config);
                 eprintln!("Migrated settings.json to {}", new_config.display());

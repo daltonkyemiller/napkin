@@ -21,6 +21,8 @@ interface SettingsDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+
 const themeModes: { value: ThemeMode; label: string }[] = [
   { value: "light", label: "Light" },
   { value: "dark", label: "Dark" },
@@ -41,6 +43,8 @@ export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogPro
     setAutoSaveToDefault,
     closeAfterSave,
     setCloseAfterSave,
+    defaultSaveFormat,
+    setDefaultSaveFormat,
   } = useSettingsStore();
   const { mode, setMode } = useThemeStore();
   const [customizerOpen, setCustomizerOpen] = useState(false);
@@ -190,6 +194,29 @@ export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogPro
               >
                 {closeAfterSave ? "On" : "Off"}
               </Button>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">Default Save Format</span>
+                <span className="text-xs text-muted-foreground">Used when pressing {isMac ? "⌘" : "Ctrl"}+S</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={defaultSaveFormat === "png" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setDefaultSaveFormat("png")}
+                >
+                  PNG
+                </Button>
+                <Button
+                  variant={defaultSaveFormat === "jpg" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setDefaultSaveFormat("jpg")}
+                >
+                  JPG
+                </Button>
+              </div>
             </div>
 
             <div className="border-t pt-4 flex items-center justify-between">
