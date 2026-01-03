@@ -90,7 +90,7 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
             )}
           />
           <TooltipContent side="bottom">
-            Undo <Kbd>{modKey}Z</Kbd>
+            Undo <Kbd>{modKey}+Z</Kbd>
           </TooltipContent>
         </Tooltip>
         <Tooltip>
@@ -102,7 +102,7 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
             )}
           />
           <TooltipContent side="bottom">
-            Redo <Kbd>{modKey}⇧Z</Kbd>
+            Redo <Kbd>{modKey}+⇧+Z</Kbd>
           </TooltipContent>
         </Tooltip>
       </div>
@@ -235,7 +235,7 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
             )}
           />
           <TooltipContent side="bottom">
-            Save <Kbd>{modKey}S</Kbd>
+            Save <Kbd>{modKey}+S</Kbd>
           </TooltipContent>
         </Tooltip>
         <Tooltip>
@@ -275,7 +275,7 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
             )}
           />
           <TooltipContent side="bottom">
-            Settings <Kbd>{modKey},</Kbd>
+            Settings <Kbd>{modKey}+,</Kbd>
           </TooltipContent>
         </Tooltip>
       </div>
