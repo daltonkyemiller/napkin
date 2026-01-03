@@ -41,7 +41,7 @@ export function renderCircle(
             const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) =>
               gen.ellipse(radiusX, radiusY, width, height, {
                 stroke: annotation.stroke,
-                strokeWidth: annotation.strokeWidth,
+                strokeWidth: annotation.strokeWidth * 1.5,
                 fill: annotation.fill ?? undefined,
                 fillStyle: annotation.fill ? "solid" : undefined,
                 roughness: annotation.sketchiness,

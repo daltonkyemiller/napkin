@@ -145,7 +145,7 @@ function renderSketchyArrow(
           const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) =>
             gen.path(`M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}`, {
               stroke: annotation.stroke,
-              strokeWidth: annotation.strokeWidth,
+              strokeWidth: annotation.strokeWidth * 1.5,
               roughness: annotation.sketchiness,
               bowing: annotation.sketchiness,
             }),
@@ -191,7 +191,7 @@ function renderSketchyArrow(
         const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) =>
           gen.line(startX, startY, endX, endY, {
             stroke: annotation.stroke,
-            strokeWidth: annotation.strokeWidth,
+            strokeWidth: annotation.strokeWidth * 1.5,
             roughness: annotation.sketchiness,
             bowing: annotation.sketchiness,
           }),

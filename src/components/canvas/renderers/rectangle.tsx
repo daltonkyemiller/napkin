@@ -46,7 +46,7 @@ export function renderRectangle(
                 const path = `M ${clampedR},0 L ${w - clampedR},0 Q ${w},0 ${w},${clampedR} L ${w},${h - clampedR} Q ${w},${h} ${w - clampedR},${h} L ${clampedR},${h} Q 0,${h} 0,${h - clampedR} L 0,${clampedR} Q 0,0 ${clampedR},0 Z`;
                 return gen.path(path, {
                   stroke: annotation.stroke,
-                  strokeWidth: annotation.strokeWidth,
+                  strokeWidth: annotation.strokeWidth * 1.5,
                   fill: annotation.fill ?? undefined,
                   fillStyle: annotation.fill ? "solid" : undefined,
                   roughness: annotation.sketchiness,
@@ -55,7 +55,7 @@ export function renderRectangle(
               }
               return gen.rectangle(0, 0, w, h, {
                 stroke: annotation.stroke,
-                strokeWidth: annotation.strokeWidth,
+                strokeWidth: annotation.strokeWidth * 1.5,
                 fill: annotation.fill ?? undefined,
                 fillStyle: annotation.fill ? "solid" : undefined,
                 roughness: annotation.sketchiness,
