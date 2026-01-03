@@ -31,10 +31,10 @@ const themeModes: { value: ThemeMode; label: string }[] = [
 ];
 
 const STROKE_SIZE_OPTIONS: { value: StrokeSizePreset; label: string }[] = [
-  { value: "S", label: "Small" },
-  { value: "M", label: "Medium" },
-  { value: "L", label: "Large" },
-  { value: "XL", label: "Extra Large" },
+  { value: "S", label: "S" },
+  { value: "M", label: "M" },
+  { value: "L", label: "L" },
+  { value: "XL", label: "XL" },
 ];
 
 export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogProps) {
