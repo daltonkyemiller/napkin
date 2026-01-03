@@ -199,7 +199,7 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
             handleStrokeWidthChange(newValue);
           }}
           min={1}
-          max={20}
+          max={100}
           step={1}
         />
         <span className="w-8 text-xs tabular-nums text-muted-foreground">{strokeWidth}px</span>
