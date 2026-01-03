@@ -46,7 +46,7 @@ export function useOcrSelection({
 
   const handleOcrMouseMove = useCallback((): boolean => {
     if (!ocrSelectionStart) return false;
-    
+
     const pos = stageRef.current?.getPointerPosition();
     if (!pos) return false;
 
@@ -101,7 +101,16 @@ export function useOcrSelection({
     setOcrSelectionStart(null);
     setOcrSelectionRect(null);
     return true;
-  }, [ocrSelectionStart, ocrSelectionRect, image, scaledWidth, scaledHeight, imageX, imageY, onOcrRegionSelected]);
+  }, [
+    ocrSelectionStart,
+    ocrSelectionRect,
+    image,
+    scaledWidth,
+    scaledHeight,
+    imageX,
+    imageY,
+    onOcrRegionSelected,
+  ]);
 
   return {
     ocrSelectionRect,

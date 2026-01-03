@@ -237,7 +237,13 @@ export function FloatingElementToolbar({ containerRef, image }: FloatingElementT
 
     setPosition({ left, top });
     setIsVisible(true);
-  }, [hasAnySelection, selectedShapeAnnotations, selectedTextAnnotations, containerRef, imageTransform]);
+  }, [
+    hasAnySelection,
+    selectedShapeAnnotations,
+    selectedTextAnnotations,
+    containerRef,
+    imageTransform,
+  ]);
 
   useLayoutEffect(() => {
     updatePosition();

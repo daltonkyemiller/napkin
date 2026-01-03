@@ -1,8 +1,8 @@
-import { useIconStore } from '@/stores/icon-store';
-import { lucideFallbackMap } from '@/icons/lucide-fallback';
-import type { IconName } from '@/icons/types';
-import { cn } from '@/lib/utils';
-import { useMemo } from 'react';
+import { useIconStore } from "@/stores/icon-store";
+import { lucideFallbackMap } from "@/icons/lucide-fallback";
+import type { IconName } from "@/icons/types";
+import { cn } from "@/lib/utils";
+import { useMemo } from "react";
 
 interface IconProps {
   name: IconName;
@@ -31,15 +31,15 @@ export function Icon({ name, size = 18, className, strokeWidth = 2 }: IconProps)
       .replace(/fill="black"/gi, 'fill="currentColor"')
       .replace(/fill="#000000"/gi, 'fill="currentColor"')
       .replace(/fill="#000"/gi, 'fill="currentColor"');
-    
-    if (!processedSvg.includes('fill=')) {
+
+    if (!processedSvg.includes("fill=")) {
       processedSvg = processedSvg.replace(/<svg/, '<svg fill="currentColor"');
     }
 
     return (
       <span
-        className={cn('inline-flex items-center justify-center shrink-0', className)}
-        style={{ width: size, height: size, color: 'inherit' }}
+        className={cn("inline-flex items-center justify-center shrink-0", className)}
+        style={{ width: size, height: size, color: "inherit" }}
         dangerouslySetInnerHTML={{ __html: processedSvg }}
       />
     );
@@ -52,10 +52,6 @@ export function Icon({ name, size = 18, className, strokeWidth = 2 }: IconProps)
   }
 
   return (
-    <LucideComponent
-      size={size}
-      className={cn('shrink-0', className)}
-      strokeWidth={strokeWidth}
-    />
+    <LucideComponent size={size} className={cn("shrink-0", className)} strokeWidth={strokeWidth} />
   );
 }

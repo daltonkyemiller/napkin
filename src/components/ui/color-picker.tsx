@@ -14,12 +14,7 @@ import {
 } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/ui/icon";
 
@@ -470,7 +465,10 @@ export const ColorPickerFormat = ({ className, ...props }: ColorPickerFormatProp
   }
 
   if (mode === "rgb") {
-    const [r, g, b] = color.rgb().array().map((v) => Math.round(v));
+    const [r, g, b] = color
+      .rgb()
+      .array()
+      .map((v) => Math.round(v));
 
     const updateFromRgb = (newR: number, newG: number, newB: number) => {
       try {

@@ -36,11 +36,11 @@ function normalizeSvgForDisplay(svg: string, size: number): string {
     .replace(/fill="black"/gi, 'fill="currentColor"')
     .replace(/fill="#000000"/gi, 'fill="currentColor"')
     .replace(/fill="#000"/gi, 'fill="currentColor"');
-  
-  if (!result.includes('fill=')) {
+
+  if (!result.includes("fill=")) {
     result = result.replace(/<svg/, '<svg fill="currentColor"');
   }
-  
+
   return result;
 }
 
@@ -80,7 +80,7 @@ function LazyIconPreview({
           observer.disconnect();
         }
       },
-      { rootMargin: "100px" }
+      { rootMargin: "100px" },
     );
 
     observer.observe(element);
@@ -157,15 +157,18 @@ export function IconCustomizerDialog({ open: isOpen, onOpenChange }: IconCustomi
     }
   };
 
-  const loadPreview = useCallback(async (path: string) => {
-    if (previewCache[path]) return;
-    try {
-      const svg = await invoke<string>("load_svg_file", { filePath: path });
-      setPreviewCache((prev) => ({ ...prev, [path]: svg }));
-    } catch (error) {
-      console.error("Failed to load preview:", error);
-    }
-  }, [previewCache]);
+  const loadPreview = useCallback(
+    async (path: string) => {
+      if (previewCache[path]) return;
+      try {
+        const svg = await invoke<string>("load_svg_file", { filePath: path });
+        setPreviewCache((prev) => ({ ...prev, [path]: svg }));
+      } catch (error) {
+        console.error("Failed to load preview:", error);
+      }
+    },
+    [previewCache],
+  );
 
   useEffect(() => {
     for (const [, path] of Object.entries(pendingChanges)) {
@@ -223,15 +226,15 @@ export function IconCustomizerDialog({ open: isOpen, onOpenChange }: IconCustomi
 
   const renderCurrentIcon = (iconName: IconName) => {
     const pendingPath = pendingChanges[iconName];
-    
+
     if (pendingPath && previewCache[pendingPath]) {
       return <SvgPreview svg={previewCache[pendingPath]} size={18} />;
     }
-    
+
     if (pendingPath === null) {
       return <Icon name={iconName} />;
     }
-    
+
     return <Icon name={iconName} />;
   };
 
@@ -262,7 +265,7 @@ export function IconCustomizerDialog({ open: isOpen, onOpenChange }: IconCustomi
                       onClick={() => setSelectedIcon(isSelected ? null : iconName)}
                       className={cn(
                         "flex items-center gap-3 p-2 w-full text-left hover:bg-muted/50 transition-colors",
-                        isSelected && "bg-primary/10 ring-2 ring-primary ring-inset"
+                        isSelected && "bg-primary/10 ring-2 ring-primary ring-inset",
                       )}
                     >
                       <div className="flex h-8 w-8 items-center justify-center rounded bg-muted shrink-0">
@@ -274,7 +277,7 @@ export function IconCustomizerDialog({ open: isOpen, onOpenChange }: IconCustomi
                           <span
                             className={cn(
                               "text-xs truncate",
-                              isPending ? "text-primary" : "text-muted-foreground"
+                              isPending ? "text-primary" : "text-muted-foreground",
                             )}
                             title={customPath}
                           >
@@ -307,7 +310,12 @@ export function IconCustomizerDialog({ open: isOpen, onOpenChange }: IconCustomi
           <div className="flex flex-col w-1/2 min-h-0">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-sm font-medium">Available Icons</span>
-              <Button variant="outline" size="sm" onClick={handleSelectDirectory} className="ml-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSelectDirectory}
+                className="ml-auto"
+              >
                 <Icon name="folder" size={16} />
                 {directoryPath ? "Change" : "Select"} Directory
               </Button>
@@ -346,7 +354,7 @@ export function IconCustomizerDialog({ open: isOpen, onOpenChange }: IconCustomi
                       disabled={!selectedIcon}
                       className={cn(
                         "flex flex-col items-center gap-1.5 p-2 rounded hover:bg-muted/50 transition-colors",
-                        selectedIcon ? "cursor-pointer" : "opacity-50 cursor-not-allowed"
+                        selectedIcon ? "cursor-pointer" : "opacity-50 cursor-not-allowed",
                       )}
                       title={dirIcon.name}
                     >
@@ -357,7 +365,9 @@ export function IconCustomizerDialog({ open: isOpen, onOpenChange }: IconCustomi
                         onLoadPreview={loadPreview}
                       />
                       <span className="text-xs text-muted-foreground truncate w-full text-center">
-                        {dirIcon.name.length > 14 ? `${dirIcon.name.slice(0, 14)}...` : dirIcon.name}
+                        {dirIcon.name.length > 14
+                          ? `${dirIcon.name.slice(0, 14)}...`
+                          : dirIcon.name}
                       </span>
                     </button>
                   ))}

@@ -6,12 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import {
   ColorPicker,
   ColorPickerSelection,
@@ -20,11 +15,7 @@ import {
   ColorPickerOutput,
 } from "@/components/ui/color-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  useBackgroundStore,
-  GRADIENT_PRESETS,
-  ASPECT_RATIOS,
-} from "@/stores/background-store";
+import { useBackgroundStore, GRADIENT_PRESETS, ASPECT_RATIOS } from "@/stores/background-store";
 import { cn } from "@/lib/utils";
 
 export function BackgroundSidebar() {
@@ -82,12 +73,16 @@ export function BackgroundSidebar() {
         const ctx = canvas.getContext("2d");
         if (ctx) {
           ctx.drawImage(img, 0, 0, newWidth, newHeight);
-          canvas.toBlob((resizedBlob) => {
-            if (resizedBlob) {
-              URL.revokeObjectURL(originalUrl);
-              setCustomImage(URL.createObjectURL(resizedBlob));
-            }
-          }, "image/jpeg", 0.9);
+          canvas.toBlob(
+            (resizedBlob) => {
+              if (resizedBlob) {
+                URL.revokeObjectURL(originalUrl);
+                setCustomImage(URL.createObjectURL(resizedBlob));
+              }
+            },
+            "image/jpeg",
+            0.9,
+          );
         }
       };
       img.src = originalUrl;
@@ -203,7 +198,11 @@ export function BackgroundSidebar() {
 
             <div className="space-y-3">
               <span className="text-xs font-medium text-muted-foreground">Ratio</span>
-              <Select value={aspectRatio} onValueChange={(v) => setAspectRatio(v as typeof aspectRatio)} disabled={isNoneSelected}>
+              <Select
+                value={aspectRatio}
+                onValueChange={(v) => setAspectRatio(v as typeof aspectRatio)}
+                disabled={isNoneSelected}
+              >
                 <SelectTrigger className="w-full">
                   {ASPECT_RATIOS.find((r) => r.id === aspectRatio)?.label || "Auto"}
                 </SelectTrigger>
@@ -249,7 +248,9 @@ export function BackgroundSidebar() {
 
             <div className="h-px bg-border" />
 
-            <div className={cn("space-y-3", imageHasTransparency && "opacity-50 pointer-events-none")}>
+            <div
+              className={cn("space-y-3", imageHasTransparency && "opacity-50 pointer-events-none")}
+            >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">
                   Shadow {imageHasTransparency && "(transparent image)"}
@@ -266,7 +267,9 @@ export function BackgroundSidebar() {
               />
             </div>
 
-            <div className={cn("space-y-3", imageHasTransparency && "opacity-50 pointer-events-none")}>
+            <div
+              className={cn("space-y-3", imageHasTransparency && "opacity-50 pointer-events-none")}
+            >
               <span className="text-xs font-medium text-muted-foreground">Shadow Color</span>
               <Popover>
                 <PopoverTrigger

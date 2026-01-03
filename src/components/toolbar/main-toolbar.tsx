@@ -97,7 +97,13 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
         <Tooltip>
           <TooltipTrigger
             render={(props) => (
-              <Button {...props} variant="ghost" size="icon" onClick={handleUndo} disabled={!canUndo}>
+              <Button
+                {...props}
+                variant="ghost"
+                size="icon"
+                onClick={handleUndo}
+                disabled={!canUndo}
+              >
                 <Icon name="undo" />
               </Button>
             )}
@@ -109,7 +115,13 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
         <Tooltip>
           <TooltipTrigger
             render={(props) => (
-              <Button {...props} variant="ghost" size="icon" onClick={handleRedo} disabled={!canRedo}>
+              <Button
+                {...props}
+                variant="ghost"
+                size="icon"
+                onClick={handleRedo}
+                disabled={!canRedo}
+              >
                 <Icon name="redo" />
               </Button>
             )}
@@ -130,68 +142,100 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
         }}
       >
         <Tooltip>
-          <TooltipTrigger render={(props) => (
-            <ToggleGroupItem {...props} value="select">
-              <Icon name="cursor-default" />
-            </ToggleGroupItem>
-          )} />
-          <TooltipContent side="bottom">Select <Kbd>V</Kbd></TooltipContent>
+          <TooltipTrigger
+            render={(props) => (
+              <ToggleGroupItem {...props} value="select">
+                <Icon name="cursor-default" />
+              </ToggleGroupItem>
+            )}
+          />
+          <TooltipContent side="bottom">
+            Select <Kbd>V</Kbd>
+          </TooltipContent>
         </Tooltip>
         <Tooltip>
-          <TooltipTrigger render={(props) => (
-            <ToggleGroupItem {...props} value="circle">
-              <Icon name="shape-circle" />
-            </ToggleGroupItem>
-          )} />
-          <TooltipContent side="bottom">Circle <Kbd>C</Kbd></TooltipContent>
+          <TooltipTrigger
+            render={(props) => (
+              <ToggleGroupItem {...props} value="circle">
+                <Icon name="shape-circle" />
+              </ToggleGroupItem>
+            )}
+          />
+          <TooltipContent side="bottom">
+            Circle <Kbd>C</Kbd>
+          </TooltipContent>
         </Tooltip>
         <Tooltip>
-          <TooltipTrigger render={(props) => (
-            <ToggleGroupItem {...props} value="rectangle">
-              <Icon name="shape-square" />
-            </ToggleGroupItem>
-          )} />
-          <TooltipContent side="bottom">Rectangle <Kbd>R</Kbd></TooltipContent>
+          <TooltipTrigger
+            render={(props) => (
+              <ToggleGroupItem {...props} value="rectangle">
+                <Icon name="shape-square" />
+              </ToggleGroupItem>
+            )}
+          />
+          <TooltipContent side="bottom">
+            Rectangle <Kbd>R</Kbd>
+          </TooltipContent>
         </Tooltip>
         <Tooltip>
-          <TooltipTrigger render={(props) => (
-            <ToggleGroupItem {...props} value="arrow">
-              <Icon name="arrow-right" />
-            </ToggleGroupItem>
-          )} />
-          <TooltipContent side="bottom">Arrow <Kbd>A</Kbd></TooltipContent>
+          <TooltipTrigger
+            render={(props) => (
+              <ToggleGroupItem {...props} value="arrow">
+                <Icon name="arrow-right" />
+              </ToggleGroupItem>
+            )}
+          />
+          <TooltipContent side="bottom">
+            Arrow <Kbd>A</Kbd>
+          </TooltipContent>
         </Tooltip>
         <Tooltip>
-          <TooltipTrigger render={(props) => (
-            <ToggleGroupItem {...props} value="text">
-              <Icon name="typography" />
-            </ToggleGroupItem>
-          )} />
-          <TooltipContent side="bottom">Text <Kbd>T</Kbd></TooltipContent>
+          <TooltipTrigger
+            render={(props) => (
+              <ToggleGroupItem {...props} value="text">
+                <Icon name="typography" />
+              </ToggleGroupItem>
+            )}
+          />
+          <TooltipContent side="bottom">
+            Text <Kbd>T</Kbd>
+          </TooltipContent>
         </Tooltip>
         <Tooltip>
-          <TooltipTrigger render={(props) => (
-            <ToggleGroupItem {...props} value="freehand">
-              <Icon name="pen" />
-            </ToggleGroupItem>
-          )} />
-          <TooltipContent side="bottom">Freehand <Kbd>P</Kbd></TooltipContent>
+          <TooltipTrigger
+            render={(props) => (
+              <ToggleGroupItem {...props} value="freehand">
+                <Icon name="pen" />
+              </ToggleGroupItem>
+            )}
+          />
+          <TooltipContent side="bottom">
+            Freehand <Kbd>P</Kbd>
+          </TooltipContent>
         </Tooltip>
         <Tooltip>
-          <TooltipTrigger render={(props) => (
-            <ToggleGroupItem {...props} value="highlighter">
-              <Icon name="text-highlight" />
-            </ToggleGroupItem>
-          )} />
-          <TooltipContent side="bottom">Highlighter <Kbd>M</Kbd></TooltipContent>
+          <TooltipTrigger
+            render={(props) => (
+              <ToggleGroupItem {...props} value="highlighter">
+                <Icon name="text-highlight" />
+              </ToggleGroupItem>
+            )}
+          />
+          <TooltipContent side="bottom">
+            Highlighter <Kbd>M</Kbd>
+          </TooltipContent>
         </Tooltip>
         <Tooltip>
-          <TooltipTrigger render={(props) => (
-            <ToggleGroupItem {...props} value="ocr">
-              <Icon name="scan-text" />
-            </ToggleGroupItem>
-          )} />
-          <TooltipContent side="bottom">OCR Text Recognition <Kbd>O</Kbd></TooltipContent>
+          <TooltipTrigger
+            render={(props) => (
+              <ToggleGroupItem {...props} value="ocr">
+                <Icon name="scan-text" />
+              </ToggleGroupItem>
+            )}
+          />
+          <TooltipContent side="bottom">
+            OCR Text Recognition <Kbd>O</Kbd>
+          </TooltipContent>
         </Tooltip>
       </ToggleGroup>
 
@@ -241,7 +285,9 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
                 <PopoverContent align="center" className="w-48 p-3 gap-2">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-medium">Custom Size</span>
-                    <span className="text-xs tabular-nums text-muted-foreground">{customStrokeWidth}px</span>
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                      {customStrokeWidth}px
+                    </span>
                   </div>
                   <Slider
                     value={[customStrokeWidth]}
@@ -260,9 +306,7 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
             </div>
           )}
         />
-        <TooltipContent side="bottom">
-          Stroke Size ({strokeWidth}px)
-        </TooltipContent>
+        <TooltipContent side="bottom">Stroke Size ({strokeWidth}px)</TooltipContent>
       </Tooltip>
 
       <div className="h-6 w-px bg-border" />

@@ -58,7 +58,7 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
       const target = e.target as HTMLElement;
       const isInput =
         target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
-      
+
       // Allow Enter in custom view even when focused on inputs (sliders)
       const allowEnterFromInput = e.key === "Enter" && view === "custom" && open;
       if (isInput && !allowEnterFromInput) return;
@@ -236,7 +236,9 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
               >
                 <Icon name="arrow-left" className="h-4 w-4" />
               </Button>
-              <span className="text-sm font-medium">{isAddingToPalette ? "Add color" : "Custom color"}</span>
+              <span className="text-sm font-medium">
+                {isAddingToPalette ? "Add color" : "Custom color"}
+              </span>
             </div>
             <ColorPicker
               value={value}
@@ -274,7 +276,12 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
                 >
                   Add to palette
                 </Button>
-                <Button variant="default" size="sm" className="flex-1 justify-between" onClick={() => setOpen(false)}>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="flex-1 justify-between"
+                  onClick={() => setOpen(false)}
+                >
                   Done
                   <Kbd>Enter</Kbd>
                 </Button>
@@ -333,9 +340,7 @@ export function ColorPaletteDropdown({ value, onChange }: ColorPaletteDropdownPr
                 <span className="text-lg font-light">+</span>
               </button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Click a color to remove it
-            </p>
+            <p className="text-xs text-muted-foreground">Click a color to remove it</p>
           </div>
         )}
       </PopoverContent>

@@ -1,11 +1,4 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  forwardRef,
-  useImperativeHandle,
-} from "react";
+import { useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle } from "react";
 import { Stage, Layer, Image, Transformer, Rect, Group } from "react-konva";
 import Konva from "konva";
 import { useCanvasStore } from "@/stores/canvas-store";
@@ -48,10 +41,10 @@ function parseGradient(gradientStr: string, width: number, height: number) {
   const centerX = width / 2;
   const centerY = height / 2;
 
-  const startX = centerX - Math.cos(angleRad) * diagonal / 2;
-  const startY = centerY - Math.sin(angleRad) * diagonal / 2;
-  const endX = centerX + Math.cos(angleRad) * diagonal / 2;
-  const endY = centerY + Math.sin(angleRad) * diagonal / 2;
+  const startX = centerX - (Math.cos(angleRad) * diagonal) / 2;
+  const startY = centerY - (Math.sin(angleRad) * diagonal) / 2;
+  const endX = centerX + (Math.cos(angleRad) * diagonal) / 2;
+  const endY = centerY + (Math.sin(angleRad) * diagonal) / 2;
 
   const colorStops: (number | string)[] = [];
   const stops = match[2].split(/,(?![^(]*\))/);
@@ -171,11 +164,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       const totalWidth = hasBackground ? bgWidth : image.width;
       const totalHeight = hasBackground ? bgHeight : image.height;
 
-      const scale = Math.min(
-        containerWidth / totalWidth,
-        containerHeight / totalHeight,
-        1
-      );
+      const scale = Math.min(containerWidth / totalWidth, containerHeight / totalHeight, 1);
 
       const scaledTotal = {
         width: totalWidth * scale,
@@ -221,7 +210,16 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
         bgImageX,
         bgImageY,
       };
-    }, [image.width, image.height, padding, aspectRatio, hasBackground, containerWidth, containerHeight, bgImageElement]);
+    }, [
+      image.width,
+      image.height,
+      padding,
+      aspectRatio,
+      hasBackground,
+      containerWidth,
+      containerHeight,
+      bgImageElement,
+    ]);
 
     const gradientConfig = useMemo(() => {
       if (backgroundType !== "gradient" || !backgroundValue) return null;
@@ -275,11 +273,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       onOcrRegionSelected,
     });
 
-    const {
-      handleStageMouseDown,
-      handleStageMouseMove,
-      handleStageMouseUp,
-    } = useDrawingHandlers({
+    const { handleStageMouseDown, handleStageMouseMove, handleStageMouseUp } = useDrawingHandlers({
       stageRef,
       activeTool,
       strokeColor,
@@ -396,7 +390,10 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       });
     };
 
-    const handleTextTransformEnd = (annotation: TextAnnotation, e: Konva.KonvaEventObject<Event>) => {
+    const handleTextTransformEnd = (
+      annotation: TextAnnotation,
+      e: Konva.KonvaEventObject<Event>,
+    ) => {
       const node = e.target;
       updateAnnotation(annotation.id, {
         width: node.width(),
@@ -406,9 +403,12 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       });
     };
 
-    const selectedText = selectedIds.length === 1
-      ? annotations.find((a) => a.id === selectedIds[0] && a.type === "text") as TextAnnotation | undefined
-      : undefined;
+    const selectedText =
+      selectedIds.length === 1
+        ? (annotations.find((a) => a.id === selectedIds[0] && a.type === "text") as
+            | TextAnnotation
+            | undefined)
+        : undefined;
 
     const scaledBorderRadius = borderRadius * layout.scale;
 
@@ -425,7 +425,12 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
         >
           <Layer>
             {hasBackground && (
-              <Group x={layout.stageX} y={layout.stageY} scaleX={layout.scale} scaleY={layout.scale}>
+              <Group
+                x={layout.stageX}
+                y={layout.stageY}
+                scaleX={layout.scale}
+                scaleY={layout.scale}
+              >
                 {backgroundType === "gradient" && gradientConfig && (
                   <Rect
                     width={layout.bgWidth}
@@ -474,11 +479,21 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
             <Group
               x={layout.stageX + layout.imageOffsetX * layout.scale}
               y={layout.stageY + layout.imageOffsetY * layout.scale}
-              clipFunc={hasBackground ? (ctx) => {
-                ctx.beginPath();
-                ctx.roundRect(0, 0, image.width * layout.scale, image.height * layout.scale, scaledBorderRadius);
-                ctx.closePath();
-              } : undefined}
+              clipFunc={
+                hasBackground
+                  ? (ctx) => {
+                      ctx.beginPath();
+                      ctx.roundRect(
+                        0,
+                        0,
+                        image.width * layout.scale,
+                        image.height * layout.scale,
+                        scaledBorderRadius,
+                      );
+                      ctx.closePath();
+                    }
+                  : undefined
+              }
             >
               <Image
                 image={image}
@@ -526,7 +541,16 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                 enabledAnchors={
                   selectedText
                     ? ["middle-left", "middle-right"]
-                    : ["top-left", "top-center", "top-right", "middle-right", "bottom-right", "bottom-center", "bottom-left", "middle-left"]
+                    : [
+                        "top-left",
+                        "top-center",
+                        "top-right",
+                        "middle-right",
+                        "bottom-right",
+                        "bottom-center",
+                        "bottom-left",
+                        "middle-left",
+                      ]
                 }
                 boundBoxFunc={
                   selectedText

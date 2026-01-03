@@ -105,7 +105,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
       if (settings) {
         const strokeSizePreset = settings.strokeSizePreset ?? DEFAULT_SETTINGS.strokeSizePreset;
         const fontSize = settings.fontSize ?? DEFAULT_SETTINGS.fontSize;
-        
+
         set({
           strokeSizePreset,
           fontSize,
@@ -117,7 +117,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
           defaultSaveFormat: settings.defaultSaveFormat ?? DEFAULT_SETTINGS.defaultSaveFormat,
           isLoaded: true,
         });
-        
+
         useCanvasStore.getState().setStrokeSizePreset(strokeSizePreset);
         useCanvasStore.getState().setFontSize(fontSize);
       } else {

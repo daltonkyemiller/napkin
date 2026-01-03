@@ -8,11 +8,7 @@ export function useRoughGenerator() {
   const roughDrawablesRef = useRef<Map<string, { key: string; drawable: Drawable }>>(new Map());
 
   const getRoughDrawable = useCallback(
-    (
-      id: string,
-      cacheKey: string,
-      createDrawable: (gen: RoughGenerator) => Drawable,
-    ): Drawable => {
+    (id: string, cacheKey: string, createDrawable: (gen: RoughGenerator) => Drawable): Drawable => {
       const cached = roughDrawablesRef.current.get(id);
       if (cached && cached.key === cacheKey) {
         return cached.drawable;

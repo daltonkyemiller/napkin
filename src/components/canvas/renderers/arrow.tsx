@@ -90,12 +90,15 @@ export function renderArrow(annotation: ArrowAnnotation, ctx: ArrowRenderContext
     );
   }
 
-  return renderSmoothArrow(
-    annotation,
-    arrowCommonProps,
-    arrowDrawOffset,
-    { startX, startY, endX, endY, bend, pointerLength, pointerWidth },
-  );
+  return renderSmoothArrow(annotation, arrowCommonProps, arrowDrawOffset, {
+    startX,
+    startY,
+    endX,
+    endY,
+    bend,
+    pointerLength,
+    pointerWidth,
+  });
 }
 
 interface ArrowGeometry {

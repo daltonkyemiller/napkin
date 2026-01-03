@@ -202,7 +202,9 @@ export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogPro
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
                 <span className="text-sm font-medium">Default Save Format</span>
-                <span className="text-xs text-muted-foreground">Used when pressing {isMac ? "⌘" : "Ctrl"}+S</span>
+                <span className="text-xs text-muted-foreground">
+                  Used when pressing {isMac ? "⌘" : "Ctrl"}+S
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Button

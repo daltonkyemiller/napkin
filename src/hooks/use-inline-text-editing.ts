@@ -146,7 +146,15 @@ export function useInlineTextEditing(
         window.addEventListener("touchstart", handleOutsideClick);
       }, 100);
     },
-    [stageRef, imageScale, updateAnnotation, deleteAnnotations, clearSelection, selectedIds, setActiveTool],
+    [
+      stageRef,
+      imageScale,
+      updateAnnotation,
+      deleteAnnotations,
+      clearSelection,
+      selectedIds,
+      setActiveTool,
+    ],
   );
 
   return { startInlineEdit };

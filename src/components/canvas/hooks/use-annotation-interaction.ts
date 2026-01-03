@@ -1,11 +1,6 @@
 import { useMemo, useCallback, useState } from "react";
 import type Konva from "konva";
-import type {
-  Annotation,
-  CircleAnnotation,
-  RectangleAnnotation,
-  ArrowAnnotation,
-} from "@/types";
+import type { Annotation, CircleAnnotation, RectangleAnnotation, ArrowAnnotation } from "@/types";
 
 interface UseAnnotationInteractionParams {
   annotations: Annotation[];

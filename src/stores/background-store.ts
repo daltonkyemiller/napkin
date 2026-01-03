@@ -12,7 +12,11 @@ export const GRADIENT_PRESETS: GradientPreset[] = [
   { id: "ocean", name: "Ocean", value: "linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)" },
   { id: "forest", name: "Forest", value: "linear-gradient(135deg, #134e5e 0%, #71b280 100%)" },
   { id: "fire", name: "Fire", value: "linear-gradient(135deg, #f12711 0%, #f5af19 100%)" },
-  { id: "aurora", name: "Aurora", value: "linear-gradient(135deg, #00c6ff 0%, #0072ff 50%, #7c3aed 100%)" },
+  {
+    id: "aurora",
+    name: "Aurora",
+    value: "linear-gradient(135deg, #00c6ff 0%, #0072ff 50%, #7c3aed 100%)",
+  },
   { id: "rose", name: "Rose", value: "linear-gradient(135deg, #ee9ca7 0%, #ffdde1 100%)" },
   { id: "midnight", name: "Midnight", value: "linear-gradient(135deg, #232526 0%, #414345 100%)" },
   { id: "cosmic", name: "Cosmic", value: "linear-gradient(135deg, #ff00cc 0%, #333399 100%)" },
