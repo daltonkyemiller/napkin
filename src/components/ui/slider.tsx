@@ -16,6 +16,16 @@ function Slider({
     [value, defaultValue, min, max],
   );
 
+  const handlePointerDown = React.useCallback(() => {
+    document.body.classList.add("dragging");
+
+    const handlePointerUp = () => {
+      document.body.classList.remove("dragging");
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+    window.addEventListener("pointerup", handlePointerUp);
+  }, []);
+
   return (
     <SliderPrimitive.Root
       className={cn("w-full", className)}
@@ -24,12 +34,13 @@ function Slider({
       value={value}
       min={min}
       max={max}
+      onPointerDown={handlePointerDown}
       {...props}
     >
       <SliderPrimitive.Control className="relative flex w-full touch-none items-center select-none data-[disabled]:opacity-50">
         <SliderPrimitive.Track
           data-slot="slider-track"
-          className="bg-muted relative h-1.5 w-full rounded-full overflow-hidden select-none"
+          className="bg-muted relative h-1.5 w-full rounded-full overflow-hidden select-none [-webkit-user-drag:none]"
         >
           <SliderPrimitive.Indicator
             data-slot="slider-range"
@@ -41,6 +52,8 @@ function Slider({
             data-slot="slider-thumb"
             key={index}
             className="border-primary ring-ring/50 size-4 rounded-full border bg-white shadow-sm transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden block shrink-0 select-none disabled:pointer-events-none disabled:opacity-50"
+            // onPointerDown={handlePointerDown}
+
           />
         ))}
       </SliderPrimitive.Control>
