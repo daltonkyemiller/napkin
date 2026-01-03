@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { useSettingsStore } from "@/stores/settings-store";
+import { type StrokeSizePreset } from "@/stores/canvas-store";
 import { useThemeStore, type ThemeMode } from "@/stores/theme-store";
 import { IconCustomizerDialog } from "./icon-customizer-dialog";
 import { ThemeCustomizerDialog } from "./theme-customizer-dialog";
@@ -29,10 +30,17 @@ const themeModes: { value: ThemeMode; label: string }[] = [
   { value: "system", label: "System" },
 ];
 
+const STROKE_SIZE_OPTIONS: { value: StrokeSizePreset; label: string }[] = [
+  { value: "S", label: "Small" },
+  { value: "M", label: "Medium" },
+  { value: "L", label: "Large" },
+  { value: "XL", label: "Extra Large" },
+];
+
 export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogProps) {
   const {
-    strokeWidth,
-    setStrokeWidth,
+    strokeSizePreset,
+    setStrokeSizePreset,
     fontSize,
     setFontSize,
     sketchiness,
@@ -76,23 +84,18 @@ export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogPro
         <ScrollArea className="flex-1 min-h-0">
           <div className="flex flex-col gap-4 py-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Default Stroke Width</span>
+              <span className="text-sm font-medium">Default Stroke Size</span>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setStrokeWidth(Math.max(1, strokeWidth - 1))}
-                >
-                  -
-                </Button>
-                <span className="w-8 text-center text-sm">{strokeWidth}</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setStrokeWidth(Math.min(100, strokeWidth + 1))}
-                >
-                  +
-                </Button>
+                {STROKE_SIZE_OPTIONS.map((option) => (
+                  <Button
+                    key={option.value}
+                    variant={strokeSizePreset === option.value ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setStrokeSizePreset(option.value)}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
               </div>
             </div>
 

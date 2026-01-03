@@ -1,12 +1,12 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
-import { useCanvasStore } from "./canvas-store";
+import { useCanvasStore, type StrokeSizePreset } from "./canvas-store";
 import { STROKE_COLORS } from "@/constants";
 
 export type SaveFormat = "png" | "jpg";
 
 interface AppSettings {
-  strokeWidth: number;
+  strokeSizePreset: StrokeSizePreset;
   fontSize: number;
   sketchiness: number;
   defaultSaveLocation: string | null;
@@ -18,7 +18,7 @@ interface AppSettings {
 
 interface SettingsStore extends AppSettings {
   isLoaded: boolean;
-  setStrokeWidth: (width: number) => Promise<void>;
+  setStrokeSizePreset: (preset: StrokeSizePreset) => Promise<void>;
   setFontSize: (size: number) => Promise<void>;
   setSketchiness: (sketchiness: number) => Promise<void>;
   setDefaultSaveLocation: (location: string | null) => Promise<void>;
@@ -30,7 +30,7 @@ interface SettingsStore extends AppSettings {
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
-  strokeWidth: 3,
+  strokeSizePreset: "M",
   fontSize: 24,
   sketchiness: 1.5,
   defaultSaveLocation: null,
@@ -43,7 +43,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 async function persistSettings(settings: Partial<AppSettings>) {
   const currentState = useSettingsStore.getState();
   const fullSettings: AppSettings = {
-    strokeWidth: settings.strokeWidth ?? currentState.strokeWidth,
+    strokeSizePreset: settings.strokeSizePreset ?? currentState.strokeSizePreset,
     fontSize: settings.fontSize ?? currentState.fontSize,
     sketchiness: settings.sketchiness ?? currentState.sketchiness,
     defaultSaveLocation: settings.defaultSaveLocation ?? currentState.defaultSaveLocation,
@@ -59,9 +59,9 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   ...DEFAULT_SETTINGS,
   isLoaded: false,
 
-  setStrokeWidth: async (strokeWidth) => {
-    set({ strokeWidth });
-    await persistSettings({ strokeWidth });
+  setStrokeSizePreset: async (strokeSizePreset) => {
+    set({ strokeSizePreset });
+    await persistSettings({ strokeSizePreset });
   },
 
   setFontSize: async (fontSize) => {
@@ -103,11 +103,11 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     try {
       const settings = await invoke<AppSettings | null>("load_settings");
       if (settings) {
-        const strokeWidth = settings.strokeWidth ?? DEFAULT_SETTINGS.strokeWidth;
+        const strokeSizePreset = settings.strokeSizePreset ?? DEFAULT_SETTINGS.strokeSizePreset;
         const fontSize = settings.fontSize ?? DEFAULT_SETTINGS.fontSize;
         
         set({
-          strokeWidth,
+          strokeSizePreset,
           fontSize,
           sketchiness: settings.sketchiness ?? DEFAULT_SETTINGS.sketchiness,
           defaultSaveLocation: settings.defaultSaveLocation ?? DEFAULT_SETTINGS.defaultSaveLocation,
@@ -118,7 +118,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
           isLoaded: true,
         });
         
-        useCanvasStore.getState().setStrokeWidth(strokeWidth);
+        useCanvasStore.getState().setStrokeSizePreset(strokeSizePreset);
         useCanvasStore.getState().setFontSize(fontSize);
       } else {
         set({ isLoaded: true });

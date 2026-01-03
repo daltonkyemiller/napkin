@@ -6,11 +6,18 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Kbd } from "@/components/ui/kbd";
 import { Icon } from "@/components/ui/icon";
 import { ColorPaletteDropdown } from "./color-palette-dropdown";
-import { useCanvasStore } from "@/stores/canvas-store";
+import { useCanvasStore, type StrokeSizePreset } from "@/stores/canvas-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
 import { useBackgroundStore } from "@/stores/background-store";
 import type { SaveFormat } from "@/stores/settings-store";
 import type { Tool } from "@/types";
+
+const STROKE_SIZE_OPTIONS: { value: StrokeSizePreset; label: string }[] = [
+  { value: "S", label: "S" },
+  { value: "M", label: "M" },
+  { value: "L", label: "L" },
+  { value: "XL", label: "XL" },
+];
 
 const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
 const modKey = isMac ? "⌘" : "Ctrl";
@@ -28,6 +35,10 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
     setStrokeColor,
     strokeWidth,
     setStrokeWidth,
+    strokeSizePreset,
+    setStrokeSizePreset,
+    customStrokeWidth,
+    setCustomStrokeWidth,
     selectedIds,
     clearSelection,
   } = useCanvasStore();
@@ -190,20 +201,69 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
 
       <div className="h-6 w-px bg-border" />
 
-      <div className="flex w-28 items-center gap-2">
-        <Slider
-          className="flex-1"
-          value={[strokeWidth]}
-          onValueChange={(value) => {
-            const newValue = Array.isArray(value) ? value[0] : value;
-            handleStrokeWidthChange(newValue);
-          }}
-          min={1}
-          max={100}
-          step={1}
+      <Tooltip>
+        <TooltipTrigger
+          render={(props) => (
+            <div {...props} className="flex items-center gap-1">
+              <ToggleGroup
+                value={[strokeSizePreset]}
+                onValueChange={(value) => {
+                  const newValue = Array.isArray(value) ? value[0] : value;
+                  if (newValue && newValue !== "custom") {
+                    setStrokeSizePreset(newValue as StrokeSizePreset);
+                  }
+                }}
+              >
+                {STROKE_SIZE_OPTIONS.map((option) => (
+                  <ToggleGroupItem
+                    key={option.value}
+                    value={option.value}
+                    size="sm"
+                    className="w-8 text-xs font-medium"
+                  >
+                    {option.label}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+              <Popover>
+                <PopoverTrigger
+                  render={(triggerProps) => (
+                    <Button
+                      {...triggerProps}
+                      variant={strokeSizePreset === "custom" ? "secondary" : "ghost"}
+                      size="sm"
+                      className="w-8 text-xs font-medium"
+                    >
+                      {strokeSizePreset === "custom" ? customStrokeWidth : "#"}
+                    </Button>
+                  )}
+                />
+                <PopoverContent align="center" className="w-48 p-3 gap-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium">Custom Size</span>
+                    <span className="text-xs tabular-nums text-muted-foreground">{customStrokeWidth}px</span>
+                  </div>
+                  <Slider
+                    value={[customStrokeWidth]}
+                    onValueChange={(value) => {
+                      const newValue = Array.isArray(value) ? value[0] : value;
+                      setCustomStrokeWidth(newValue);
+                      setStrokeSizePreset("custom");
+                      handleStrokeWidthChange(newValue);
+                    }}
+                    min={1}
+                    max={100}
+                    step={1}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
         />
-        <span className="w-8 text-xs tabular-nums text-muted-foreground">{strokeWidth}px</span>
-      </div>
+        <TooltipContent side="bottom">
+          Stroke Size ({strokeWidth}px)
+        </TooltipContent>
+      </Tooltip>
 
       <div className="h-6 w-px bg-border" />
 

@@ -41,8 +41,8 @@ fn ensure_config_dir() -> Result<PathBuf, String> {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct AppConfig {
-    /// Default stroke width for annotations
-    pub stroke_width: Option<u32>,
+    /// Default stroke size preset (S, M, L, XL, custom)
+    pub stroke_size_preset: Option<String>,
     /// Default font size for text annotations
     pub font_size: Option<u32>,
     /// Sketchiness level for hand-drawn style (0 = clean, higher = more sketchy)
@@ -180,10 +180,10 @@ pub fn migrate_from_app_data(app_data_dir: &PathBuf) -> Result<(), String> {
         if let Ok(json) = fs::read_to_string(&old_settings) {
             if let Ok(settings) = serde_json::from_str::<serde_json::Value>(&json) {
                 let config = AppConfig {
-                    stroke_width: settings
-                        .get("strokeWidth")
-                        .and_then(|v| v.as_u64())
-                        .map(|v| v as u32),
+                    stroke_size_preset: settings
+                        .get("strokeSizePreset")
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.to_string()),
                     font_size: settings
                         .get("fontSize")
                         .and_then(|v| v.as_u64())

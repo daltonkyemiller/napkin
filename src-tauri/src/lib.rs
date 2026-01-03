@@ -152,7 +152,7 @@ fn load_theme_preference() -> Result<Option<String>, String> {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct AppSettings {
-    stroke_width: Option<u32>,
+    stroke_size_preset: Option<String>,
     font_size: Option<u32>,
     sketchiness: Option<f64>,
     default_save_location: Option<String>,
@@ -165,7 +165,7 @@ struct AppSettings {
 impl From<config::AppConfig> for AppSettings {
     fn from(cfg: config::AppConfig) -> Self {
         AppSettings {
-            stroke_width: cfg.stroke_width,
+            stroke_size_preset: cfg.stroke_size_preset,
             font_size: cfg.font_size,
             sketchiness: cfg.sketchiness,
             default_save_location: cfg.default_save_location,
@@ -180,7 +180,7 @@ impl From<config::AppConfig> for AppSettings {
 impl From<AppSettings> for config::AppConfig {
     fn from(settings: AppSettings) -> Self {
         config::AppConfig {
-            stroke_width: settings.stroke_width,
+            stroke_size_preset: settings.stroke_size_preset,
             font_size: settings.font_size,
             sketchiness: settings.sketchiness,
             default_save_location: settings.default_save_location,

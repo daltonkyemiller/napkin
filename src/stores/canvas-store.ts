@@ -1,6 +1,26 @@
 import { create } from "zustand";
 import type { Tool } from "@/types";
 
+export type StrokeSizePreset = "S" | "M" | "L" | "XL" | "custom";
+
+export const STROKE_PRESETS: Record<Exclude<StrokeSizePreset, "custom">, number> = {
+  S: 0.003,
+  M: 0.006,
+  L: 0.012,
+  XL: 0.025,
+};
+
+export function calculateStrokeWidth(
+  preset: StrokeSizePreset,
+  customWidth: number,
+  imageWidth: number,
+  imageHeight: number,
+): number {
+  if (preset === "custom") return customWidth;
+  const diagonal = Math.sqrt(imageWidth ** 2 + imageHeight ** 2);
+  return Math.max(1, Math.round(diagonal * STROKE_PRESETS[preset]));
+}
+
 export interface OcrSelection {
   x: number;
   y: number;
@@ -20,6 +40,8 @@ interface CanvasStore {
   strokeColor: string;
   fillColor: string | null;
   strokeWidth: number;
+  strokeSizePreset: StrokeSizePreset;
+  customStrokeWidth: number;
   fontSize: number;
   isDrawing: boolean;
   editingTextId: string | null;
@@ -36,6 +58,8 @@ interface CanvasStore {
   setStrokeColor: (color: string) => void;
   setFillColor: (color: string | null) => void;
   setStrokeWidth: (width: number) => void;
+  setStrokeSizePreset: (preset: StrokeSizePreset) => void;
+  setCustomStrokeWidth: (width: number) => void;
   setFontSize: (size: number) => void;
   setIsDrawing: (isDrawing: boolean) => void;
   setEditingTextId: (id: string | null) => void;
@@ -54,6 +78,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   strokeColor: "#ef4444",
   fillColor: null,
   strokeWidth: 3,
+  strokeSizePreset: "M" as StrokeSizePreset,
+  customStrokeWidth: 3,
   fontSize: 24,
   isDrawing: false,
   editingTextId: null,
@@ -61,12 +87,16 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   setCanvasSize: (width, height) => set({ width, height }),
 
-  setImage: (url, width, height) =>
+  setImage: (url, width, height) => {
+    const { strokeSizePreset, customStrokeWidth } = get();
+    const strokeWidth = calculateStrokeWidth(strokeSizePreset, customStrokeWidth, width, height);
     set({
       imageUrl: url,
       imageWidth: width,
       imageHeight: height,
-    }),
+      strokeWidth,
+    });
+  },
 
   clearImage: () =>
     set({
@@ -107,6 +137,19 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   setStrokeColor: (strokeColor) => set({ strokeColor }),
   setFillColor: (fillColor) => set({ fillColor }),
   setStrokeWidth: (strokeWidth) => set({ strokeWidth }),
+  setStrokeSizePreset: (preset) => {
+    const { imageWidth, imageHeight, customStrokeWidth } = get();
+    const strokeWidth = calculateStrokeWidth(preset, customStrokeWidth, imageWidth, imageHeight);
+    set({ strokeSizePreset: preset, strokeWidth });
+  },
+  setCustomStrokeWidth: (width) => {
+    const { strokeSizePreset } = get();
+    if (strokeSizePreset === "custom") {
+      set({ customStrokeWidth: width, strokeWidth: width });
+    } else {
+      set({ customStrokeWidth: width });
+    }
+  },
   setFontSize: (fontSize) => set({ fontSize }),
   setIsDrawing: (isDrawing) => set({ isDrawing }),
   setEditingTextId: (editingTextId) => set({ editingTextId }),
