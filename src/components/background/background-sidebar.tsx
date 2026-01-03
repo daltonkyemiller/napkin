@@ -224,7 +224,7 @@ export function BackgroundSidebar() {
               value={[padding]}
               onValueChange={(v) => setPadding(Array.isArray(v) ? v[0] : v)}
               min={0}
-              max={200}
+              max={300}
               step={1}
             />
           </div>
