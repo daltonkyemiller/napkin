@@ -14,6 +14,7 @@ interface AppSettings {
   closeAfterSave: boolean;
   palette: string[];
   defaultSaveFormat: SaveFormat;
+  copyToClipboardOnSave: boolean;
 }
 
 interface SettingsStore extends AppSettings {
@@ -26,6 +27,7 @@ interface SettingsStore extends AppSettings {
   setCloseAfterSave: (enabled: boolean) => Promise<void>;
   setPalette: (palette: string[]) => Promise<void>;
   setDefaultSaveFormat: (format: SaveFormat) => Promise<void>;
+  setCopyToClipboardOnSave: (enabled: boolean) => Promise<void>;
   loadSettings: () => Promise<void>;
 }
 
@@ -38,6 +40,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   closeAfterSave: true,
   palette: [...STROKE_COLORS],
   defaultSaveFormat: "png",
+  copyToClipboardOnSave: true,
 };
 
 async function persistSettings(settings: Partial<AppSettings>) {
@@ -51,6 +54,7 @@ async function persistSettings(settings: Partial<AppSettings>) {
     closeAfterSave: settings.closeAfterSave ?? currentState.closeAfterSave,
     palette: settings.palette ?? currentState.palette,
     defaultSaveFormat: settings.defaultSaveFormat ?? currentState.defaultSaveFormat,
+    copyToClipboardOnSave: settings.copyToClipboardOnSave ?? currentState.copyToClipboardOnSave,
   };
   await invoke("save_settings", { settings: fullSettings });
 }
@@ -99,6 +103,11 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     await persistSettings({ defaultSaveFormat });
   },
 
+  setCopyToClipboardOnSave: async (copyToClipboardOnSave) => {
+    set({ copyToClipboardOnSave });
+    await persistSettings({ copyToClipboardOnSave });
+  },
+
   loadSettings: async () => {
     try {
       const settings = await invoke<AppSettings | null>("load_settings");
@@ -115,6 +124,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
           closeAfterSave: settings.closeAfterSave ?? DEFAULT_SETTINGS.closeAfterSave,
           palette: settings.palette ?? DEFAULT_SETTINGS.palette,
           defaultSaveFormat: settings.defaultSaveFormat ?? DEFAULT_SETTINGS.defaultSaveFormat,
+          copyToClipboardOnSave:
+            settings.copyToClipboardOnSave ?? DEFAULT_SETTINGS.copyToClipboardOnSave,
           isLoaded: true,
         });
 

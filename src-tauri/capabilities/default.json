@@ -20,6 +20,8 @@
         }
       ]
     },
-    "notification:default"
+    "notification:default",
+    "clipboard-manager:default",
+    "clipboard-manager:allow-write-image"
   ]
 }

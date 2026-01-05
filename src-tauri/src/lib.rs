@@ -160,6 +160,7 @@ struct AppSettings {
     close_after_save: Option<bool>,
     palette: Option<Vec<String>>,
     default_save_format: Option<String>,
+    copy_to_clipboard_on_save: Option<bool>,
 }
 
 impl From<config::AppConfig> for AppSettings {
@@ -173,6 +174,7 @@ impl From<config::AppConfig> for AppSettings {
             close_after_save: cfg.close_after_save,
             palette: cfg.palette,
             default_save_format: cfg.default_save_format,
+            copy_to_clipboard_on_save: cfg.copy_to_clipboard_on_save,
         }
     }
 }
@@ -188,6 +190,7 @@ impl From<AppSettings> for config::AppConfig {
             close_after_save: settings.close_after_save,
             palette: settings.palette,
             default_save_format: settings.default_save_format,
+            copy_to_clipboard_on_save: settings.copy_to_clipboard_on_save,
         }
     }
 }
@@ -206,6 +209,42 @@ fn load_settings() -> Result<Option<AppSettings>, String> {
 #[tauri::command]
 fn get_config_dir() -> Result<String, String> {
     config::get_config_dir().map(|p| p.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+fn copy_image_to_clipboard_from_path(path: String) -> Result<(), String> {
+    use std::process::{Command, Stdio};
+
+    std::thread::spawn(move || {
+        let wayland_success = std::fs::File::open(&path).ok().and_then(|file| {
+            Command::new("wl-copy")
+                .arg("--type")
+                .arg("image/png")
+                .stdin(file)
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status()
+                .ok()
+                .filter(|s| s.success())
+        });
+
+        if wayland_success.is_none() {
+            let _ = Command::new("xclip")
+                .arg("-selection")
+                .arg("clipboard")
+                .arg("-t")
+                .arg("image/png")
+                .arg("-i")
+                .arg(&path)
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status();
+        }
+
+        let _ = std::fs::remove_file(&path);
+    });
+
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -238,6 +277,7 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .manage(app_state)
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
@@ -261,6 +301,7 @@ pub fn run() {
             save_settings,
             load_settings,
             get_config_dir,
+            copy_image_to_clipboard_from_path,
             icons::load_icon_mapping,
             icons::save_icon_mapping,
             icons::load_svg_file,

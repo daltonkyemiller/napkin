@@ -28,6 +28,8 @@ interface AnnotationCanvasProps {
 
 export interface AnnotationCanvasHandle {
   exportImage: (format?: "png" | "jpg") => string | null;
+  exportImageData: () => ImageData | null;
+  exportForClipboard: () => Promise<Blob | null>;
 }
 
 function parseGradient(gradientStr: string, width: number, height: number) {
@@ -371,6 +373,74 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
             pixelRatio: layout.bgWidth / layout.scaledWidth,
             mimeType,
             quality,
+          });
+        },
+        exportImageData: () => {
+          if (!stageRef.current) return null;
+
+          transformerRef.current?.nodes([]);
+          stageRef.current.batchDraw();
+
+          const pixelRatio = hasBackground
+            ? layout.bgWidth / layout.scaledWidth
+            : image.width / (image.width * layout.scale);
+
+          const config = hasBackground
+            ? {
+                x: layout.stageX,
+                y: layout.stageY,
+                width: layout.scaledWidth,
+                height: layout.scaledHeight,
+                pixelRatio,
+              }
+            : {
+                x: layout.stageX + layout.imageOffsetX * layout.scale,
+                y: layout.stageY + layout.imageOffsetY * layout.scale,
+                width: image.width * layout.scale,
+                height: image.height * layout.scale,
+                pixelRatio,
+              };
+
+          const canvas = stageRef.current.toCanvas(config);
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return null;
+          return ctx.getImageData(0, 0, canvas.width, canvas.height);
+        },
+        exportForClipboard: () => {
+          if (!stageRef.current) return Promise.resolve(null);
+
+          transformerRef.current?.nodes([]);
+          stageRef.current.batchDraw();
+
+          const pixelRatio = hasBackground
+            ? layout.bgWidth / layout.scaledWidth
+            : image.width / (image.width * layout.scale);
+
+          const config = hasBackground
+            ? {
+                x: layout.stageX,
+                y: layout.stageY,
+                width: layout.scaledWidth,
+                height: layout.scaledHeight,
+                pixelRatio,
+                mimeType: "image/jpeg" as const,
+                quality: 0.92,
+              }
+            : {
+                x: layout.stageX + layout.imageOffsetX * layout.scale,
+                y: layout.stageY + layout.imageOffsetY * layout.scale,
+                width: image.width * layout.scale,
+                height: image.height * layout.scale,
+                pixelRatio,
+                mimeType: "image/jpeg" as const,
+                quality: 0.92,
+              };
+
+          return new Promise((resolve) => {
+            stageRef.current!.toBlob({
+              ...config,
+              callback: (blob) => resolve(blob),
+            });
           });
         },
       }),

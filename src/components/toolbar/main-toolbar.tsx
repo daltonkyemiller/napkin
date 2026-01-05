@@ -24,10 +24,11 @@ const modKey = isMac ? "⌘" : "Ctrl";
 
 interface MainToolbarProps {
   onDownload: (format: SaveFormat) => void;
+  onCopyToClipboard: () => void;
   onSettingsClick: () => void;
 }
 
-export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
+export function MainToolbar({ onDownload, onCopyToClipboard, onSettingsClick }: MainToolbarProps) {
   const {
     activeTool,
     setActiveTool,
@@ -351,7 +352,7 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
               Save <Kbd>{modKey}+S</Kbd>
             </TooltipContent>
           </Tooltip>
-          <PopoverContent align="end" className="w-32 p-1 gap-0">
+          <PopoverContent align="end" className="w-40 p-1 gap-0">
             <button
               type="button"
               className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
@@ -365,6 +366,14 @@ export function MainToolbar({ onDownload, onSettingsClick }: MainToolbarProps) {
               onClick={() => onDownload("jpg")}
             >
               Save as JPG
+            </button>
+            <div className="h-px bg-border my-1" />
+            <button
+              type="button"
+              className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+              onClick={onCopyToClipboard}
+            >
+              Copy to Clipboard
             </button>
           </PopoverContent>
         </Popover>

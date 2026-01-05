@@ -53,6 +53,8 @@ export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogPro
     setCloseAfterSave,
     defaultSaveFormat,
     setDefaultSaveFormat,
+    copyToClipboardOnSave,
+    setCopyToClipboardOnSave,
   } = useSettingsStore();
   const { mode, setMode } = useThemeStore();
   const [customizerOpen, setCustomizerOpen] = useState(false);
@@ -196,6 +198,22 @@ export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogPro
                 onClick={() => setCloseAfterSave(!closeAfterSave)}
               >
                 {closeAfterSave ? "On" : "Off"}
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">Copy to clipboard on save</span>
+                <span className="text-xs text-muted-foreground">
+                  Also copy image when saving
+                </span>
+              </div>
+              <Button
+                variant={copyToClipboardOnSave ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCopyToClipboardOnSave(!copyToClipboardOnSave)}
+              >
+                {copyToClipboardOnSave ? "On" : "Off"}
               </Button>
             </div>
 

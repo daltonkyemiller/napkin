@@ -27,6 +27,7 @@ import {
   sendNotification,
 } from "@tauri-apps/plugin-notification";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { toast, Toaster } from "sonner";
@@ -67,6 +68,7 @@ export default function App() {
     autoSaveToDefault,
     closeAfterSave,
     defaultSaveFormat,
+    copyToClipboardOnSave,
   } = useSettingsStore();
   const { loadIconMapping } = useIconStore();
   const { sidebarOpen, toggleSidebar, setImageHasTransparency } = useBackgroundStore();
@@ -189,6 +191,21 @@ export default function App() {
     img.src = imageUrl;
   }, [imageUrl, setImageHasTransparency]);
 
+  const copyToClipboard = useCallback(async () => {
+    const dataURL = canvasRef.current?.exportImage("png");
+    if (!dataURL) return;
+
+    const response = await fetch(dataURL);
+    const buffer = await response.arrayBuffer();
+
+    const tempPath = `/tmp/napkin-clipboard-${Date.now()}.png`;
+    await writeFile(tempPath, new Uint8Array(buffer));
+
+    invoke("copy_image_to_clipboard_from_path", { path: tempPath })
+      .then(() => toast.success("Copied to clipboard"))
+      .catch(() => toast.error("Failed to copy to clipboard"));
+  }, []);
+
   const handleDownload = useCallback(
     async (format: SaveFormat) => {
       const result = canvasRef.current?.exportImage(format);
@@ -218,10 +235,26 @@ export default function App() {
 
       if (!filePath) return;
 
-      const base64Data = dataURL.replace(/^data:image\/(png|jpeg);base64,/, "");
-      const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+      const response = await fetch(dataURL);
+      const arrayBuffer = await response.arrayBuffer();
+      const binaryData = new Uint8Array(arrayBuffer);
 
       await writeFile(filePath, binaryData);
+
+      if (copyToClipboardOnSave) {
+        if (format === "png") {
+          invoke("copy_image_to_clipboard_from_path", { path: filePath });
+        } else {
+          const pngDataURL = canvasRef.current?.exportImage("png");
+          if (pngDataURL) {
+            const pngResponse = await fetch(pngDataURL);
+            const pngBuffer = await pngResponse.arrayBuffer();
+            const tempPath = `/tmp/napkin-clipboard-${Date.now()}.png`;
+            await writeFile(tempPath, new Uint8Array(pngBuffer));
+            invoke("copy_image_to_clipboard_from_path", { path: tempPath });
+          }
+        }
+      }
 
       const fileName = filePath.split("/").pop() || filePath.split("\\").pop() || "image";
       const savedFilePath = filePath;
@@ -252,7 +285,7 @@ export default function App() {
         await getCurrentWindow().close();
       }
     },
-    [outputFilename, defaultSaveLocation, autoSaveToDefault, closeAfterSave],
+    [outputFilename, defaultSaveLocation, autoSaveToDefault, closeAfterSave, copyToClipboardOnSave],
   );
 
   useHotkeys(
@@ -320,6 +353,15 @@ export default function App() {
 
   useHotkeys("mod+comma", () => setSettingsOpen(true), { preventDefault: true });
   useHotkeys("mod+s", () => handleDownload(defaultSaveFormat), { preventDefault: true });
+  useHotkeys(
+    "mod+c",
+    () => {
+      if (selectedIds.length === 0) {
+        copyToClipboard();
+      }
+    },
+    { preventDefault: selectedIds.length === 0 },
+  );
   useHotkeys("o", () => setActiveTool("ocr"));
   useHotkeys("b", () => toggleSidebar());
 
@@ -375,7 +417,11 @@ export default function App() {
         selectionPosition={ocrSelectionPosition}
       />
 
-      <MainToolbar onDownload={handleDownload} onSettingsClick={() => setSettingsOpen(true)} />
+      <MainToolbar
+        onDownload={handleDownload}
+        onCopyToClipboard={copyToClipboard}
+        onSettingsClick={() => setSettingsOpen(true)}
+      />
 
       <div className="flex flex-1 overflow-hidden">
         <motion.div
