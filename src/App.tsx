@@ -18,6 +18,7 @@ import { useSettingsStore, type SaveFormat } from "@/stores/settings-store";
 import { useThemeStore } from "@/stores/theme-store";
 import type { TextAnnotation } from "@/types";
 import { invoke } from "@tauri-apps/api/core";
+import { join, tempDir } from "@tauri-apps/api/path";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
@@ -198,7 +199,7 @@ export default function App() {
     const response = await fetch(dataURL);
     const buffer = await response.arrayBuffer();
 
-    const tempPath = `/tmp/napkin-clipboard-${Date.now()}.png`;
+    const tempPath = await join(await tempDir(), `napkin-clipboard-${Date.now()}.png`);
     await writeFile(tempPath, new Uint8Array(buffer));
 
     invoke("copy_image_to_clipboard_from_path", { path: tempPath })
@@ -249,7 +250,7 @@ export default function App() {
           if (pngDataURL) {
             const pngResponse = await fetch(pngDataURL);
             const pngBuffer = await pngResponse.arrayBuffer();
-            const tempPath = `/tmp/napkin-clipboard-${Date.now()}.png`;
+            const tempPath = await join(await tempDir(), `napkin-clipboard-${Date.now()}.png`);
             await writeFile(tempPath, new Uint8Array(pngBuffer));
             invoke("copy_image_to_clipboard_from_path", { path: tempPath });
           }

@@ -216,26 +216,61 @@ fn copy_image_to_clipboard_from_path(path: String) -> Result<(), String> {
     use std::process::{Command, Stdio};
 
     std::thread::spawn(move || {
-        let wayland_success = std::fs::File::open(&path).ok().and_then(|file| {
-            Command::new("wl-copy")
-                .arg("--type")
-                .arg("image/png")
-                .stdin(file)
+        #[cfg(target_os = "linux")]
+        {
+            // Try Wayland first (wl-copy), then fall back to X11 (xclip)
+            let wayland_success = std::fs::File::open(&path).ok().and_then(|file| {
+                Command::new("wl-copy")
+                    .arg("--type")
+                    .arg("image/png")
+                    .stdin(file)
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .status()
+                    .ok()
+                    .filter(|s| s.success())
+            });
+
+            if wayland_success.is_none() {
+                let _ = Command::new("xclip")
+                    .arg("-selection")
+                    .arg("clipboard")
+                    .arg("-t")
+                    .arg("image/png")
+                    .arg("-i")
+                    .arg(&path)
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .status();
+            }
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            // Use osascript to set clipboard to image file
+            let script = format!(
+                "set the clipboard to (read (POSIX file \"{}\") as «class PNGf»)",
+                path.replace("\"", "\\\"")
+            );
+            let _ = Command::new("osascript")
+                .arg("-e")
+                .arg(&script)
                 .stdout(Stdio::null())
                 .stderr(Stdio::null())
-                .status()
-                .ok()
-                .filter(|s| s.success())
-        });
+                .status();
+        }
 
-        if wayland_success.is_none() {
-            let _ = Command::new("xclip")
-                .arg("-selection")
-                .arg("clipboard")
-                .arg("-t")
-                .arg("image/png")
-                .arg("-i")
-                .arg(&path)
+        #[cfg(target_os = "windows")]
+        {
+            // Use PowerShell to copy image to clipboard
+            let script = format!(
+                "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Clipboard]::SetImage([System.Drawing.Image]::FromFile('{}'))",
+                path.replace("'", "''")
+            );
+            let _ = Command::new("powershell")
+                .arg("-NoProfile")
+                .arg("-Command")
+                .arg(&script)
                 .stdout(Stdio::null())
                 .stderr(Stdio::null())
                 .status();
