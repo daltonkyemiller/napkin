@@ -4,11 +4,11 @@ mod icons;
 use base64::{engine::general_purpose::STANDARD, Engine};
 use clap::Parser;
 use font_kit::source::SystemSource;
-use image::ImageFormat;
+
 use rusty_tesseract::{Args as TesseractArgs, Image as TesseractImage};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
-use std::io::{Cursor, Read};
+use std::io::{Read, Write};
 use std::sync::Mutex;
 use tauri::{Manager, State};
 
@@ -33,16 +33,72 @@ pub struct AppState {
     pub fullscreen: Mutex<bool>,
 }
 
-fn convert_to_png_data_url(buffer: &[u8]) -> Result<String, String> {
+fn is_browser_compatible_format(buffer: &[u8]) -> bool {
+    if buffer.len() < 8 {
+        return false;
+    }
+    let png_magic = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+    let jpeg_magic = [0xFF, 0xD8, 0xFF];
+    let webp_magic = b"RIFF";
+    let webp_type = b"WEBP";
+
+    buffer.starts_with(&png_magic)
+        || buffer.starts_with(&jpeg_magic)
+        || (buffer.starts_with(webp_magic) && buffer.len() >= 12 && &buffer[8..12] == webp_type)
+}
+
+fn get_image_extension(buffer: &[u8]) -> &'static str {
+    if buffer.len() < 8 {
+        return "png";
+    }
+    let png_magic = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+    let jpeg_magic = [0xFF, 0xD8, 0xFF];
+
+    if buffer.starts_with(&png_magic) {
+        "png"
+    } else if buffer.starts_with(&jpeg_magic) {
+        "jpg"
+    } else {
+        "png"
+    }
+}
+
+fn save_image_to_temp_file(buffer: &[u8]) -> Result<String, String> {
+    let temp_dir = std::env::temp_dir();
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis();
+
+    if is_browser_compatible_format(buffer) {
+        let ext = get_image_extension(buffer);
+        let temp_path = temp_dir.join(format!("napkin-{}.{}", timestamp, ext));
+        let mut file = std::fs::File::create(&temp_path)
+            .map_err(|e| format!("Failed to create temp file: {}", e))?;
+        file.write_all(buffer)
+            .map_err(|e| format!("Failed to write temp file: {}", e))?;
+        return Ok(temp_path.to_string_lossy().to_string());
+    }
+
     let img =
         image::load_from_memory(buffer).map_err(|e| format!("Failed to decode image: {}", e))?;
 
-    let mut png_buffer = Cursor::new(Vec::new());
-    img.write_to(&mut png_buffer, ImageFormat::Png)
-        .map_err(|e| format!("Failed to encode as PNG: {}", e))?;
+    let temp_path = temp_dir.join(format!("napkin-{}.jpg", timestamp));
 
-    let base64_data = STANDARD.encode(png_buffer.get_ref());
-    Ok(format!("data:image/png;base64,{}", base64_data))
+    let rgb = img.to_rgb8();
+    let jpeg_data = turbojpeg::compress_image(
+        &rgb,
+        100,
+        turbojpeg::Subsamp::None,
+    )
+    .map_err(|e| format!("Failed to encode as JPEG: {}", e))?;
+
+    let mut file = std::fs::File::create(&temp_path)
+        .map_err(|e| format!("Failed to create temp file: {}", e))?;
+    file.write_all(&jpeg_data)
+        .map_err(|e| format!("Failed to write temp file: {}", e))?;
+
+    Ok(temp_path.to_string_lossy().to_string())
 }
 
 fn load_image_from_stdin() -> Result<String, String> {
@@ -55,12 +111,12 @@ fn load_image_from_stdin() -> Result<String, String> {
         return Err("No data received from stdin".to_string());
     }
 
-    convert_to_png_data_url(&buffer)
+    save_image_to_temp_file(&buffer)
 }
 
 fn load_image_from_file(path: &str) -> Result<String, String> {
     let buffer = std::fs::read(path).map_err(|e| format!("Failed to read file: {}", e))?;
-    convert_to_png_data_url(&buffer)
+    save_image_to_temp_file(&buffer)
 }
 
 #[tauri::command]

@@ -21,7 +21,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { join, tempDir } from "@tauri-apps/api/path";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { save } from "@tauri-apps/plugin-dialog";
-import { writeFile } from "@tauri-apps/plugin-fs";
+import { readFile, writeFile } from "@tauri-apps/plugin-fs";
 import {
   isPermissionGranted,
   requestPermission,
@@ -93,17 +93,22 @@ export default function App() {
   useEffect(() => {
     async function loadFromCli() {
       try {
-        const initialImage = await invoke<string | null>("get_initial_image");
-        if (initialImage) {
+        const initialImagePath = await invoke<string | null>("get_initial_image");
+        if (initialImagePath) {
+          const fileData = await readFile(initialImagePath);
+          const mimeType = initialImagePath.endsWith(".jpg") ? "image/jpeg" : "image/png";
+          const blob = new Blob([fileData], { type: mimeType });
+          const imageUrl = URL.createObjectURL(blob);
+
           const img = new window.Image();
           img.onload = () => {
-            setImageInStore(initialImage, img.width, img.height);
+            setImageInStore(imageUrl, img.width, img.height);
             setIsLoading(false);
           };
           img.onerror = () => {
             setIsLoading(false);
           };
-          img.src = initialImage;
+          img.src = imageUrl;
         } else {
           setIsLoading(false);
         }
