@@ -248,17 +248,13 @@ export default function App() {
       await writeFile(filePath, binaryData);
 
       if (copyToClipboardOnSave) {
-        if (format === "png") {
-          invoke("copy_image_to_clipboard_from_path", { path: filePath });
-        } else {
-          const pngDataURL = canvasRef.current?.exportImage("png");
-          if (pngDataURL) {
-            const pngResponse = await fetch(pngDataURL);
-            const pngBuffer = await pngResponse.arrayBuffer();
-            const tempPath = await join(await tempDir(), `napkin-clipboard-${Date.now()}.png`);
-            await writeFile(tempPath, new Uint8Array(pngBuffer));
-            invoke("copy_image_to_clipboard_from_path", { path: tempPath });
-          }
+        const pngDataURL = canvasRef.current?.exportImage("png");
+        if (pngDataURL) {
+          const pngResponse = await fetch(pngDataURL);
+          const pngBuffer = await pngResponse.arrayBuffer();
+          const tempPath = await join(await tempDir(), `napkin-clipboard-${Date.now()}.png`);
+          await writeFile(tempPath, new Uint8Array(pngBuffer));
+          invoke("copy_image_to_clipboard_from_path", { path: tempPath });
         }
       }
 
