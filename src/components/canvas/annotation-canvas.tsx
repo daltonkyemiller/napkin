@@ -350,30 +350,29 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           stageRef.current.batchDraw();
 
           const mimeType = format === "jpg" ? "image/jpeg" : "image/png";
-          const quality = format === "jpg" ? 0.92 : undefined;
+          const quality = format === "jpg" ? 1.0 : undefined;
           const pixelRatio = image.width / (image.width * layout.scale);
 
-          if (!hasBackground) {
-            return stageRef.current.toDataURL({
-              x: layout.stageX + layout.imageOffsetX * layout.scale,
-              y: layout.stageY + layout.imageOffsetY * layout.scale,
-              width: image.width * layout.scale,
-              height: image.height * layout.scale,
-              pixelRatio,
-              mimeType,
-              quality,
-            });
-          }
+          const exportConfig = !hasBackground
+            ? {
+                x: layout.stageX + layout.imageOffsetX * layout.scale,
+                y: layout.stageY + layout.imageOffsetY * layout.scale,
+                width: image.width * layout.scale,
+                height: image.height * layout.scale,
+                pixelRatio,
+                imageSmoothingEnabled: false,
+              }
+            : {
+                x: layout.stageX,
+                y: layout.stageY,
+                width: layout.scaledWidth,
+                height: layout.scaledHeight,
+                pixelRatio: layout.bgWidth / layout.scaledWidth,
+                imageSmoothingEnabled: false,
+              };
 
-          return stageRef.current.toDataURL({
-            x: layout.stageX,
-            y: layout.stageY,
-            width: layout.scaledWidth,
-            height: layout.scaledHeight,
-            pixelRatio: layout.bgWidth / layout.scaledWidth,
-            mimeType,
-            quality,
-          });
+          const canvas = stageRef.current.toCanvas(exportConfig);
+          return canvas.toDataURL(mimeType, quality);
         },
         exportImageData: () => {
           if (!stageRef.current) return null;
@@ -493,7 +492,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
           onMouseUp={handleStageMouseUp}
           onMouseLeave={handleStageMouseUp}
         >
-          <Layer>
+          <Layer imageSmoothingEnabled={false}>
             {hasBackground && (
               <Group
                 x={layout.stageX}
