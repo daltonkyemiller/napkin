@@ -25,6 +25,7 @@ interface UseDrawingHandlersParams {
   annotations: Annotation[];
   ocrSelectionStart: { x: number; y: number } | null;
   ocrSelectionRect: { x: number; y: number; width: number; height: number } | null;
+  selectModeAfterDrawing: boolean;
   getImageCoords: (stageX: number, stageY: number) => { x: number; y: number };
   clearSelection: () => void;
   setIsDrawing: (isDrawing: boolean) => void;
@@ -50,6 +51,7 @@ export function useDrawingHandlers({
   annotations,
   ocrSelectionStart,
   ocrSelectionRect,
+  selectModeAfterDrawing,
   getImageCoords,
   clearSelection,
   setIsDrawing,
@@ -362,7 +364,7 @@ export function useDrawingHandlers({
     currentAnnotationRef.current = null;
     drawStartPosRef.current = null;
 
-    if (shouldSwitchToSelect) {
+    if (shouldSwitchToSelect && selectModeAfterDrawing) {
       setActiveTool("select");
     }
   }, [
@@ -370,6 +372,7 @@ export function useDrawingHandlers({
     annotations,
     ocrSelectionStart,
     ocrSelectionRect,
+    selectModeAfterDrawing,
     setIsDrawing,
     setActiveTool,
     updateAnnotation,

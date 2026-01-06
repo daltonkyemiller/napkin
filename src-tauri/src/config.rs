@@ -59,6 +59,12 @@ pub struct AppConfig {
     pub default_save_format: Option<String>,
     /// Copy image to clipboard when saving
     pub copy_to_clipboard_on_save: Option<bool>,
+    /// Close app after copying to clipboard (Ctrl+C)
+    pub close_after_copy: Option<bool>,
+    /// Enter select mode after drawing a shape
+    pub select_mode_after_drawing: Option<bool>,
+    /// Open folder location after saving
+    pub open_folder_after_save: Option<bool>,
 }
 
 /// Loads config.yml from the config directory.
@@ -202,6 +208,9 @@ pub fn migrate_from_app_data(app_data_dir: &PathBuf) -> Result<(), String> {
                     palette: None,
                     default_save_format: None,
                     copy_to_clipboard_on_save: None,
+                    close_after_copy: None,
+                    select_mode_after_drawing: None,
+                    open_folder_after_save: None,
                 };
                 let _ = save_config(&config);
                 eprintln!("Migrated settings.json to {}", new_config.display());

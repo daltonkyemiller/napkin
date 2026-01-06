@@ -15,6 +15,9 @@ interface AppSettings {
   palette: string[];
   defaultSaveFormat: SaveFormat;
   copyToClipboardOnSave: boolean;
+  closeAfterCopy: boolean;
+  selectModeAfterDrawing: boolean;
+  openFolderAfterSave: boolean;
 }
 
 interface SettingsStore extends AppSettings {
@@ -28,6 +31,9 @@ interface SettingsStore extends AppSettings {
   setPalette: (palette: string[]) => Promise<void>;
   setDefaultSaveFormat: (format: SaveFormat) => Promise<void>;
   setCopyToClipboardOnSave: (enabled: boolean) => Promise<void>;
+  setCloseAfterCopy: (enabled: boolean) => Promise<void>;
+  setSelectModeAfterDrawing: (enabled: boolean) => Promise<void>;
+  setOpenFolderAfterSave: (enabled: boolean) => Promise<void>;
   loadSettings: () => Promise<void>;
 }
 
@@ -41,6 +47,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   palette: [...STROKE_COLORS],
   defaultSaveFormat: "png",
   copyToClipboardOnSave: true,
+  closeAfterCopy: false,
+  selectModeAfterDrawing: true,
+  openFolderAfterSave: false,
 };
 
 async function persistSettings(settings: Partial<AppSettings>) {
@@ -55,6 +64,9 @@ async function persistSettings(settings: Partial<AppSettings>) {
     palette: settings.palette ?? currentState.palette,
     defaultSaveFormat: settings.defaultSaveFormat ?? currentState.defaultSaveFormat,
     copyToClipboardOnSave: settings.copyToClipboardOnSave ?? currentState.copyToClipboardOnSave,
+    closeAfterCopy: settings.closeAfterCopy ?? currentState.closeAfterCopy,
+    selectModeAfterDrawing: settings.selectModeAfterDrawing ?? currentState.selectModeAfterDrawing,
+    openFolderAfterSave: settings.openFolderAfterSave ?? currentState.openFolderAfterSave,
   };
   await invoke("save_settings", { settings: fullSettings });
 }
@@ -108,6 +120,21 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     await persistSettings({ copyToClipboardOnSave });
   },
 
+  setCloseAfterCopy: async (closeAfterCopy) => {
+    set({ closeAfterCopy });
+    await persistSettings({ closeAfterCopy });
+  },
+
+  setSelectModeAfterDrawing: async (selectModeAfterDrawing) => {
+    set({ selectModeAfterDrawing });
+    await persistSettings({ selectModeAfterDrawing });
+  },
+
+  setOpenFolderAfterSave: async (openFolderAfterSave) => {
+    set({ openFolderAfterSave });
+    await persistSettings({ openFolderAfterSave });
+  },
+
   loadSettings: async () => {
     try {
       const settings = await invoke<AppSettings | null>("load_settings");
@@ -126,6 +153,11 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
           defaultSaveFormat: settings.defaultSaveFormat ?? DEFAULT_SETTINGS.defaultSaveFormat,
           copyToClipboardOnSave:
             settings.copyToClipboardOnSave ?? DEFAULT_SETTINGS.copyToClipboardOnSave,
+          closeAfterCopy: settings.closeAfterCopy ?? DEFAULT_SETTINGS.closeAfterCopy,
+          selectModeAfterDrawing:
+            settings.selectModeAfterDrawing ?? DEFAULT_SETTINGS.selectModeAfterDrawing,
+          openFolderAfterSave:
+            settings.openFolderAfterSave ?? DEFAULT_SETTINGS.openFolderAfterSave,
           isLoaded: true,
         });
 

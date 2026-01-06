@@ -217,6 +217,9 @@ struct AppSettings {
     palette: Option<Vec<String>>,
     default_save_format: Option<String>,
     copy_to_clipboard_on_save: Option<bool>,
+    close_after_copy: Option<bool>,
+    select_mode_after_drawing: Option<bool>,
+    open_folder_after_save: Option<bool>,
 }
 
 impl From<config::AppConfig> for AppSettings {
@@ -231,6 +234,9 @@ impl From<config::AppConfig> for AppSettings {
             palette: cfg.palette,
             default_save_format: cfg.default_save_format,
             copy_to_clipboard_on_save: cfg.copy_to_clipboard_on_save,
+            close_after_copy: cfg.close_after_copy,
+            select_mode_after_drawing: cfg.select_mode_after_drawing,
+            open_folder_after_save: cfg.open_folder_after_save,
         }
     }
 }
@@ -247,6 +253,9 @@ impl From<AppSettings> for config::AppConfig {
             palette: settings.palette,
             default_save_format: settings.default_save_format,
             copy_to_clipboard_on_save: settings.copy_to_clipboard_on_save,
+            close_after_copy: settings.close_after_copy,
+            select_mode_after_drawing: settings.select_mode_after_drawing,
+            open_folder_after_save: settings.open_folder_after_save,
         }
     }
 }

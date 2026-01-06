@@ -55,6 +55,12 @@ export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogPro
     setDefaultSaveFormat,
     copyToClipboardOnSave,
     setCopyToClipboardOnSave,
+    closeAfterCopy,
+    setCloseAfterCopy,
+    selectModeAfterDrawing,
+    setSelectModeAfterDrawing,
+    openFolderAfterSave,
+    setOpenFolderAfterSave,
   } = useSettingsStore();
   const { mode, setMode } = useThemeStore();
   const [customizerOpen, setCustomizerOpen] = useState(false);
@@ -214,6 +220,54 @@ export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogPro
                 onClick={() => setCopyToClipboardOnSave(!copyToClipboardOnSave)}
               >
                 {copyToClipboardOnSave ? "On" : "Off"}
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">Close after copy</span>
+                <span className="text-xs text-muted-foreground">
+                  Exit app after {isMac ? "⌘" : "Ctrl"}+C
+                </span>
+              </div>
+              <Button
+                variant={closeAfterCopy ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCloseAfterCopy(!closeAfterCopy)}
+              >
+                {closeAfterCopy ? "On" : "Off"}
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">Open folder after saving</span>
+                <span className="text-xs text-muted-foreground">
+                  Reveal saved file in folder
+                </span>
+              </div>
+              <Button
+                variant={openFolderAfterSave ? "default" : "outline"}
+                size="sm"
+                onClick={() => setOpenFolderAfterSave(!openFolderAfterSave)}
+              >
+                {openFolderAfterSave ? "On" : "Off"}
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">Select mode after drawing</span>
+                <span className="text-xs text-muted-foreground">
+                  Switch to select tool after drawing
+                </span>
+              </div>
+              <Button
+                variant={selectModeAfterDrawing ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectModeAfterDrawing(!selectModeAfterDrawing)}
+              >
+                {selectModeAfterDrawing ? "On" : "Off"}
               </Button>
             </div>
 

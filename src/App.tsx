@@ -70,6 +70,8 @@ export default function App() {
     closeAfterSave,
     defaultSaveFormat,
     copyToClipboardOnSave,
+    closeAfterCopy,
+    openFolderAfterSave,
   } = useSettingsStore();
   const { loadIconMapping } = useIconStore();
   const { sidebarOpen, toggleSidebar, setImageHasTransparency } = useBackgroundStore();
@@ -208,9 +210,14 @@ export default function App() {
     await writeFile(tempPath, new Uint8Array(buffer));
 
     invoke("copy_image_to_clipboard_from_path", { path: tempPath })
-      .then(() => toast.success("Copied to clipboard"))
+      .then(async () => {
+        toast.success("Copied to clipboard");
+        if (closeAfterCopy) {
+          await getCurrentWindow().close();
+        }
+      })
       .catch(() => toast.error("Failed to copy to clipboard"));
-  }, []);
+  }, [closeAfterCopy]);
 
   const handleDownload = useCallback(
     async (format: SaveFormat) => {
@@ -273,6 +280,10 @@ export default function App() {
         });
       }
 
+      if (openFolderAfterSave) {
+        revealItemInDir(savedFilePath);
+      }
+
       if (!closeAfterSave) {
         toast.success("Image saved", {
           description: fileName,
@@ -287,7 +298,7 @@ export default function App() {
         await getCurrentWindow().close();
       }
     },
-    [outputFilename, defaultSaveLocation, autoSaveToDefault, closeAfterSave, copyToClipboardOnSave],
+    [outputFilename, defaultSaveLocation, autoSaveToDefault, closeAfterSave, copyToClipboardOnSave, openFolderAfterSave],
   );
 
   useHotkeys(
