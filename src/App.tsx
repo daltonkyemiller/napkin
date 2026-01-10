@@ -446,22 +446,26 @@ export default function App() {
           <BackgroundSidebar />
         </motion.div>
 
-        <div ref={canvasContainerRef} className="relative flex-1 overflow-hidden">
+        <motion.div
+          ref={canvasContainerRef}
+          layout
+          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+          className={`relative flex-1 overflow-hidden ${selectedIds.length > 0 ? 'pb-20' : ''}`}
+        >
           {isLoading || !image ? (
             <div className="flex h-full items-center justify-center">
               <Skeleton className="h-3/4 w-3/4 bg-background" />
             </div>
           ) : (
-            <>
-              <AnnotationCanvas
-                ref={canvasRef}
-                image={image}
-                onOcrRegionSelected={handleOcrRegionSelected}
-              />
-               <BottomElementToolbar />
-            </>
+            <AnnotationCanvas
+              ref={canvasRef}
+              image={image}
+              onOcrRegionSelected={handleOcrRegionSelected}
+            />
           )}
-        </div>
+        </motion.div>
+
+        {!isLoading && image && <BottomElementToolbar />}
       </div>
 
       <Toaster position="top-right" richColors />
