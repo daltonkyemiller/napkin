@@ -13,8 +13,6 @@
     "windows": [
       {
         "title": "Napkin",
-        "width": 1280,
-        "height": 720,
         "alwaysOnTop": true,
         "decorations": false,
         "visible": false

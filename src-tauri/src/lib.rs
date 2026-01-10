@@ -386,6 +386,52 @@ pub fn run() {
             if let Ok(app_data_dir) = app.path().app_data_dir() {
                 let _ = config::migrate_from_app_data(&app_data_dir);
             }
+
+            if let Some(window) = app.get_webview_window("main") {
+                let monitors: Vec<_> = window.available_monitors().unwrap_or_default();
+
+                let cursor_monitor = window.cursor_position().ok().and_then(|cursor| {
+                    monitors.iter().find(|m| {
+                        let pos = m.position();
+                        let size = m.size();
+                        let scale = 1.0;
+                        let x = cursor.x * scale;
+                        let y = cursor.y * scale;
+                        x >= pos.x as f64
+                            && x < (pos.x + size.width as i32) as f64
+                            && y >= pos.y as f64
+                            && y < (pos.y + size.height as i32) as f64
+                    }).cloned()
+                });
+
+                let monitor = cursor_monitor
+                    .or_else(|| window.primary_monitor().ok().flatten())
+                    .or_else(|| monitors.into_iter().next());
+
+                if let Some(monitor) = monitor {
+                    let monitor_size = monitor.size();
+                    let scale_factor = window.scale_factor().unwrap_or(1.0);
+
+                    let monitor_width = monitor_size.width as f64 / scale_factor;
+                    let monitor_height = monitor_size.height as f64 / scale_factor;
+
+                    let target_height = (monitor_height * 0.8).round();
+                    let target_width_from_height = (target_height * 16.0 / 9.0).round();
+
+                    let max_width = (monitor_width * 0.7).round();
+                    let target_width = target_width_from_height.min(max_width);
+
+                    let final_height = if target_width < target_width_from_height {
+                        (target_width * 9.0 / 16.0).round()
+                    } else {
+                        target_height
+                    };
+
+                    let _ = window.set_size(tauri::LogicalSize::new(target_width, final_height));
+                    let _ = window.center();
+                }
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
