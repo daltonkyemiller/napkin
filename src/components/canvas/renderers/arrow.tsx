@@ -134,7 +134,14 @@ function renderSketchyArrow(
 
     const tangentX = endX - ctrlX;
     const tangentY = endY - ctrlY;
+    const tangentLen = Math.sqrt(tangentX * tangentX + tangentY * tangentY) || 1;
+    const normTangentX = tangentX / tangentLen;
+    const normTangentY = tangentY / tangentLen;
     const angle = Math.atan2(tangentY, tangentX);
+
+    const shortenBy = pointerLength * 0.7;
+    const shortenedEndX = endX - normTangentX * shortenBy;
+    const shortenedEndY = endY - normTangentY * shortenBy;
 
     return (
       <Shape
@@ -146,7 +153,7 @@ function renderSketchyArrow(
         sceneFunc={(ctx) => {
           ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
           const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) =>
-            gen.path(`M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}`, {
+            gen.path(`M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${shortenedEndX} ${shortenedEndY}`, {
               stroke: annotation.stroke,
               strokeWidth: annotation.strokeWidth * 1.5,
               roughness: annotation.sketchiness,
@@ -180,7 +187,13 @@ function renderSketchyArrow(
     );
   }
 
-  const straightAngle = Math.atan2(endY - startY, endX - startX);
+  const straightDx = endX - startX;
+  const straightDy = endY - startY;
+  const straightLen = Math.sqrt(straightDx * straightDx + straightDy * straightDy) || 1;
+  const straightAngle = Math.atan2(straightDy, straightDx);
+  const straightShortenBy = pointerLength * 0.7;
+  const shortenedEndX = endX - (straightDx / straightLen) * straightShortenBy;
+  const shortenedEndY = endY - (straightDy / straightLen) * straightShortenBy;
 
   return (
     <Shape
@@ -192,7 +205,7 @@ function renderSketchyArrow(
       sceneFunc={(ctx) => {
         ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
         const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) =>
-          gen.line(startX, startY, endX, endY, {
+          gen.line(startX, startY, shortenedEndX, shortenedEndY, {
             stroke: annotation.stroke,
             strokeWidth: annotation.strokeWidth * 1.5,
             roughness: annotation.sketchiness,
