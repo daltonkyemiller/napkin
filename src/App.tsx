@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import {
   AnnotationCanvas,
   type AnnotationCanvasHandle,
@@ -6,7 +6,7 @@ import {
 import { BackgroundSidebar } from "@/components/background/background-sidebar";
 import { OcrResultDialog } from "@/components/ocr/ocr-result-dialog";
 import { SettingsDialog } from "@/components/settings/settings-dialog";
-import { BottomElementToolbar } from "@/components/toolbar/bottom-element-toolbar";
+import { InspectorSidebar } from "@/components/inspector/inspector-sidebar";
 import { MainToolbar } from "@/components/toolbar/main-toolbar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DEFAULT_FONT_FAMILY } from "@/constants";
@@ -57,6 +57,8 @@ export default function App() {
     clearSelection,
     setActiveTool,
     activeTool,
+    zoomLevel,
+    resetZoom,
   } = useCanvasStore();
 
   const { annotations, deleteAnnotations, updateAnnotation, addAnnotation } = useAnnotationStore();
@@ -340,6 +342,7 @@ export default function App() {
   useHotkeys("t", () => setActiveTool("text"));
   useHotkeys("p", () => setActiveTool("freehand"));
   useHotkeys("m", () => setActiveTool("highlighter"));
+  useHotkeys("mod+0", () => resetZoom(), { preventDefault: true });
 
   const moveSelected = useCallback(
     (dx: number, dy: number) => {
@@ -449,7 +452,7 @@ export default function App() {
         <motion.div
           ref={canvasContainerRef}
           layout
-          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+          transition={{ type: "spring", bounce: 0, duration: 0.3 }}
           className="relative flex-1 overflow-hidden"
         >
           {isLoading || !image ? (
@@ -457,40 +460,28 @@ export default function App() {
               <Skeleton className="h-3/4 w-3/4 bg-background" />
             </div>
           ) : (
-            <div className="flex flex-col h-full">
-              <div className="flex-1 overflow-hidden">
-                <AnnotationCanvas
-                  ref={canvasRef}
-                  image={image}
-                  onOcrRegionSelected={handleOcrRegionSelected}
-                />
-              </div>
-              <AnimatePresence>
-                {selectedIds.length > 0 && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 30,
-                      mass: 0.8,
-                      opacity: { duration: 0.2 }
-                    }}
-                    className="overflow-hidden border-t bg-background/95 backdrop-blur-sm"
-                  >
-                    <div className="p-4 pb-6">
-                      <div className="mx-auto max-w-4xl">
-                        <BottomElementToolbar />
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            <>
+              <AnnotationCanvas
+                ref={canvasRef}
+                image={image}
+                onOcrRegionSelected={handleOcrRegionSelected}
+              />
+              {zoomLevel !== 1 && (
+                <button
+                  type="button"
+                  onClick={resetZoom}
+                  className="absolute bottom-4 left-4 rounded-md bg-background/90 px-2 py-1 text-xs font-medium text-muted-foreground shadow-sm border border-border hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  {Math.round(zoomLevel * 100)}%
+                </button>
+              )}
+            </>
           )}
         </motion.div>
+
+        <div className="shrink-0 border-l bg-background">
+          <InspectorSidebar />
+        </div>
       </div>
 
       <Toaster position="top-right" richColors />

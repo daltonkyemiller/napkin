@@ -71,6 +71,9 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
     const transformerRef = useRef<Konva.Transformer>(null);
     const bgImageRef = useRef<Konva.Image>(null);
     const [bgImageElement, setBgImageElement] = useState<HTMLImageElement | null>(null);
+    const [isSpaceHeld, setIsSpaceHeld] = useState(false);
+    const [isPanning, setIsPanning] = useState(false);
+    const panStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
 
     const {
       width: containerWidth,
@@ -78,6 +81,10 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       selectedId,
       selectedIds,
       activeTool,
+      zoomLevel,
+      setZoomLevel,
+      panOffset,
+      setPanOffset,
       strokeColor,
       fillColor,
       strokeWidth,
@@ -166,15 +173,17 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       const totalWidth = hasBackground ? bgWidth : image.width;
       const totalHeight = hasBackground ? bgHeight : image.height;
 
-      const scale = Math.min(containerWidth / totalWidth, containerHeight / totalHeight, 1);
+      const fitScale = Math.min(containerWidth / totalWidth, containerHeight / totalHeight);
+      const baseScale = Math.min(fitScale, 1);
+      const scale = baseScale * zoomLevel;
 
       const scaledTotal = {
         width: totalWidth * scale,
         height: totalHeight * scale,
       };
 
-      const stageX = (containerWidth - scaledTotal.width) / 2;
-      const stageY = (containerHeight - scaledTotal.height) / 2;
+      const stageX = (containerWidth - scaledTotal.width) / 2 + panOffset.x;
+      const stageY = (containerHeight - scaledTotal.height) / 2 + panOffset.y;
 
       const imageOffsetX = hasBackground ? (bgWidth - image.width) / 2 : 0;
       const imageOffsetY = hasBackground ? (bgHeight - image.height) / 2 : 0;
@@ -221,6 +230,8 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       containerWidth,
       containerHeight,
       bgImageElement,
+      zoomLevel,
+      panOffset,
     ]);
 
     const gradientConfig = useMemo(() => {
@@ -340,6 +351,68 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       setSelectedIds,
       addAnnotation,
     });
+
+    useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.code === "Space" && !e.repeat) {
+          setIsSpaceHeld(true);
+        }
+      };
+      const handleKeyUp = (e: KeyboardEvent) => {
+        if (e.code === "Space") {
+          setIsSpaceHeld(false);
+          setIsPanning(false);
+          panStartRef.current = null;
+        }
+      };
+      window.addEventListener("keydown", handleKeyDown);
+      window.addEventListener("keyup", handleKeyUp);
+      return () => {
+        window.removeEventListener("keydown", handleKeyDown);
+        window.removeEventListener("keyup", handleKeyUp);
+      };
+    }, []);
+
+    const handlePanMouseDown = () => {
+      if (!isSpaceHeld) return false;
+      const pos = stageRef.current?.getPointerPosition();
+      if (!pos) return false;
+      setIsPanning(true);
+      panStartRef.current = { x: pos.x, y: pos.y, panX: panOffset.x, panY: panOffset.y };
+      return true;
+    };
+
+    const handlePanMouseMove = () => {
+      if (!isPanning || !panStartRef.current) return false;
+      const pos = stageRef.current?.getPointerPosition();
+      if (!pos) return false;
+      const dx = pos.x - panStartRef.current.x;
+      const dy = pos.y - panStartRef.current.y;
+      setPanOffset({ x: panStartRef.current.panX + dx, y: panStartRef.current.panY + dy });
+      return true;
+    };
+
+    const handlePanMouseUp = () => {
+      if (!isPanning) return false;
+      setIsPanning(false);
+      panStartRef.current = null;
+      return true;
+    };
+
+    const wrappedMouseDown = (e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (handlePanMouseDown()) return;
+      handleStageMouseDown(e);
+    };
+
+    const wrappedMouseMove = (e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (handlePanMouseMove()) return;
+      handleStageMouseMove(e);
+    };
+
+    const wrappedMouseUp = () => {
+      if (handlePanMouseUp()) return;
+      handleStageMouseUp();
+    };
 
     useImperativeHandle(
       ref,
@@ -482,16 +555,55 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
 
     const scaledBorderRadius = borderRadius * layout.scale;
 
+    const handleWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
+      if (!e.evt.ctrlKey) return;
+
+      e.evt.preventDefault();
+      
+      const stage = stageRef.current;
+      if (!stage) return;
+
+      const pointer = stage.getPointerPosition();
+      if (!pointer) return;
+
+      const scaleBy = 1.1;
+      const direction = e.evt.deltaY > 0 ? -1 : 1;
+      const newZoom = direction > 0 ? zoomLevel * scaleBy : zoomLevel / scaleBy;
+      const clampedZoom = Math.max(0.1, Math.min(5, newZoom));
+      
+      const zoomRatio = clampedZoom / zoomLevel;
+      
+      const centerX = containerWidth / 2 + panOffset.x;
+      const centerY = containerHeight / 2 + panOffset.y;
+      
+      const newPanX = pointer.x - (pointer.x - centerX) * zoomRatio - containerWidth / 2;
+      const newPanY = pointer.y - (pointer.y - centerY) * zoomRatio - containerHeight / 2;
+
+      setPanOffset({ x: newPanX, y: newPanY });
+      setZoomLevel(clampedZoom);
+    };
+
+    useEffect(() => {
+      const container = stageRef.current?.container();
+      if (!container) return;
+      if (isSpaceHeld) {
+        container.style.cursor = isPanning ? "grabbing" : "grab";
+      } else {
+        container.style.cursor = "";
+      }
+    }, [isSpaceHeld, isPanning]);
+
     return (
       <div ref={containerRef} className="h-full w-full">
         <Stage
           ref={stageRef}
           width={containerWidth}
           height={containerHeight}
-          onMouseDown={handleStageMouseDown}
-          onMouseMove={handleStageMouseMove}
-          onMouseUp={handleStageMouseUp}
-          onMouseLeave={handleStageMouseUp}
+          onMouseDown={wrappedMouseDown}
+          onMouseMove={wrappedMouseMove}
+          onMouseUp={wrappedMouseUp}
+          onMouseLeave={wrappedMouseUp}
+          onWheel={handleWheel}
         >
           <Layer imageSmoothingEnabled={false}>
             {hasBackground && (

@@ -46,6 +46,8 @@ interface CanvasStore {
   isDrawing: boolean;
   editingTextId: string | null;
   ocrSelection: OcrSelection | null;
+  zoomLevel: number;
+  panOffset: { x: number; y: number };
 
   setCanvasSize: (width: number, height: number) => void;
   setImage: (url: string, width: number, height: number) => void;
@@ -64,6 +66,9 @@ interface CanvasStore {
   setIsDrawing: (isDrawing: boolean) => void;
   setEditingTextId: (id: string | null) => void;
   setOcrSelection: (selection: OcrSelection | null) => void;
+  setZoomLevel: (zoom: number) => void;
+  setPanOffset: (offset: { x: number; y: number }) => void;
+  resetZoom: () => void;
 }
 
 export const useCanvasStore = create<CanvasStore>((set, get) => ({
@@ -84,6 +89,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   isDrawing: false,
   editingTextId: null,
   ocrSelection: null,
+  zoomLevel: 1,
+  panOffset: { x: 0, y: 0 },
 
   setCanvasSize: (width, height) => set({ width, height }),
 
@@ -154,4 +161,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   setIsDrawing: (isDrawing) => set({ isDrawing }),
   setEditingTextId: (editingTextId) => set({ editingTextId }),
   setOcrSelection: (ocrSelection) => set({ ocrSelection }),
+  setZoomLevel: (zoomLevel) => set({ zoomLevel: Math.max(0.1, Math.min(5, zoomLevel)) }),
+  setPanOffset: (panOffset) => set({ panOffset }),
+  resetZoom: () => set({ zoomLevel: 1, panOffset: { x: 0, y: 0 } }),
 }));
