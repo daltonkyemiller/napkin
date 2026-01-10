@@ -6,7 +6,7 @@ import {
 import { BackgroundSidebar } from "@/components/background/background-sidebar";
 import { OcrResultDialog } from "@/components/ocr/ocr-result-dialog";
 import { SettingsDialog } from "@/components/settings/settings-dialog";
-import { FloatingElementToolbar } from "@/components/toolbar/floating-element-toolbar";
+import { BottomElementToolbar } from "@/components/toolbar/bottom-element-toolbar";
 import { MainToolbar } from "@/components/toolbar/main-toolbar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DEFAULT_FONT_FAMILY } from "@/constants";
@@ -458,7 +458,7 @@ export default function App() {
                 image={image}
                 onOcrRegionSelected={handleOcrRegionSelected}
               />
-              <FloatingElementToolbar containerRef={canvasContainerRef} image={image} />
+               <BottomElementToolbar />
             </>
           )}
         </div>
