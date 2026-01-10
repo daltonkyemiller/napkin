@@ -1,4 +1,4 @@
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   AnnotationCanvas,
   type AnnotationCanvasHandle,
@@ -450,22 +450,47 @@ export default function App() {
           ref={canvasContainerRef}
           layout
           transition={{ type: "spring", stiffness: 400, damping: 30 }}
-          className={`relative flex-1 overflow-hidden ${selectedIds.length > 0 ? 'pb-20' : ''}`}
+          className="relative flex-1 overflow-hidden"
         >
           {isLoading || !image ? (
             <div className="flex h-full items-center justify-center">
               <Skeleton className="h-3/4 w-3/4 bg-background" />
             </div>
           ) : (
-            <AnnotationCanvas
-              ref={canvasRef}
-              image={image}
-              onOcrRegionSelected={handleOcrRegionSelected}
-            />
+            <div className="flex flex-col h-full">
+              <div className="flex-1 overflow-hidden">
+                <AnnotationCanvas
+                  ref={canvasRef}
+                  image={image}
+                  onOcrRegionSelected={handleOcrRegionSelected}
+                />
+              </div>
+              <AnimatePresence>
+                {selectedIds.length > 0 && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 400,
+                      damping: 30,
+                      mass: 0.8,
+                      opacity: { duration: 0.2 }
+                    }}
+                    className="overflow-hidden border-t bg-background/95 backdrop-blur-sm"
+                  >
+                    <div className="p-4 pb-6">
+                      <div className="mx-auto max-w-4xl">
+                        <BottomElementToolbar />
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           )}
         </motion.div>
-
-        {!isLoading && image && <BottomElementToolbar />}
       </div>
 
       <Toaster position="top-right" richColors />
