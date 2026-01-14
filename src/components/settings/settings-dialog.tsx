@@ -14,6 +14,7 @@ import { type StrokeSizePreset } from "@/stores/canvas-store";
 import { useThemeStore, type ThemeMode } from "@/stores/theme-store";
 import { IconCustomizerDialog } from "./icon-customizer-dialog";
 import { ThemeCustomizerDialog } from "./theme-customizer-dialog";
+import { BooleanToggleSetting } from "./boolean-toggle-setting";
 import { open } from "@tauri-apps/plugin-dialog";
 import { Icon } from "@/components/ui/icon";
 
@@ -178,98 +179,48 @@ export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogPro
             </div>
 
             {defaultSaveLocation && (
-              <div className="flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">Auto-save to default location</span>
-                  <span className="text-xs text-muted-foreground">Skip the save dialog</span>
-                </div>
-                <Button
-                  variant={autoSaveToDefault ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setAutoSaveToDefault(!autoSaveToDefault)}
-                >
-                  {autoSaveToDefault ? "On" : "Off"}
-                </Button>
-              </div>
+              <BooleanToggleSetting
+                label="Auto-save to default location"
+                description="Skip the save dialog"
+                value={autoSaveToDefault}
+                onChange={setAutoSaveToDefault}
+              />
             )}
 
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">Close after saving</span>
-                <span className="text-xs text-muted-foreground">Exit the app after save</span>
-              </div>
-              <Button
-                variant={closeAfterSave ? "default" : "outline"}
-                size="sm"
-                onClick={() => setCloseAfterSave(!closeAfterSave)}
-              >
-                {closeAfterSave ? "On" : "Off"}
-              </Button>
-            </div>
+            <BooleanToggleSetting
+              label="Close after saving"
+              description="Exit the app after save"
+              value={closeAfterSave}
+              onChange={setCloseAfterSave}
+            />
 
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">Copy to clipboard on save</span>
-                <span className="text-xs text-muted-foreground">
-                  Also copy image when saving
-                </span>
-              </div>
-              <Button
-                variant={copyToClipboardOnSave ? "default" : "outline"}
-                size="sm"
-                onClick={() => setCopyToClipboardOnSave(!copyToClipboardOnSave)}
-              >
-                {copyToClipboardOnSave ? "On" : "Off"}
-              </Button>
-            </div>
+            <BooleanToggleSetting
+              label="Copy to clipboard on save"
+              description="Also copy image when saving"
+              value={copyToClipboardOnSave}
+              onChange={setCopyToClipboardOnSave}
+            />
 
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">Close after copy</span>
-                <span className="text-xs text-muted-foreground">
-                  Exit app after {isMac ? "⌘" : "Ctrl"}+C
-                </span>
-              </div>
-              <Button
-                variant={closeAfterCopy ? "default" : "outline"}
-                size="sm"
-                onClick={() => setCloseAfterCopy(!closeAfterCopy)}
-              >
-                {closeAfterCopy ? "On" : "Off"}
-              </Button>
-            </div>
+            <BooleanToggleSetting
+              label="Close after copy"
+              description={`Exit app after ${isMac ? "⌘" : "Ctrl"}+C`}
+              value={closeAfterCopy}
+              onChange={setCloseAfterCopy}
+            />
 
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">Open folder after saving</span>
-                <span className="text-xs text-muted-foreground">
-                  Reveal saved file in folder
-                </span>
-              </div>
-              <Button
-                variant={openFolderAfterSave ? "default" : "outline"}
-                size="sm"
-                onClick={() => setOpenFolderAfterSave(!openFolderAfterSave)}
-              >
-                {openFolderAfterSave ? "On" : "Off"}
-              </Button>
-            </div>
+            <BooleanToggleSetting
+              label="Open folder after saving"
+              description="Reveal saved file in folder"
+              value={openFolderAfterSave}
+              onChange={setOpenFolderAfterSave}
+            />
 
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">Select mode after drawing</span>
-                <span className="text-xs text-muted-foreground">
-                  Switch to select tool after drawing
-                </span>
-              </div>
-              <Button
-                variant={selectModeAfterDrawing ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectModeAfterDrawing(!selectModeAfterDrawing)}
-              >
-                {selectModeAfterDrawing ? "On" : "Off"}
-              </Button>
-            </div>
+            <BooleanToggleSetting
+              label="Select mode after drawing"
+              description="Switch to select tool after drawing"
+              value={selectModeAfterDrawing}
+              onChange={setSelectModeAfterDrawing}
+            />
 
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
