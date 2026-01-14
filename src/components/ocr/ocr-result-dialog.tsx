@@ -22,6 +22,12 @@ interface OcrResultDialogProps {
   selectionPosition: { x: number; y: number } | null;
 }
 
+function getDialogDescription(isLoading: boolean, error: string | null): string {
+  if (isLoading) return "Extracting text from image...";
+  if (error) return "Failed to extract text";
+  return "Edit the extracted text below";
+}
+
 export function OcrResultDialog({
   open,
   onOpenChange,
@@ -62,11 +68,7 @@ export function OcrResultDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>OCR Result</AlertDialogTitle>
           <AlertDialogDescription>
-            {isLoading
-              ? "Extracting text from image..."
-              : error
-                ? "Failed to extract text"
-                : "Edit the extracted text below"}
+            {getDialogDescription(isLoading, error)}
           </AlertDialogDescription>
         </AlertDialogHeader>
 

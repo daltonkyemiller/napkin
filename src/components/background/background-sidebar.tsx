@@ -16,7 +16,17 @@ import {
 } from "@/components/ui/color-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useBackgroundStore, GRADIENT_PRESETS, ASPECT_RATIOS } from "@/stores/background-store";
+import type { BackgroundType } from "@/stores/background-store";
 import { cn } from "@/lib/utils";
+
+function isPresetSelected(
+  backgroundType: BackgroundType,
+  gradientPreset: string,
+  presetId: string
+): boolean {
+  if (presetId === "none") return backgroundType === "none";
+  return backgroundType === "gradient" && gradientPreset === presetId;
+}
 
 export function BackgroundSidebar() {
   const {
@@ -151,8 +161,7 @@ export function BackgroundSidebar() {
                   }}
                   className={cn(
                     "h-12 w-full rounded-md border-2 transition-all hover:scale-105",
-                    (backgroundType === "gradient" && gradientPreset === preset.id) ||
-                      (backgroundType === "none" && preset.id === "none")
+                    isPresetSelected(backgroundType, gradientPreset, preset.id)
                       ? "border-ring ring-2 ring-ring/50"
                       : "border-border",
                   )}
