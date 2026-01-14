@@ -3,6 +3,12 @@ import type Konva from "konva";
 import { drawRoughDrawable } from "@/lib/rough-draw";
 import type { Annotation, ArrowAnnotation } from "@/types";
 import type { ShapeRenderContext } from "./types";
+import {
+  calculateBendedArrow,
+  calculateStraightArrow,
+  drawArrowhead,
+  type ArrowGeometry,
+} from "./arrow-geometry";
 
 interface ArrowRenderContext extends ShapeRenderContext {
   activeTool: string;
@@ -101,15 +107,7 @@ export function renderArrow(annotation: ArrowAnnotation, ctx: ArrowRenderContext
   });
 }
 
-interface ArrowGeometry {
-  startX: number;
-  startY: number;
-  endX: number;
-  endY: number;
-  bend: number;
-  pointerLength: number;
-  pointerWidth: number;
-}
+const SKETCHY_SHORTEN_FACTOR = 0.7;
 
 function renderSketchyArrow(
   annotation: ArrowAnnotation,
@@ -120,28 +118,13 @@ function renderSketchyArrow(
 ) {
   const { startX, startY, endX, endY, bend, pointerLength, pointerWidth } = geo;
   const cacheKey = `${startX}-${startY}-${endX}-${endY}-${bend}-${annotation.stroke}-${annotation.strokeWidth}-${annotation.sketchiness}`;
+  const sketchyShortenBy = pointerLength * SKETCHY_SHORTEN_FACTOR;
 
   if (bend !== 0) {
-    const midX = (startX + endX) / 2;
-    const midY = (startY + endY) / 2;
-    const dx = endX - startX;
-    const dy = endY - startY;
-    const length = Math.sqrt(dx * dx + dy * dy) || 1;
-    const perpX = -dy / length;
-    const perpY = dx / length;
-    const ctrlX = midX + perpX * bend;
-    const ctrlY = midY + perpY * bend;
-
-    const tangentX = endX - ctrlX;
-    const tangentY = endY - ctrlY;
-    const tangentLen = Math.sqrt(tangentX * tangentX + tangentY * tangentY) || 1;
-    const normTangentX = tangentX / tangentLen;
-    const normTangentY = tangentY / tangentLen;
-    const angle = Math.atan2(tangentY, tangentX);
-
-    const shortenBy = pointerLength * 0.7;
-    const shortenedEndX = endX - normTangentX * shortenBy;
-    const shortenedEndY = endY - normTangentY * shortenBy;
+    const { ctrlX, ctrlY, angle, shortenedEndX, shortenedEndY } = calculateBendedArrow(
+      geo,
+      sketchyShortenBy
+    );
 
     return (
       <Shape
@@ -161,20 +144,16 @@ function renderSketchyArrow(
             }),
           );
           drawRoughDrawable(ctx._context, drawable);
-
-          ctx.save();
-          ctx.translate(endX, endY);
-          ctx.rotate(angle);
-          ctx.beginPath();
-          ctx.moveTo(-pointerLength, -pointerWidth / 2);
-          ctx.lineTo(0, 0);
-          ctx.lineTo(-pointerLength, pointerWidth / 2);
-          ctx.strokeStyle = annotation.stroke;
-          ctx.lineWidth = annotation.strokeWidth;
-          ctx.lineCap = "round";
-          ctx.lineJoin = "round";
-          ctx.stroke();
-          ctx.restore();
+          drawArrowhead(
+            ctx._context,
+            endX,
+            endY,
+            angle,
+            pointerLength,
+            pointerWidth,
+            annotation.stroke,
+            annotation.strokeWidth
+          );
         }}
         hitFunc={(ctx, shape) => {
           ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
@@ -187,13 +166,7 @@ function renderSketchyArrow(
     );
   }
 
-  const straightDx = endX - startX;
-  const straightDy = endY - startY;
-  const straightLen = Math.sqrt(straightDx * straightDx + straightDy * straightDy) || 1;
-  const straightAngle = Math.atan2(straightDy, straightDx);
-  const straightShortenBy = pointerLength * 0.7;
-  const shortenedEndX = endX - (straightDx / straightLen) * straightShortenBy;
-  const shortenedEndY = endY - (straightDy / straightLen) * straightShortenBy;
+  const { angle, shortenedEndX, shortenedEndY } = calculateStraightArrow(geo, sketchyShortenBy);
 
   return (
     <Shape
@@ -213,20 +186,16 @@ function renderSketchyArrow(
           }),
         );
         drawRoughDrawable(ctx._context, drawable);
-
-        ctx.save();
-        ctx.translate(endX, endY);
-        ctx.rotate(straightAngle);
-        ctx.beginPath();
-        ctx.moveTo(-pointerLength, -pointerWidth / 2);
-        ctx.lineTo(0, 0);
-        ctx.lineTo(-pointerLength, pointerWidth / 2);
-        ctx.strokeStyle = annotation.stroke;
-        ctx.lineWidth = annotation.strokeWidth;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.stroke();
-        ctx.restore();
+        drawArrowhead(
+          ctx._context,
+          endX,
+          endY,
+          angle,
+          pointerLength,
+          pointerWidth,
+          annotation.stroke,
+          annotation.strokeWidth
+        );
       }}
       hitFunc={(ctx, shape) => {
         ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
@@ -246,28 +215,13 @@ function renderSmoothArrow(
   geo: ArrowGeometry,
 ) {
   const { startX, startY, endX, endY, bend, pointerLength, pointerWidth } = geo;
+  const smoothShortenBy = annotation.strokeWidth / 2;
 
   if (bend !== 0) {
-    const midX = (startX + endX) / 2;
-    const midY = (startY + endY) / 2;
-    const dx = endX - startX;
-    const dy = endY - startY;
-    const length = Math.sqrt(dx * dx + dy * dy) || 1;
-    const perpX = -dy / length;
-    const perpY = dx / length;
-    const ctrlX = midX + perpX * bend;
-    const ctrlY = midY + perpY * bend;
-
-    const tangentX = endX - ctrlX;
-    const tangentY = endY - ctrlY;
-    const tangentLen = Math.sqrt(tangentX * tangentX + tangentY * tangentY) || 1;
-    const normTangentX = tangentX / tangentLen;
-    const normTangentY = tangentY / tangentLen;
-    const angle = Math.atan2(tangentY, tangentX);
-
-    const shortenBy = annotation.strokeWidth / 2;
-    const shortenedEndX = endX - normTangentX * shortenBy;
-    const shortenedEndY = endY - normTangentY * shortenBy;
+    const { ctrlX, ctrlY, angle, shortenedEndX, shortenedEndY } = calculateBendedArrow(
+      geo,
+      smoothShortenBy
+    );
 
     return (
       <Shape
@@ -289,17 +243,16 @@ function renderSmoothArrow(
           ctx.lineJoin = "round";
           ctx.stroke();
 
-          ctx.translate(endX, endY);
-          ctx.rotate(angle);
-          ctx.beginPath();
-          ctx.moveTo(-pointerLength, -pointerWidth / 2);
-          ctx.lineTo(0, 0);
-          ctx.lineTo(-pointerLength, pointerWidth / 2);
-          ctx.strokeStyle = annotation.stroke;
-          ctx.lineWidth = annotation.strokeWidth;
-          ctx.lineCap = "round";
-          ctx.lineJoin = "round";
-          ctx.stroke();
+          drawArrowhead(
+            ctx._context,
+            endX,
+            endY,
+            angle,
+            pointerLength,
+            pointerWidth,
+            annotation.stroke,
+            annotation.strokeWidth
+          );
 
           ctx.restore();
         }}
@@ -314,13 +267,7 @@ function renderSmoothArrow(
     );
   }
 
-  const straightDx = endX - startX;
-  const straightDy = endY - startY;
-  const straightLen = Math.sqrt(straightDx * straightDx + straightDy * straightDy) || 1;
-  const straightAngle = Math.atan2(straightDy, straightDx);
-  const straightShortenBy = annotation.strokeWidth / 2;
-  const straightEndX = endX - (straightDx / straightLen) * straightShortenBy;
-  const straightEndY = endY - (straightDy / straightLen) * straightShortenBy;
+  const { angle, shortenedEndX, shortenedEndY } = calculateStraightArrow(geo, smoothShortenBy);
 
   return (
     <Shape
@@ -335,24 +282,23 @@ function renderSmoothArrow(
 
         ctx.beginPath();
         ctx.moveTo(startX, startY);
-        ctx.lineTo(straightEndX, straightEndY);
+        ctx.lineTo(shortenedEndX, shortenedEndY);
         ctx.strokeStyle = annotation.stroke;
         ctx.lineWidth = annotation.strokeWidth;
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
         ctx.stroke();
 
-        ctx.translate(endX, endY);
-        ctx.rotate(straightAngle);
-        ctx.beginPath();
-        ctx.moveTo(-pointerLength, -pointerWidth / 2);
-        ctx.lineTo(0, 0);
-        ctx.lineTo(-pointerLength, pointerWidth / 2);
-        ctx.strokeStyle = annotation.stroke;
-        ctx.lineWidth = annotation.strokeWidth;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.stroke();
+        drawArrowhead(
+          ctx._context,
+          endX,
+          endY,
+          angle,
+          pointerLength,
+          pointerWidth,
+          annotation.stroke,
+          annotation.strokeWidth
+        );
 
         ctx.restore();
       }}
