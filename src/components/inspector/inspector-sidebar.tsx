@@ -12,8 +12,13 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCanvasStore } from "@/stores/canvas-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
+import { useAnnotationsByType } from "@/hooks/use-annotations-by-type";
 import { FONT_FAMILIES } from "@/constants";
-import type { BlendMode, TextAnnotation } from "@/types";
+import type { AnnotationType, BlendMode, TextAnnotation } from "@/types";
+
+const SHAPE_TYPES: AnnotationType[] = ["circle", "rectangle", "arrow", "freehand"];
+const TEXT_TYPES: AnnotationType[] = ["text"];
+const SKETCHABLE_TYPES: AnnotationType[] = ["circle", "rectangle", "arrow"];
 
 const BLEND_MODES: { value: BlendMode; label: string }[] = [
   { value: "source-over", label: "Normal" },
@@ -27,36 +32,9 @@ export function InspectorSidebar() {
   const { selectedIds } = useCanvasStore();
   const { annotations, updateAnnotation } = useAnnotationStore();
 
-  const selectedShapeAnnotations = useMemo(
-    () =>
-      annotations.filter(
-        (a) =>
-          selectedIds.includes(a.id) &&
-          (a.type === "circle" ||
-            a.type === "rectangle" ||
-            a.type === "arrow" ||
-            a.type === "freehand"),
-      ),
-    [annotations, selectedIds],
-  );
-
-  const selectedTextAnnotations = useMemo(
-    () =>
-      annotations.filter(
-        (a) => selectedIds.includes(a.id) && a.type === "text",
-      ) as TextAnnotation[],
-    [annotations, selectedIds],
-  );
-
-  const selectedSketchableAnnotations = useMemo(
-    () =>
-      annotations.filter(
-        (a) =>
-          selectedIds.includes(a.id) &&
-          (a.type === "circle" || a.type === "rectangle" || a.type === "arrow"),
-      ),
-    [annotations, selectedIds],
-  );
+  const selectedShapeAnnotations = useAnnotationsByType(annotations, selectedIds, SHAPE_TYPES);
+  const selectedTextAnnotations = useAnnotationsByType<TextAnnotation>(annotations, selectedIds, TEXT_TYPES);
+  const selectedSketchableAnnotations = useAnnotationsByType(annotations, selectedIds, SKETCHABLE_TYPES);
 
   const hasShapeSelection = selectedShapeAnnotations.length > 0;
   const hasTextSelection = selectedTextAnnotations.length > 0;
