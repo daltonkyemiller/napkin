@@ -101,15 +101,6 @@ export function useInlineTextEditing(
         setActiveTool("select");
       }
 
-      function cancelEdit() {
-        if (textAnnotation.text === "") {
-          deleteAnnotations([textAnnotation.id]);
-          clearSelection();
-        }
-        removeTextarea();
-        setActiveTool("select");
-      }
-
       function setTextareaWidth(newWidth = 0) {
         if (!newWidth) {
           newWidth = Math.max(100, textAnnotation.text.length * textNode.fontSize());
@@ -124,7 +115,7 @@ export function useInlineTextEditing(
           saveAndClose();
         }
         if (e.key === "Escape") {
-          cancelEdit();
+          saveAndClose();
         }
       });
 
