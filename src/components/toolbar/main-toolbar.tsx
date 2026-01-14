@@ -6,11 +6,24 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Kbd } from "@/components/ui/kbd";
 import { Icon } from "@/components/ui/icon";
 import { ColorPaletteDropdown } from "./color-palette-dropdown";
+import { ToolButton } from "./tool-button";
 import { useCanvasStore, type StrokeSizePreset } from "@/stores/canvas-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
 import { useBackgroundStore } from "@/stores/background-store";
 import type { SaveFormat } from "@/stores/settings-store";
 import type { Tool } from "@/types";
+import type { IconName } from "@/icons/types";
+
+const TOOL_BUTTONS: { value: Tool; icon: IconName; label: string; shortcut: string }[] = [
+  { value: "select", icon: "cursor-default", label: "Select", shortcut: "V" },
+  { value: "circle", icon: "shape-circle", label: "Circle", shortcut: "C" },
+  { value: "rectangle", icon: "shape-square", label: "Rectangle", shortcut: "R" },
+  { value: "arrow", icon: "arrow-right", label: "Arrow", shortcut: "A" },
+  { value: "text", icon: "typography", label: "Text", shortcut: "T" },
+  { value: "freehand", icon: "pen", label: "Freehand", shortcut: "P" },
+  { value: "highlighter", icon: "text-highlight", label: "Highlighter", shortcut: "M" },
+  { value: "ocr", icon: "scan-text", label: "OCR Text Recognition", shortcut: "O" },
+];
 
 const STROKE_SIZE_OPTIONS: { value: StrokeSizePreset; label: string }[] = [
   { value: "S", label: "S" },
@@ -142,102 +155,9 @@ export function MainToolbar({ onDownload, onCopyToClipboard, onSettingsClick }: 
           if (newValue) setActiveTool(newValue as Tool);
         }}
       >
-        <Tooltip>
-          <TooltipTrigger
-            render={(props) => (
-              <ToggleGroupItem {...props} value="select">
-                <Icon name="cursor-default" />
-              </ToggleGroupItem>
-            )}
-          />
-          <TooltipContent side="bottom">
-            Select <Kbd>V</Kbd>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger
-            render={(props) => (
-              <ToggleGroupItem {...props} value="circle">
-                <Icon name="shape-circle" />
-              </ToggleGroupItem>
-            )}
-          />
-          <TooltipContent side="bottom">
-            Circle <Kbd>C</Kbd>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger
-            render={(props) => (
-              <ToggleGroupItem {...props} value="rectangle">
-                <Icon name="shape-square" />
-              </ToggleGroupItem>
-            )}
-          />
-          <TooltipContent side="bottom">
-            Rectangle <Kbd>R</Kbd>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger
-            render={(props) => (
-              <ToggleGroupItem {...props} value="arrow">
-                <Icon name="arrow-right" />
-              </ToggleGroupItem>
-            )}
-          />
-          <TooltipContent side="bottom">
-            Arrow <Kbd>A</Kbd>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger
-            render={(props) => (
-              <ToggleGroupItem {...props} value="text">
-                <Icon name="typography" />
-              </ToggleGroupItem>
-            )}
-          />
-          <TooltipContent side="bottom">
-            Text <Kbd>T</Kbd>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger
-            render={(props) => (
-              <ToggleGroupItem {...props} value="freehand">
-                <Icon name="pen" />
-              </ToggleGroupItem>
-            )}
-          />
-          <TooltipContent side="bottom">
-            Freehand <Kbd>P</Kbd>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger
-            render={(props) => (
-              <ToggleGroupItem {...props} value="highlighter">
-                <Icon name="text-highlight" />
-              </ToggleGroupItem>
-            )}
-          />
-          <TooltipContent side="bottom">
-            Highlighter <Kbd>M</Kbd>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger
-            render={(props) => (
-              <ToggleGroupItem {...props} value="ocr">
-                <Icon name="scan-text" />
-              </ToggleGroupItem>
-            )}
-          />
-          <TooltipContent side="bottom">
-            OCR Text Recognition <Kbd>O</Kbd>
-          </TooltipContent>
-        </Tooltip>
+        {TOOL_BUTTONS.map((tool) => (
+          <ToolButton key={tool.value} {...tool} />
+        ))}
       </ToggleGroup>
 
       <div className="h-6 w-px bg-border" />
