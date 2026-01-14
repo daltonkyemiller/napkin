@@ -3,9 +3,10 @@ import { Stage, Layer, Image, Transformer, Rect, Group } from "react-konva";
 import Konva from "konva";
 import { useCanvasStore } from "@/stores/canvas-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
-import { useBackgroundStore, GRADIENT_PRESETS, ASPECT_RATIOS } from "@/stores/background-store";
+import { useBackgroundStore, GRADIENT_PRESETS } from "@/stores/background-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useInlineTextEditing } from "@/hooks/use-inline-text-editing";
+import { parseGradient } from "@/lib/gradient-parser";
 import { renderAnnotation } from "./renderers";
 import { ArrowHandles, CornerRadiusHandle } from "./selection-handles";
 import { useKeyboardShortcuts } from "./hooks/use-keyboard-shortcuts";
@@ -13,6 +14,9 @@ import { useRoughGenerator } from "./hooks/use-rough-generator";
 import { useAnnotationInteraction } from "./hooks/use-annotation-interaction";
 import { useOcrSelection } from "./hooks/use-ocr-selection";
 import { useDrawingHandlers } from "./hooks/use-drawing-handlers";
+import { useCanvasLayout } from "./hooks/use-canvas-layout";
+import { usePanZoom } from "./hooks/use-pan-zoom";
+import { useCanvasExport } from "./hooks/use-canvas-export";
 import type { TextAnnotation } from "@/types";
 
 interface AnnotationCanvasProps {
@@ -32,38 +36,6 @@ export interface AnnotationCanvasHandle {
   exportForClipboard: () => Promise<Blob | null>;
 }
 
-function parseGradient(gradientStr: string, width: number, height: number) {
-  const match = gradientStr.match(/linear-gradient\((\d+)deg,\s*(.+)\)/);
-  if (!match) return null;
-
-  const angle = parseInt(match[1]);
-  const angleRad = (angle - 90) * (Math.PI / 180);
-
-  const diagonal = Math.sqrt(width * width + height * height);
-  const centerX = width / 2;
-  const centerY = height / 2;
-
-  const startX = centerX - (Math.cos(angleRad) * diagonal) / 2;
-  const startY = centerY - (Math.sin(angleRad) * diagonal) / 2;
-  const endX = centerX + (Math.cos(angleRad) * diagonal) / 2;
-  const endY = centerY + (Math.sin(angleRad) * diagonal) / 2;
-
-  const colorStops: (number | string)[] = [];
-  const stops = match[2].split(/,(?![^(]*\))/);
-  stops.forEach((stop: string) => {
-    const colorMatch = stop.trim().match(/(.+?)\s+(\d+)%/);
-    if (colorMatch) {
-      colorStops.push(parseFloat(colorMatch[2]) / 100, colorMatch[1].trim());
-    }
-  });
-
-  return {
-    startPoint: { x: startX, y: startY },
-    endPoint: { x: endX, y: endY },
-    colorStops,
-  };
-}
-
 export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCanvasProps>(
   function AnnotationCanvas({ image, onOcrRegionSelected }, ref) {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -71,9 +43,6 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
     const transformerRef = useRef<Konva.Transformer>(null);
     const bgImageRef = useRef<Konva.Image>(null);
     const [bgImageElement, setBgImageElement] = useState<HTMLImageElement | null>(null);
-    const [isSpaceHeld, setIsSpaceHeld] = useState(false);
-    const [isPanning, setIsPanning] = useState(false);
-    const panStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
 
     const {
       width: containerWidth,
@@ -150,89 +119,17 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       }
     }, [blur, bgImageElement]);
 
-    const layout = useMemo(() => {
-      const contentWidth = image.width + padding * 2;
-      const contentHeight = image.height + padding * 2;
-
-      let bgWidth = contentWidth;
-      let bgHeight = contentHeight;
-
-      if (hasBackground) {
-        const ratioConfig = ASPECT_RATIOS.find((r) => r.id === aspectRatio);
-        const targetRatio = ratioConfig?.value;
-        if (targetRatio) {
-          const currentRatio = contentWidth / contentHeight;
-          if (currentRatio > targetRatio) {
-            bgHeight = contentWidth / targetRatio;
-          } else {
-            bgWidth = contentHeight * targetRatio;
-          }
-        }
-      }
-
-      const totalWidth = hasBackground ? bgWidth : image.width;
-      const totalHeight = hasBackground ? bgHeight : image.height;
-
-      const fitScale = Math.min(containerWidth / totalWidth, containerHeight / totalHeight);
-      const baseScale = Math.min(fitScale, 1);
-      const scale = baseScale * zoomLevel;
-
-      const scaledTotal = {
-        width: totalWidth * scale,
-        height: totalHeight * scale,
-      };
-
-      const stageX = (containerWidth - scaledTotal.width) / 2 + panOffset.x;
-      const stageY = (containerHeight - scaledTotal.height) / 2 + panOffset.y;
-
-      const imageOffsetX = hasBackground ? (bgWidth - image.width) / 2 : 0;
-      const imageOffsetY = hasBackground ? (bgHeight - image.height) / 2 : 0;
-
-      let bgImageScale = 1;
-      let bgImageX = 0;
-      let bgImageY = 0;
-
-      if (bgImageElement) {
-        const bgImgRatio = bgImageElement.width / bgImageElement.height;
-        const targetRatio = bgWidth / bgHeight;
-
-        if (bgImgRatio > targetRatio) {
-          bgImageScale = bgHeight / bgImageElement.height;
-          bgImageX = (bgWidth - bgImageElement.width * bgImageScale) / 2;
-        } else {
-          bgImageScale = bgWidth / bgImageElement.width;
-          bgImageY = (bgHeight - bgImageElement.height * bgImageScale) / 2;
-        }
-      }
-
-      return {
-        scale,
-        bgWidth,
-        bgHeight,
-        imageOffsetX,
-        imageOffsetY,
-        stageX,
-        stageY,
-        scaledWidth: scaledTotal.width,
-        scaledHeight: scaledTotal.height,
-        contentWidth,
-        contentHeight,
-        bgImageScale,
-        bgImageX,
-        bgImageY,
-      };
-    }, [
-      image.width,
-      image.height,
+    const layout = useCanvasLayout({
+      image: { width: image.width, height: image.height },
+      containerWidth,
+      containerHeight,
       padding,
       aspectRatio,
       hasBackground,
-      containerWidth,
-      containerHeight,
       bgImageElement,
       zoomLevel,
       panOffset,
-    ]);
+    });
 
     const gradientConfig = useMemo(() => {
       if (backgroundType !== "gradient" || !backgroundValue) return null;
@@ -352,52 +249,13 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       addAnnotation,
     });
 
-    useEffect(() => {
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.code === "Space" && !e.repeat) {
-          setIsSpaceHeld(true);
-        }
-      };
-      const handleKeyUp = (e: KeyboardEvent) => {
-        if (e.code === "Space") {
-          setIsSpaceHeld(false);
-          setIsPanning(false);
-          panStartRef.current = null;
-        }
-      };
-      window.addEventListener("keydown", handleKeyDown);
-      window.addEventListener("keyup", handleKeyUp);
-      return () => {
-        window.removeEventListener("keydown", handleKeyDown);
-        window.removeEventListener("keyup", handleKeyUp);
-      };
-    }, []);
-
-    const handlePanMouseDown = () => {
-      if (!isSpaceHeld) return false;
-      const pos = stageRef.current?.getPointerPosition();
-      if (!pos) return false;
-      setIsPanning(true);
-      panStartRef.current = { x: pos.x, y: pos.y, panX: panOffset.x, panY: panOffset.y };
-      return true;
-    };
-
-    const handlePanMouseMove = () => {
-      if (!isPanning || !panStartRef.current) return false;
-      const pos = stageRef.current?.getPointerPosition();
-      if (!pos) return false;
-      const dx = pos.x - panStartRef.current.x;
-      const dy = pos.y - panStartRef.current.y;
-      setPanOffset({ x: panStartRef.current.panX + dx, y: panStartRef.current.panY + dy });
-      return true;
-    };
-
-    const handlePanMouseUp = () => {
-      if (!isPanning) return false;
-      setIsPanning(false);
-      panStartRef.current = null;
-      return true;
-    };
+    const {
+      isSpaceHeld,
+      isPanning,
+      handlePanMouseDown,
+      handlePanMouseMove,
+      handlePanMouseUp,
+    } = usePanZoom({ stageRef, panOffset, setPanOffset });
 
     const wrappedMouseDown = (e: Konva.KonvaEventObject<MouseEvent>) => {
       if (handlePanMouseDown()) return;
@@ -414,111 +272,15 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       handleStageMouseUp();
     };
 
-    useImperativeHandle(
-      ref,
-      () => ({
-        exportImage: (format: "png" | "jpg" = "png") => {
-          if (!stageRef.current) return null;
+    const canvasExport = useCanvasExport({
+      stageRef,
+      transformerRef,
+      layout,
+      image: { width: image.width, height: image.height },
+      hasBackground,
+    });
 
-          transformerRef.current?.nodes([]);
-          stageRef.current.batchDraw();
-
-          const mimeType = format === "jpg" ? "image/jpeg" : "image/png";
-          const quality = format === "jpg" ? 1.0 : undefined;
-          const pixelRatio = image.width / (image.width * layout.scale);
-
-          const exportConfig = !hasBackground
-            ? {
-                x: layout.stageX + layout.imageOffsetX * layout.scale,
-                y: layout.stageY + layout.imageOffsetY * layout.scale,
-                width: image.width * layout.scale,
-                height: image.height * layout.scale,
-                pixelRatio,
-                imageSmoothingEnabled: false,
-              }
-            : {
-                x: layout.stageX,
-                y: layout.stageY,
-                width: layout.scaledWidth,
-                height: layout.scaledHeight,
-                pixelRatio: layout.bgWidth / layout.scaledWidth,
-                imageSmoothingEnabled: false,
-              };
-
-          const canvas = stageRef.current.toCanvas(exportConfig);
-          return canvas.toDataURL(mimeType, quality);
-        },
-        exportImageData: () => {
-          if (!stageRef.current) return null;
-
-          transformerRef.current?.nodes([]);
-          stageRef.current.batchDraw();
-
-          const pixelRatio = hasBackground
-            ? layout.bgWidth / layout.scaledWidth
-            : image.width / (image.width * layout.scale);
-
-          const config = hasBackground
-            ? {
-                x: layout.stageX,
-                y: layout.stageY,
-                width: layout.scaledWidth,
-                height: layout.scaledHeight,
-                pixelRatio,
-              }
-            : {
-                x: layout.stageX + layout.imageOffsetX * layout.scale,
-                y: layout.stageY + layout.imageOffsetY * layout.scale,
-                width: image.width * layout.scale,
-                height: image.height * layout.scale,
-                pixelRatio,
-              };
-
-          const canvas = stageRef.current.toCanvas(config);
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return null;
-          return ctx.getImageData(0, 0, canvas.width, canvas.height);
-        },
-        exportForClipboard: () => {
-          if (!stageRef.current) return Promise.resolve(null);
-
-          transformerRef.current?.nodes([]);
-          stageRef.current.batchDraw();
-
-          const pixelRatio = hasBackground
-            ? layout.bgWidth / layout.scaledWidth
-            : image.width / (image.width * layout.scale);
-
-          const config = hasBackground
-            ? {
-                x: layout.stageX,
-                y: layout.stageY,
-                width: layout.scaledWidth,
-                height: layout.scaledHeight,
-                pixelRatio,
-                mimeType: "image/jpeg" as const,
-                quality: 0.92,
-              }
-            : {
-                x: layout.stageX + layout.imageOffsetX * layout.scale,
-                y: layout.stageY + layout.imageOffsetY * layout.scale,
-                width: image.width * layout.scale,
-                height: image.height * layout.scale,
-                pixelRatio,
-                mimeType: "image/jpeg" as const,
-                quality: 0.92,
-              };
-
-          return new Promise((resolve) => {
-            stageRef.current!.toBlob({
-              ...config,
-              callback: (blob) => resolve(blob),
-            });
-          });
-        },
-      }),
-      [layout, image.width, image.height, hasBackground],
-    );
+    useImperativeHandle(ref, () => canvasExport, [canvasExport]);
 
     const handleTextDblClick = (annotation: TextAnnotation) => {
       startInlineEdit(annotation);
