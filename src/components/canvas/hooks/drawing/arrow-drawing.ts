@@ -3,7 +3,7 @@ import type { ArrowAnnotation } from "@/types";
 interface DrawingParams {
   strokeColor: string;
   strokeWidth: number;
-  defaultSketchiness: number;
+  sketchiness: number;
 }
 
 export function createArrowAnnotation(
@@ -21,7 +21,7 @@ export function createArrowAnnotation(
     strokeWidth: params.strokeWidth,
     pointerLength: 15,
     pointerWidth: 15,
-    sketchiness: params.defaultSketchiness,
+    sketchiness: params.sketchiness,
   };
 }
 

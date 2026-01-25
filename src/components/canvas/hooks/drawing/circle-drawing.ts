@@ -4,7 +4,7 @@ interface DrawingParams {
   strokeColor: string;
   fillColor: string | null;
   strokeWidth: number;
-  defaultSketchiness: number;
+  sketchiness: number;
 }
 
 export function createCircleAnnotation(
@@ -22,7 +22,7 @@ export function createCircleAnnotation(
     stroke: params.strokeColor,
     strokeWidth: params.strokeWidth,
     fill: params.fillColor,
-    sketchiness: params.defaultSketchiness,
+    sketchiness: params.sketchiness,
   };
 }
 

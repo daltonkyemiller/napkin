@@ -17,7 +17,7 @@ interface UseDrawingHandlersParams {
   fillColor: string | null;
   strokeWidth: number;
   fontSize: number;
-  defaultSketchiness: number;
+  sketchiness: number;
   annotations: Annotation[];
   ocrSelectionStart: { x: number; y: number } | null;
   ocrSelectionRect: { x: number; y: number; width: number; height: number } | null;
@@ -43,7 +43,7 @@ export function useDrawingHandlers({
   fillColor,
   strokeWidth,
   fontSize,
-  defaultSketchiness,
+  sketchiness,
   annotations,
   ocrSelectionStart,
   ocrSelectionRect,
@@ -103,7 +103,7 @@ export function useDrawingHandlers({
           fillColor,
           strokeWidth,
           fontSize,
-          defaultSketchiness,
+          sketchiness,
         };
 
         preDrawAnnotationsRef.current = [...useAnnotationStore.getState().annotations];
@@ -132,7 +132,7 @@ export function useDrawingHandlers({
       fillColor,
       strokeWidth,
       fontSize,
-      defaultSketchiness,
+      sketchiness,
       getImageCoords,
       clearSelection,
       setIsDrawing,

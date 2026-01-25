@@ -57,6 +57,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       strokeColor,
       fillColor,
       strokeWidth,
+      sketchiness,
       fontSize,
       isDrawing,
       setSelectedId,
@@ -68,7 +69,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
     } = useCanvasStore();
 
     const { annotations, addAnnotation, updateAnnotation } = useAnnotationStore();
-    const { sketchiness: defaultSketchiness, selectModeAfterDrawing } = useSettingsStore();
+    const { selectModeAfterDrawing } = useSettingsStore();
     const {
       backgroundType,
       gradientPreset,
@@ -190,7 +191,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       fillColor,
       strokeWidth,
       fontSize,
-      defaultSketchiness,
+      sketchiness,
       annotations,
       ocrSelectionStart,
       ocrSelectionRect,

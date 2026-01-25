@@ -45,8 +45,8 @@ pub struct AppConfig {
     pub stroke_size_preset: Option<String>,
     /// Default font size for text annotations
     pub font_size: Option<u32>,
-    /// Sketchiness level for hand-drawn style (0 = clean, higher = more sketchy)
-    pub sketchiness: Option<f64>,
+    /// Sketchiness preset for hand-drawn style (none, subtle, medium, heavy)
+    pub sketchiness_preset: Option<String>,
     /// Default directory for saving images
     pub default_save_location: Option<String>,
     /// Automatically save to default location without showing dialog
@@ -196,7 +196,10 @@ pub fn migrate_from_app_data(app_data_dir: &PathBuf) -> Result<(), String> {
                         .get("fontSize")
                         .and_then(|v| v.as_u64())
                         .map(|v| v as u32),
-                    sketchiness: settings.get("sketchiness").and_then(|v| v.as_f64()),
+                    sketchiness_preset: settings
+                        .get("sketchinessPreset")
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.to_string()),
                     default_save_location: settings
                         .get("defaultSaveLocation")
                         .and_then(|v| v.as_str())

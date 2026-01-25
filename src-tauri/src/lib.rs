@@ -210,7 +210,7 @@ fn load_theme_preference() -> Result<Option<String>, String> {
 struct AppSettings {
     stroke_size_preset: Option<String>,
     font_size: Option<u32>,
-    sketchiness: Option<f64>,
+    sketchiness_preset: Option<String>,
     default_save_location: Option<String>,
     auto_save_to_default: Option<bool>,
     close_after_save: Option<bool>,
@@ -227,7 +227,7 @@ impl From<config::AppConfig> for AppSettings {
         AppSettings {
             stroke_size_preset: cfg.stroke_size_preset,
             font_size: cfg.font_size,
-            sketchiness: cfg.sketchiness,
+            sketchiness_preset: cfg.sketchiness_preset,
             default_save_location: cfg.default_save_location,
             auto_save_to_default: cfg.auto_save_to_default,
             close_after_save: cfg.close_after_save,
@@ -246,7 +246,7 @@ impl From<AppSettings> for config::AppConfig {
         config::AppConfig {
             stroke_size_preset: settings.stroke_size_preset,
             font_size: settings.font_size,
-            sketchiness: settings.sketchiness,
+            sketchiness_preset: settings.sketchiness_preset,
             default_save_location: settings.default_save_location,
             auto_save_to_default: settings.auto_save_to_default,
             close_after_save: settings.close_after_save,

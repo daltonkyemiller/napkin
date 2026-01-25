@@ -19,7 +19,7 @@ export interface DrawingParams {
   fillColor: string | null;
   strokeWidth: number;
   fontSize: number;
-  defaultSketchiness: number;
+  sketchiness: number;
 }
 
 type AnnotationCreator = (

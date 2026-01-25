@@ -8,9 +8,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Slider } from "@/components/ui/slider";
 import { useSettingsStore } from "@/stores/settings-store";
-import { type StrokeSizePreset } from "@/stores/canvas-store";
+import { type StrokeSizePreset, type SketchinessPreset } from "@/stores/canvas-store";
 import { useThemeStore, type ThemeMode } from "@/stores/theme-store";
 import { IconCustomizerDialog } from "./icon-customizer-dialog";
 import { ThemeCustomizerDialog } from "./theme-customizer-dialog";
@@ -38,14 +37,21 @@ const STROKE_SIZE_OPTIONS: { value: StrokeSizePreset; label: string }[] = [
   { value: "XL", label: "XL" },
 ];
 
+const SKETCHINESS_OPTIONS: { value: SketchinessPreset; label: string }[] = [
+  { value: "none", label: "None" },
+  { value: "subtle", label: "Subtle" },
+  { value: "medium", label: "Medium" },
+  { value: "heavy", label: "Heavy" },
+];
+
 export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogProps) {
   const {
     strokeSizePreset,
     setStrokeSizePreset,
     fontSize,
     setFontSize,
-    sketchiness,
-    setSketchiness,
+    sketchinessPreset,
+    setSketchinessPreset,
     defaultSaveLocation,
     setDefaultSaveLocation,
     autoSaveToDefault,
@@ -129,25 +135,19 @@ export function SettingsDialog({ open: isOpen, onOpenChange }: SettingsDialogPro
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">Default Sketchiness</span>
-                <span className="text-xs text-muted-foreground">Roughness of drawn shapes</span>
-              </div>
-              <div className="flex items-center gap-3 w-40">
-                <Slider
-                  value={[sketchiness]}
-                  onValueChange={(values) => {
-                    const val = Array.isArray(values) ? values[0] : values;
-                    setSketchiness(val);
-                  }}
-                  min={0}
-                  max={3}
-                  step={0.1}
-                />
-                <span className="w-8 text-center text-sm tabular-nums">
-                  {sketchiness.toFixed(1)}
-                </span>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Default Sketchiness</span>
+              <div className="flex items-center gap-2">
+                {SKETCHINESS_OPTIONS.map((option) => (
+                  <Button
+                    key={option.value}
+                    variant={sketchinessPreset === option.value ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSketchinessPreset(option.value)}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
               </div>
             </div>
 

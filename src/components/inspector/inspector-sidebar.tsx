@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import {
   Combobox,
@@ -10,7 +11,7 @@ import {
   ComboboxEmpty,
 } from "@/components/ui/combobox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useCanvasStore } from "@/stores/canvas-store";
+import { useCanvasStore, calculateSketchiness, type SketchinessPreset } from "@/stores/canvas-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
 import { useAnnotationsByType } from "@/hooks/use-annotations-by-type";
 import { FONT_FAMILIES } from "@/constants";
@@ -19,6 +20,13 @@ import type { AnnotationType, BlendMode, TextAnnotation } from "@/types";
 const SHAPE_TYPES: AnnotationType[] = ["circle", "rectangle", "arrow", "freehand"];
 const TEXT_TYPES: AnnotationType[] = ["text"];
 const SKETCHABLE_TYPES: AnnotationType[] = ["circle", "rectangle", "arrow"];
+
+const SKETCHINESS_PRESETS: { value: SketchinessPreset; label: string }[] = [
+  { value: "none", label: "None" },
+  { value: "subtle", label: "Subtle" },
+  { value: "medium", label: "Med" },
+  { value: "heavy", label: "Heavy" },
+];
 
 const BLEND_MODES: { value: BlendMode; label: string }[] = [
   { value: "source-over", label: "Normal" },
@@ -29,7 +37,7 @@ const BLEND_MODES: { value: BlendMode; label: string }[] = [
 ];
 
 export function InspectorSidebar() {
-  const { selectedIds } = useCanvasStore();
+  const { selectedIds, imageWidth, imageHeight } = useCanvasStore();
   const { annotations, updateAnnotation } = useAnnotationStore();
 
   const selectedShapeAnnotations = useAnnotationsByType(annotations, selectedIds, SHAPE_TYPES);
@@ -39,10 +47,6 @@ export function InspectorSidebar() {
   const hasShapeSelection = selectedShapeAnnotations.length > 0;
   const hasTextSelection = selectedTextAnnotations.length > 0;
   const hasSketchableSelection = selectedSketchableAnnotations.length > 0;
-
-  const currentSketchiness = hasSketchableSelection
-    ? ((selectedSketchableAnnotations[0] as { sketchiness?: number }).sketchiness ?? 1.5)
-    : 1.5;
 
   const currentBlendMode = hasShapeSelection
     ? ((selectedShapeAnnotations[0] as { blendMode?: BlendMode }).blendMode ?? "source-over")
@@ -65,8 +69,8 @@ export function InspectorSidebar() {
     }
   };
 
-  const handleSketchinessChange = (value: number | readonly number[]) => {
-    const sketchiness = Array.isArray(value) ? value[0] : value;
+  const handleSketchinessPresetChange = (preset: SketchinessPreset) => {
+    const sketchiness = calculateSketchiness(preset, imageWidth, imageHeight);
     for (const annotation of selectedSketchableAnnotations) {
       updateAnnotation(annotation.id, { sketchiness });
     }
@@ -141,19 +145,20 @@ export function InspectorSidebar() {
 
               {hasSketchableSelection && (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">Sketchiness</span>
-                    <span className="text-xs tabular-nums text-muted-foreground">
-                      {currentSketchiness.toFixed(1)}
-                    </span>
+                  <span className="text-xs font-medium text-muted-foreground">Sketchiness</span>
+                  <div className="flex gap-1">
+                    {SKETCHINESS_PRESETS.map((preset) => (
+                      <Button
+                        key={preset.value}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-xs px-1"
+                        onClick={() => handleSketchinessPresetChange(preset.value)}
+                      >
+                        {preset.label}
+                      </Button>
+                    ))}
                   </div>
-                  <Slider
-                    value={[currentSketchiness]}
-                    onValueChange={handleSketchinessChange}
-                    min={0}
-                    max={3}
-                    step={0.5}
-                  />
                 </div>
               )}
 

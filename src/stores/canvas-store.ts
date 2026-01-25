@@ -2,12 +2,22 @@ import { create } from "zustand";
 import type { Tool } from "@/types";
 
 export type StrokeSizePreset = "S" | "M" | "L" | "XL" | "custom";
+export type SketchinessPreset = "none" | "subtle" | "medium" | "heavy";
 
 export const STROKE_PRESETS: Record<Exclude<StrokeSizePreset, "custom">, number> = {
   S: 0.003,
   M: 0.006,
   L: 0.012,
   XL: 0.025,
+};
+
+// Sketchiness scales with image diagonal using square root for smoother scaling
+const REFERENCE_DIAGONAL = 1500;
+export const SKETCHINESS_PRESETS: Record<SketchinessPreset, number> = {
+  none: 0,
+  subtle: 0.8,
+  medium: 1.5,
+  heavy: 2.5,
 };
 
 export function calculateStrokeWidth(
@@ -19,6 +29,18 @@ export function calculateStrokeWidth(
   if (preset === "custom") return customWidth;
   const diagonal = Math.sqrt(imageWidth ** 2 + imageHeight ** 2);
   return Math.max(1, Math.round(diagonal * STROKE_PRESETS[preset]));
+}
+
+export function calculateSketchiness(
+  preset: SketchinessPreset,
+  imageWidth: number,
+  imageHeight: number,
+): number {
+  if (preset === "none") return 0;
+  const diagonal = Math.sqrt(imageWidth ** 2 + imageHeight ** 2);
+  // Use square root scaling for more moderate adjustments
+  const scale = Math.sqrt(diagonal / REFERENCE_DIAGONAL);
+  return SKETCHINESS_PRESETS[preset] * scale;
 }
 
 export interface OcrSelection {
@@ -42,6 +64,8 @@ interface CanvasStore {
   strokeWidth: number;
   strokeSizePreset: StrokeSizePreset;
   customStrokeWidth: number;
+  sketchinessPreset: SketchinessPreset;
+  sketchiness: number;
   fontSize: number;
   isDrawing: boolean;
   editingTextId: string | null;
@@ -62,6 +86,7 @@ interface CanvasStore {
   setStrokeWidth: (width: number) => void;
   setStrokeSizePreset: (preset: StrokeSizePreset) => void;
   setCustomStrokeWidth: (width: number) => void;
+  setSketchinessPreset: (preset: SketchinessPreset) => void;
   setFontSize: (size: number) => void;
   setIsDrawing: (isDrawing: boolean) => void;
   setEditingTextId: (id: string | null) => void;
@@ -85,6 +110,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   strokeWidth: 3,
   strokeSizePreset: "M" as StrokeSizePreset,
   customStrokeWidth: 3,
+  sketchinessPreset: "medium" as SketchinessPreset,
+  sketchiness: SKETCHINESS_PRESETS.medium,
   fontSize: 24,
   isDrawing: false,
   editingTextId: null,
@@ -95,13 +122,15 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   setCanvasSize: (width, height) => set({ width, height }),
 
   setImage: (url, width, height) => {
-    const { strokeSizePreset, customStrokeWidth } = get();
+    const { strokeSizePreset, customStrokeWidth, sketchinessPreset } = get();
     const strokeWidth = calculateStrokeWidth(strokeSizePreset, customStrokeWidth, width, height);
+    const sketchiness = calculateSketchiness(sketchinessPreset, width, height);
     set({
       imageUrl: url,
       imageWidth: width,
       imageHeight: height,
       strokeWidth,
+      sketchiness,
     });
   },
 
@@ -156,6 +185,11 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     } else {
       set({ customStrokeWidth: width });
     }
+  },
+  setSketchinessPreset: (preset) => {
+    const { imageWidth, imageHeight } = get();
+    const sketchiness = calculateSketchiness(preset, imageWidth, imageHeight);
+    set({ sketchinessPreset: preset, sketchiness });
   },
   setFontSize: (fontSize) => set({ fontSize }),
   setIsDrawing: (isDrawing) => set({ isDrawing }),
