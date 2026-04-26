@@ -3,12 +3,7 @@ import type Konva from "konva";
 import { useAnnotationStore } from "@/stores/annotation-store";
 import { simplifyPath } from "@/lib/path-smoothing";
 import { ANNOTATION_CREATORS, ANNOTATION_UPDATERS } from "./drawing";
-import type {
-  Annotation,
-  TextAnnotation,
-  HighlighterAnnotation,
-  Tool,
-} from "@/types";
+import type { Annotation, TextAnnotation, HighlighterAnnotation, Tool } from "@/types";
 
 interface UseDrawingHandlersParams {
   stageRef: RefObject<Konva.Stage | null>;
@@ -33,6 +28,11 @@ interface UseDrawingHandlersParams {
   handleOcrMouseDown: () => boolean;
   handleOcrMouseMove: () => boolean;
   handleOcrMouseUp: () => boolean;
+  cropSelectionStart: { x: number; y: number } | null;
+  cropSelectionRect: { x: number; y: number; width: number; height: number } | null;
+  handleCropMouseDown: () => boolean;
+  handleCropMouseMove: () => boolean;
+  handleCropMouseUp: () => boolean;
   startInlineEdit: (annotation: TextAnnotation) => void;
 }
 
@@ -59,6 +59,11 @@ export function useDrawingHandlers({
   handleOcrMouseDown,
   handleOcrMouseMove,
   handleOcrMouseUp,
+  cropSelectionStart,
+  cropSelectionRect,
+  handleCropMouseDown,
+  handleCropMouseMove,
+  handleCropMouseUp,
   startInlineEdit,
 }: UseDrawingHandlersParams) {
   const isDrawingRef = useRef(false);
@@ -81,6 +86,11 @@ export function useDrawingHandlers({
 
       if (activeTool === "ocr") {
         handleOcrMouseDown();
+        return;
+      }
+
+      if (activeTool === "crop") {
+        handleCropMouseDown();
         return;
       }
 
@@ -140,6 +150,7 @@ export function useDrawingHandlers({
       setSelectedIds,
       addAnnotation,
       handleOcrMouseDown,
+      handleCropMouseDown,
       startInlineEdit,
     ],
   );
@@ -148,6 +159,11 @@ export function useDrawingHandlers({
     (e: Konva.KonvaEventObject<MouseEvent>) => {
       if (activeTool === "ocr" && ocrSelectionStart) {
         handleOcrMouseMove();
+        return;
+      }
+
+      if (activeTool === "crop" && cropSelectionStart) {
+        handleCropMouseMove();
         return;
       }
 
@@ -177,15 +193,22 @@ export function useDrawingHandlers({
       activeTool,
       annotations,
       ocrSelectionStart,
+      cropSelectionStart,
       getImageCoords,
       updateAnnotation,
       handleOcrMouseMove,
+      handleCropMouseMove,
     ],
   );
 
   const handleStageMouseUp = useCallback(() => {
     if (activeTool === "ocr" && ocrSelectionStart && ocrSelectionRect) {
       handleOcrMouseUp();
+      return;
+    }
+
+    if (activeTool === "crop" && cropSelectionStart && cropSelectionRect) {
+      handleCropMouseUp();
       return;
     }
 
@@ -222,11 +245,14 @@ export function useDrawingHandlers({
     annotations,
     ocrSelectionStart,
     ocrSelectionRect,
+    cropSelectionStart,
+    cropSelectionRect,
     selectModeAfterDrawing,
     setIsDrawing,
     setActiveTool,
     updateAnnotation,
     handleOcrMouseUp,
+    handleCropMouseUp,
   ]);
 
   return {

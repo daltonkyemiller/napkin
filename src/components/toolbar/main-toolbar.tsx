@@ -23,6 +23,7 @@ const TOOL_BUTTONS: { value: Tool; icon: IconName; label: string; shortcut: stri
   { value: "freehand", icon: "pen", label: "Freehand", shortcut: "P" },
   { value: "highlighter", icon: "text-highlight", label: "Highlighter", shortcut: "M" },
   { value: "ocr", icon: "scan-text", label: "OCR Text Recognition", shortcut: "O" },
+  { value: "crop", icon: "crop", label: "Crop", shortcut: "X" },
 ];
 
 const STROKE_SIZE_OPTIONS: { value: StrokeSizePreset; label: string }[] = [
@@ -62,10 +63,26 @@ export function MainToolbar({ onDownload, onCopyToClipboard, onSettingsClick }: 
   const temporal = useAnnotationStore.temporal;
   const { sidebarOpen, toggleSidebar } = useBackgroundStore();
 
-  const canUndo = temporal.getState().pastStates.length > 0;
+  const hasAnnotationUndo = temporal.getState().pastStates.length > 0;
+  const hasCropUndo = useCanvasStore.getState().hasCropHistory();
+  const canUndo = hasAnnotationUndo || hasCropUndo;
   const canRedo = temporal.getState().futureStates.length > 0;
 
-  const handleUndo = () => temporal.getState().undo();
+  const handleUndo = () => {
+    if (hasAnnotationUndo) {
+      temporal.getState().undo();
+      return;
+    }
+    const snapshot = useCanvasStore.getState().undoCrop();
+    if (snapshot) {
+      useAnnotationStore.temporal.getState().clear();
+      useAnnotationStore.setState({ annotations: snapshot.annotations });
+      useCanvasStore
+        .getState()
+        .setImage(snapshot.imageUrl, snapshot.imageWidth, snapshot.imageHeight);
+      useCanvasStore.getState().resetZoom();
+    }
+  };
   const handleRedo = () => temporal.getState().redo();
 
   const handleDelete = () => {

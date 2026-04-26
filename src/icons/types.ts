@@ -10,6 +10,7 @@ export type IconName =
   | "circle-check"
   | "circle-info"
   | "clipboard"
+  | "crop"
   | "cursor-default"
   | "download"
   | "folder"
@@ -42,6 +43,7 @@ export const ICON_NAMES: IconName[] = [
   "circle-check",
   "circle-info",
   "clipboard",
+  "crop",
   "cursor-default",
   "download",
   "folder",

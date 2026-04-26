@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Tool } from "@/types";
+import type { Annotation, Tool } from "@/types";
 
 export type StrokeSizePreset = "S" | "M" | "L" | "XL" | "custom";
 export type SketchinessPreset = "none" | "subtle" | "medium" | "heavy";
@@ -43,6 +43,13 @@ export function calculateSketchiness(
   return SKETCHINESS_PRESETS[preset] * scale;
 }
 
+export interface CropSnapshot {
+  imageUrl: string;
+  imageWidth: number;
+  imageHeight: number;
+  annotations: Annotation[];
+}
+
 export interface OcrSelection {
   x: number;
   y: number;
@@ -70,6 +77,7 @@ interface CanvasStore {
   isDrawing: boolean;
   editingTextId: string | null;
   ocrSelection: OcrSelection | null;
+  cropHistory: CropSnapshot[];
   zoomLevel: number;
   panOffset: { x: number; y: number };
 
@@ -91,6 +99,9 @@ interface CanvasStore {
   setIsDrawing: (isDrawing: boolean) => void;
   setEditingTextId: (id: string | null) => void;
   setOcrSelection: (selection: OcrSelection | null) => void;
+  pushCropSnapshot: (snapshot: CropSnapshot) => void;
+  undoCrop: () => CropSnapshot | null;
+  hasCropHistory: () => boolean;
   setZoomLevel: (zoom: number) => void;
   setPanOffset: (offset: { x: number; y: number }) => void;
   resetZoom: () => void;
@@ -116,6 +127,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   isDrawing: false,
   editingTextId: null,
   ocrSelection: null,
+  cropHistory: [],
   zoomLevel: 1,
   panOffset: { x: 0, y: 0 },
 
@@ -139,6 +151,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       imageUrl: null,
       imageWidth: 0,
       imageHeight: 0,
+      cropHistory: [],
     }),
 
   setSelectedId: (selectedId) => set({ selectedId }),
@@ -195,6 +208,16 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   setIsDrawing: (isDrawing) => set({ isDrawing }),
   setEditingTextId: (editingTextId) => set({ editingTextId }),
   setOcrSelection: (ocrSelection) => set({ ocrSelection }),
+  pushCropSnapshot: (snapshot) =>
+    set((state) => ({ cropHistory: [...state.cropHistory, snapshot] })),
+  undoCrop: () => {
+    const { cropHistory } = get();
+    if (cropHistory.length === 0) return null;
+    const snapshot = cropHistory[cropHistory.length - 1];
+    set({ cropHistory: cropHistory.slice(0, -1) });
+    return snapshot;
+  },
+  hasCropHistory: () => get().cropHistory.length > 0,
   setZoomLevel: (zoomLevel) => set({ zoomLevel: Math.max(0.1, Math.min(5, zoomLevel)) }),
   setPanOffset: (panOffset) => set({ panOffset }),
   resetZoom: () => set({ zoomLevel: 1, panOffset: { x: 0, y: 0 } }),

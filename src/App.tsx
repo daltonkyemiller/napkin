@@ -244,7 +244,22 @@ export default function App() {
   useHotkeys(
     "mod+z",
     () => {
-      temporal.getState().undo();
+      const canUndo = temporal.getState().pastStates.length > 0;
+      if (canUndo) {
+        temporal.getState().undo();
+        return;
+      }
+
+      // If no annotation undo available, try undoing a crop
+      const snapshot = useCanvasStore.getState().undoCrop();
+      if (snapshot) {
+        useAnnotationStore.temporal.getState().clear();
+        useAnnotationStore.setState({ annotations: snapshot.annotations });
+        useCanvasStore
+          .getState()
+          .setImage(snapshot.imageUrl, snapshot.imageWidth, snapshot.imageHeight);
+        useCanvasStore.getState().resetZoom();
+      }
     },
     { preventDefault: true },
   );
@@ -301,6 +316,7 @@ export default function App() {
     { preventDefault: selectedIds.length === 0 },
   );
   useHotkeys("o", () => setActiveTool("ocr"));
+  useHotkeys("x", () => setActiveTool("crop"));
   useHotkeys("b", () => toggleSidebar());
 
   const handleOcrRegionSelected = useCallback(async (imageData: string, x: number, y: number) => {

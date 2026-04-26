@@ -17,6 +17,7 @@ import { useDrawingHandlers } from "./hooks/use-drawing-handlers";
 import { useCanvasLayout } from "./hooks/use-canvas-layout";
 import { usePanZoom } from "./hooks/use-pan-zoom";
 import { useCanvasExport } from "./hooks/use-canvas-export";
+import { useCrop } from "./hooks/use-crop";
 import type { TextAnnotation } from "@/types";
 
 interface AnnotationCanvasProps {
@@ -184,6 +185,14 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       onOcrRegionSelected,
     });
 
+    const {
+      cropSelectionStart,
+      cropSelectionRect,
+      handleCropMouseDown,
+      handleCropMouseMove,
+      handleCropMouseUp,
+    } = useCrop({ stageRef, image, getImageCoords });
+
     const { handleStageMouseDown, handleStageMouseMove, handleStageMouseUp } = useDrawingHandlers({
       stageRef,
       activeTool,
@@ -207,6 +216,11 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       handleOcrMouseDown,
       handleOcrMouseMove,
       handleOcrMouseUp,
+      cropSelectionStart,
+      cropSelectionRect,
+      handleCropMouseDown,
+      handleCropMouseMove,
+      handleCropMouseUp,
       startInlineEdit,
     });
 
@@ -250,13 +264,8 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       addAnnotation,
     });
 
-    const {
-      isSpaceHeld,
-      isPanning,
-      handlePanMouseDown,
-      handlePanMouseMove,
-      handlePanMouseUp,
-    } = usePanZoom({ stageRef, panOffset, setPanOffset });
+    const { isSpaceHeld, isPanning, handlePanMouseDown, handlePanMouseMove, handlePanMouseUp } =
+      usePanZoom({ stageRef, panOffset, setPanOffset });
 
     const wrappedMouseDown = (e: Konva.KonvaEventObject<MouseEvent>) => {
       if (handlePanMouseDown()) return;
@@ -322,7 +331,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       if (!e.evt.ctrlKey) return;
 
       e.evt.preventDefault();
-      
+
       const stage = stageRef.current;
       if (!stage) return;
 
@@ -333,12 +342,12 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       const direction = e.evt.deltaY > 0 ? -1 : 1;
       const newZoom = direction > 0 ? zoomLevel * scaleBy : zoomLevel / scaleBy;
       const clampedZoom = Math.max(0.1, Math.min(5, newZoom));
-      
+
       const zoomRatio = clampedZoom / zoomLevel;
-      
+
       const centerX = containerWidth / 2 + panOffset.x;
       const centerY = containerHeight / 2 + panOffset.y;
-      
+
       const newPanX = pointer.x - (pointer.x - centerX) * zoomRatio - containerWidth / 2;
       const newPanY = pointer.y - (pointer.y - centerY) * zoomRatio - containerHeight / 2;
 
@@ -519,6 +528,40 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                 fill="rgba(59, 130, 246, 0.1)"
               />
             )}
+            {cropSelectionRect &&
+              (() => {
+                const ox = layout.stageX + layout.imageOffsetX * layout.scale;
+                const oy = layout.stageY + layout.imageOffsetY * layout.scale;
+                const iw = image.width;
+                const ih = image.height;
+                const cx = cropSelectionRect.x;
+                const cy = cropSelectionRect.y;
+                const cw = cropSelectionRect.width;
+                const ch = cropSelectionRect.height;
+                const dimFill = "rgba(0, 0, 0, 0.5)";
+                return (
+                  <Group x={ox} y={oy} scaleX={layout.scale} scaleY={layout.scale}>
+                    {/* Top */}
+                    <Rect x={0} y={0} width={iw} height={cy} fill={dimFill} />
+                    {/* Bottom */}
+                    <Rect x={0} y={cy + ch} width={iw} height={ih - cy - ch} fill={dimFill} />
+                    {/* Left */}
+                    <Rect x={0} y={cy} width={cx} height={ch} fill={dimFill} />
+                    {/* Right */}
+                    <Rect x={cx + cw} y={cy} width={iw - cx - cw} height={ch} fill={dimFill} />
+                    {/* Border */}
+                    <Rect
+                      x={cx}
+                      y={cy}
+                      width={cw}
+                      height={ch}
+                      stroke="#ffffff"
+                      strokeWidth={2 / layout.scale}
+                      dash={[6 / layout.scale, 3 / layout.scale]}
+                    />
+                  </Group>
+                );
+              })()}
             {selectedRectangle && activeTool === "select" && !isTransformingAnnotation && (
               <CornerRadiusHandle
                 rectangle={selectedRectangle}
