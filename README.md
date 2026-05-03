@@ -8,9 +8,7 @@ The app is a Tauri 2 desktop app with a React canvas frontend. It is still a loc
 
 ## Demo
 
-[![Napkin demo](./assets/demo-poster.jpg)](./assets/demo.mp4)
-
-[Watch the demo video](./assets/demo.mp4)
+https://github.com/user-attachments/assets/f0c4260a-caae-4e82-b605-b926b0b5067f
 
 ## What It Does
 
