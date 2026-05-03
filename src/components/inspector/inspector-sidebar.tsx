@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
+import { NumberScrubber } from "@/components/ui/number-scrubber";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import {
   Combobox,
@@ -11,7 +11,11 @@ import {
   ComboboxEmpty,
 } from "@/components/ui/combobox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useCanvasStore, calculateSketchiness, type SketchinessPreset } from "@/stores/canvas-store";
+import {
+  useCanvasStore,
+  calculateSketchiness,
+  type SketchinessPreset,
+} from "@/stores/canvas-store";
 import { useAnnotationStore } from "@/stores/annotation-store";
 import { useAnnotationsByType } from "@/hooks/use-annotations-by-type";
 import { FONT_FAMILIES } from "@/constants";
@@ -36,13 +40,24 @@ const BLEND_MODES: { value: BlendMode; label: string }[] = [
   { value: "color-burn", label: "Color Burn" },
 ];
 
+const STROKE_WIDTH_SNAP_POINTS = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 100];
+const FONT_SIZE_SNAP_POINTS = [8, 10, 12, 14, 16, 18, 20, 24, 32, 48, 64, 96, 128];
+
 export function InspectorSidebar() {
   const { selectedIds, imageWidth, imageHeight } = useCanvasStore();
   const { annotations, updateAnnotation } = useAnnotationStore();
 
   const selectedShapeAnnotations = useAnnotationsByType(annotations, selectedIds, SHAPE_TYPES);
-  const selectedTextAnnotations = useAnnotationsByType<TextAnnotation>(annotations, selectedIds, TEXT_TYPES);
-  const selectedSketchableAnnotations = useAnnotationsByType(annotations, selectedIds, SKETCHABLE_TYPES);
+  const selectedTextAnnotations = useAnnotationsByType<TextAnnotation>(
+    annotations,
+    selectedIds,
+    TEXT_TYPES,
+  );
+  const selectedSketchableAnnotations = useAnnotationsByType(
+    annotations,
+    selectedIds,
+    SKETCHABLE_TYPES,
+  );
 
   const hasShapeSelection = selectedShapeAnnotations.length > 0;
   const hasTextSelection = selectedTextAnnotations.length > 0;
@@ -128,18 +143,15 @@ export function InspectorSidebar() {
           {hasShapeSelection && (
             <>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">Stroke Width</span>
-                  <span className="text-xs tabular-nums text-muted-foreground">
-                    {currentStrokeWidth}px
-                  </span>
-                </div>
-                <Slider
-                  value={[currentStrokeWidth]}
+                <NumberScrubber
+                  label="Stroke Width"
+                  value={currentStrokeWidth}
                   onValueChange={handleStrokeWidthChange}
                   min={1}
                   max={100}
                   step={1}
+                  unit="px"
+                  snapPoints={STROKE_WIDTH_SNAP_POINTS}
                 />
               </div>
 
@@ -205,18 +217,15 @@ export function InspectorSidebar() {
               </div>
 
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">Font Size</span>
-                  <span className="text-xs tabular-nums text-muted-foreground">
-                    {currentFontSize}px
-                  </span>
-                </div>
-                <Slider
-                  value={[currentFontSize]}
+                <NumberScrubber
+                  label="Font Size"
+                  value={currentFontSize}
                   onValueChange={handleFontSizeChange}
                   min={8}
                   max={128}
                   step={1}
+                  unit="px"
+                  snapPoints={FONT_SIZE_SNAP_POINTS}
                 />
               </div>
             </>

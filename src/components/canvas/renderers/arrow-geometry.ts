@@ -69,7 +69,7 @@ export function drawArrowhead(
   pointerLength: number,
   pointerWidth: number,
   stroke: string,
-  strokeWidth: number
+  strokeWidth: number,
 ): void {
   ctx.save();
   ctx.translate(x, y);

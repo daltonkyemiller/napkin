@@ -67,9 +67,7 @@ export function OcrResultDialog({
       <AlertDialogContent className="max-w-md">
         <AlertDialogHeader>
           <AlertDialogTitle>OCR Result</AlertDialogTitle>
-          <AlertDialogDescription>
-            {getDialogDescription(isLoading, error)}
-          </AlertDialogDescription>
+          <AlertDialogDescription>{getDialogDescription(isLoading, error)}</AlertDialogDescription>
         </AlertDialogHeader>
 
         {isLoading ? (

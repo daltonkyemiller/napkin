@@ -123,7 +123,7 @@ function renderSketchyArrow(
   if (bend !== 0) {
     const { ctrlX, ctrlY, angle, shortenedEndX, shortenedEndY } = calculateBendedArrow(
       geo,
-      sketchyShortenBy
+      sketchyShortenBy,
     );
 
     return (
@@ -136,12 +136,15 @@ function renderSketchyArrow(
         sceneFunc={(ctx) => {
           ctx.translate(arrowDrawOffset.x, arrowDrawOffset.y);
           const drawable = getRoughDrawable(annotation.id, cacheKey, (gen) =>
-            gen.path(`M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${shortenedEndX} ${shortenedEndY}`, {
-              stroke: annotation.stroke,
-              strokeWidth: annotation.strokeWidth * 1.5,
-              roughness: annotation.sketchiness,
-              bowing: annotation.sketchiness,
-            }),
+            gen.path(
+              `M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${shortenedEndX} ${shortenedEndY}`,
+              {
+                stroke: annotation.stroke,
+                strokeWidth: annotation.strokeWidth * 1.5,
+                roughness: annotation.sketchiness,
+                bowing: annotation.sketchiness,
+              },
+            ),
           );
           drawRoughDrawable(ctx._context, drawable);
           drawArrowhead(
@@ -152,7 +155,7 @@ function renderSketchyArrow(
             pointerLength,
             pointerWidth,
             annotation.stroke,
-            annotation.strokeWidth
+            annotation.strokeWidth,
           );
         }}
         hitFunc={(ctx, shape) => {
@@ -194,7 +197,7 @@ function renderSketchyArrow(
           pointerLength,
           pointerWidth,
           annotation.stroke,
-          annotation.strokeWidth
+          annotation.strokeWidth,
         );
       }}
       hitFunc={(ctx, shape) => {
@@ -220,7 +223,7 @@ function renderSmoothArrow(
   if (bend !== 0) {
     const { ctrlX, ctrlY, angle, shortenedEndX, shortenedEndY } = calculateBendedArrow(
       geo,
-      smoothShortenBy
+      smoothShortenBy,
     );
 
     return (
@@ -251,7 +254,7 @@ function renderSmoothArrow(
             pointerLength,
             pointerWidth,
             annotation.stroke,
-            annotation.strokeWidth
+            annotation.strokeWidth,
           );
 
           ctx.restore();
@@ -297,7 +300,7 @@ function renderSmoothArrow(
           pointerLength,
           pointerWidth,
           annotation.stroke,
-          annotation.strokeWidth
+          annotation.strokeWidth,
         );
 
         ctx.restore();

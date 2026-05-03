@@ -7,7 +7,7 @@ interface DrawingParams {
 export function createHighlighterAnnotation(
   id: string,
   pos: { x: number; y: number },
-  params: DrawingParams
+  params: DrawingParams,
 ): HighlighterAnnotation {
   return {
     id,
@@ -24,12 +24,8 @@ export function createHighlighterAnnotation(
 
 export function updateHighlighterAnnotation(
   annotation: HighlighterAnnotation,
-  pos: { x: number; y: number }
+  pos: { x: number; y: number },
 ): Partial<HighlighterAnnotation> {
-  const newPoints = [
-    ...annotation.points,
-    pos.x - annotation.x,
-    pos.y - annotation.y,
-  ];
+  const newPoints = [...annotation.points, pos.x - annotation.x, pos.y - annotation.y];
   return { points: newPoints };
 }

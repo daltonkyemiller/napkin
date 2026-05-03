@@ -45,7 +45,7 @@ export function useCanvasExport({
         imageSmoothingEnabled: false,
       };
     },
-    [layout, image.width, image.height]
+    [layout, image.width, image.height],
   );
 
   const prepareForExport = useCallback(() => {
@@ -66,7 +66,7 @@ export function useCanvasExport({
       const canvas = stageRef.current.toCanvas(exportConfig);
       return canvas.toDataURL(mimeType, quality);
     },
-    [stageRef, hasBackground, getExportConfig, prepareForExport]
+    [stageRef, hasBackground, getExportConfig, prepareForExport],
   );
 
   const exportImageData = useCallback(() => {

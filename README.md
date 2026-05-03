@@ -6,6 +6,10 @@ It is built for the common case: open an image, draw a rough arrow or circle, ad
 
 The app is a Tauri 2 desktop app with a React canvas frontend. It is still a local-first tool, not a hosted image editor.
 
+## Demo
+
+<video src="./assets/demo.mp4" controls width="100%"></video>
+
 ## What It Does
 
 - Draw rough rectangles, circles, arrows, freehand strokes, and highlighter marks.
@@ -13,12 +17,13 @@ The app is a Tauri 2 desktop app with a React canvas frontend. It is still a loc
 - Crop the image and undo the crop.
 - Select, move, transform, and delete annotations.
 - Bend arrows after drawing.
-- Adjust rectangle corner radius.
-- Use stroke presets that scale against the image size.
+- Adjust rectangle corner radius, stroke width, sketchiness, and blend mode from the inspector.
+- Use stroke presets that scale against the image size, or set an exact custom stroke width.
 - Tune sketchiness from clean to heavy.
 - Extract text from a selected image region with OCR.
 - Export PNG or JPG.
 - Copy the rendered image to the clipboard.
+- Auto-save to a default folder, copy after save, close after save/copy, and reveal the saved file.
 - Add gradient or image backgrounds, padding, border radius, shadow, blur, and aspect ratio framing.
 - Save user settings under the XDG config directory.
 - Customize the app theme with shadcn-style CSS variables.
@@ -80,7 +85,7 @@ While drawing shapes, `Shift` constrains the shape and `Alt` draws from the cent
 
 Use select mode to move annotations, resize them, rotate them, and edit shape-specific handles.
 
-Arrows have draggable endpoint handles. Rectangles have a corner-radius handle. Text can be edited inline by double-clicking it.
+Arrows have draggable endpoint handles. Rectangles have a corner-radius handle. The inspector edits stroke width, roughness, blend mode, text font, and text size for the selected item. Text can also be edited inline by double-clicking it.
 
 ### Shapes
 

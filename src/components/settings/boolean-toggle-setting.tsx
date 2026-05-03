@@ -19,11 +19,7 @@ export function BooleanToggleSetting({
         <span className="text-sm font-medium">{label}</span>
         <span className="text-xs text-muted-foreground">{description}</span>
       </div>
-      <Button
-        variant={value ? "default" : "outline"}
-        size="sm"
-        onClick={() => onChange(!value)}
-      >
+      <Button variant={value ? "default" : "outline"} size="sm" onClick={() => onChange(!value)}>
         {value ? "On" : "Off"}
       </Button>
     </div>

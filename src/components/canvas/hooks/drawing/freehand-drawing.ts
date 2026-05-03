@@ -8,7 +8,7 @@ interface DrawingParams {
 export function createFreehandAnnotation(
   id: string,
   pos: { x: number; y: number },
-  params: DrawingParams
+  params: DrawingParams,
 ): FreehandAnnotation {
   return {
     id,
@@ -24,7 +24,7 @@ export function createFreehandAnnotation(
 export function updateFreehandAnnotation(
   annotation: FreehandAnnotation,
   pos: { x: number; y: number },
-  pressure: number
+  pressure: number,
 ): Partial<FreehandAnnotation> {
   const newPoints: [number, number, number][] = [
     ...annotation.points,

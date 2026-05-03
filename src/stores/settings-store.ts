@@ -158,8 +158,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
           closeAfterCopy: settings.closeAfterCopy ?? DEFAULT_SETTINGS.closeAfterCopy,
           selectModeAfterDrawing:
             settings.selectModeAfterDrawing ?? DEFAULT_SETTINGS.selectModeAfterDrawing,
-          openFolderAfterSave:
-            settings.openFolderAfterSave ?? DEFAULT_SETTINGS.openFolderAfterSave,
+          openFolderAfterSave: settings.openFolderAfterSave ?? DEFAULT_SETTINGS.openFolderAfterSave,
           isLoaded: true,
         });
 

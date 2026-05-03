@@ -9,7 +9,7 @@ interface TextDrawingParams {
 export function createTextAnnotation(
   id: string,
   pos: { x: number; y: number },
-  params: TextDrawingParams
+  params: TextDrawingParams,
 ): TextAnnotation {
   return {
     id,

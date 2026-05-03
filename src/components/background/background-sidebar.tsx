@@ -4,8 +4,8 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
+import { NumberScrubber } from "@/components/ui/number-scrubber";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import {
   ColorPicker,
@@ -22,11 +22,16 @@ import { cn } from "@/lib/utils";
 function isPresetSelected(
   backgroundType: BackgroundType,
   gradientPreset: string,
-  presetId: string
+  presetId: string,
 ): boolean {
   if (presetId === "none") return backgroundType === "none";
   return backgroundType === "gradient" && gradientPreset === presetId;
 }
+
+const BLUR_SNAP_POINTS = [0, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128, 150];
+const PADDING_SNAP_POINTS = [0, 16, 24, 32, 40, 48, 64, 80, 96, 128, 160, 200, 240, 300];
+const ROUNDING_SNAP_POINTS = [0, 2, 4, 8, 12, 16, 24, 32, 48, 64, 96];
+const SHADOW_SNAP_POINTS = [0, 4, 8, 12, 16, 20, 24, 32, 48, 64, 96, 128, 150];
 
 export function BackgroundSidebar() {
   const {
@@ -188,16 +193,15 @@ export function BackgroundSidebar() {
 
           {hasImageBackground && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">Blur</span>
-                <span className="text-xs tabular-nums text-muted-foreground">{localBlur}px</span>
-              </div>
-              <Slider
-                value={[localBlur]}
-                onValueChange={(v) => handleBlurChange(Array.isArray(v) ? v[0] : v)}
+              <NumberScrubber
+                label="Blur"
+                value={localBlur}
+                onValueChange={handleBlurChange}
                 min={0}
                 max={150}
                 step={1}
+                unit="px"
+                snapPoints={BLUR_SNAP_POINTS}
               />
             </div>
           )}
@@ -226,31 +230,29 @@ export function BackgroundSidebar() {
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">Padding</span>
-                <span className="text-xs tabular-nums text-muted-foreground">{padding}px</span>
-              </div>
-              <Slider
-                value={[padding]}
-                onValueChange={(v) => setPadding(Array.isArray(v) ? v[0] : v)}
+              <NumberScrubber
+                label="Padding"
+                value={padding}
+                onValueChange={setPadding}
                 min={0}
                 max={300}
                 step={1}
+                unit="px"
+                snapPoints={PADDING_SNAP_POINTS}
                 disabled={isNoneSelected}
               />
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">Rounding</span>
-                <span className="text-xs tabular-nums text-muted-foreground">{borderRadius}px</span>
-              </div>
-              <Slider
-                value={[borderRadius]}
-                onValueChange={(v) => setBorderRadius(Array.isArray(v) ? v[0] : v)}
+              <NumberScrubber
+                label="Rounding"
+                value={borderRadius}
+                onValueChange={setBorderRadius}
                 min={0}
                 max={96}
                 step={1}
+                unit="px"
+                snapPoints={ROUNDING_SNAP_POINTS}
                 disabled={isNoneSelected}
               />
             </div>
@@ -260,18 +262,15 @@ export function BackgroundSidebar() {
             <div
               className={cn("space-y-3", imageHasTransparency && "opacity-50 pointer-events-none")}
             >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Shadow {imageHasTransparency && "(transparent image)"}
-                </span>
-                <span className="text-xs tabular-nums text-muted-foreground">{shadowSize}px</span>
-              </div>
-              <Slider
-                value={[shadowSize]}
-                onValueChange={(v) => setShadowSize(Array.isArray(v) ? v[0] : v)}
+              <NumberScrubber
+                label={`Shadow${imageHasTransparency ? " (transparent image)" : ""}`}
+                value={shadowSize}
+                onValueChange={setShadowSize}
                 min={0}
                 max={150}
                 step={1}
+                unit="px"
+                snapPoints={SHADOW_SNAP_POINTS}
                 disabled={isNoneSelected || imageHasTransparency}
               />
             </div>

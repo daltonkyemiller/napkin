@@ -9,7 +9,7 @@ interface DrawingParams {
 export function createArrowAnnotation(
   id: string,
   pos: { x: number; y: number },
-  params: DrawingParams
+  params: DrawingParams,
 ): ArrowAnnotation {
   return {
     id,
@@ -27,7 +27,7 @@ export function createArrowAnnotation(
 
 export function updateArrowAnnotation(
   annotation: ArrowAnnotation,
-  pos: { x: number; y: number }
+  pos: { x: number; y: number },
 ): Partial<ArrowAnnotation> {
   return {
     points: [0, 0, pos.x - annotation.x, pos.y - annotation.y],

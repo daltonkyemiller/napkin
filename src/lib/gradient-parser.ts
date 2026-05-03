@@ -7,7 +7,7 @@ export interface GradientConfig {
 export function parseGradient(
   gradientStr: string,
   width: number,
-  height: number
+  height: number,
 ): GradientConfig | null {
   const match = gradientStr.match(/linear-gradient\((\d+)deg,\s*(.+)\)/);
   if (!match) return null;

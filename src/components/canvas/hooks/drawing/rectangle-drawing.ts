@@ -10,7 +10,7 @@ interface DrawingParams {
 export function createRectangleAnnotation(
   id: string,
   pos: { x: number; y: number },
-  params: DrawingParams
+  params: DrawingParams,
 ): RectangleAnnotation {
   return {
     id,
@@ -31,7 +31,7 @@ export function updateRectangleAnnotation(
   pos: { x: number; y: number },
   startPos: { x: number; y: number },
   shiftKey: boolean,
-  altKey: boolean
+  altKey: boolean,
 ): Partial<RectangleAnnotation> {
   let dx = pos.x - startPos.x;
   let dy = pos.y - startPos.y;
