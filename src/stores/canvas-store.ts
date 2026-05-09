@@ -4,15 +4,21 @@ import type { Annotation, Tool } from "@/types";
 export type StrokeSizePreset = "S" | "M" | "L" | "XL" | "custom";
 export type SketchinessPreset = "none" | "subtle" | "medium" | "heavy";
 
-export const STROKE_PRESETS: Record<Exclude<StrokeSizePreset, "custom">, number> = {
-  S: 0.003,
-  M: 0.006,
-  L: 0.012,
-  XL: 0.025,
+interface StrokePresetConfig {
+  baseWidth: number;
+  maxWidth: number;
+}
+
+export const STROKE_PRESETS: Record<Exclude<StrokeSizePreset, "custom">, StrokePresetConfig> = {
+  S: { baseWidth: 3, maxWidth: 6 },
+  M: { baseWidth: 5, maxWidth: 10 },
+  L: { baseWidth: 10, maxWidth: 18 },
+  XL: { baseWidth: 18, maxWidth: 28 },
 };
 
-// Sketchiness scales with image diagonal using square root for smoother scaling
 const REFERENCE_DIAGONAL = 1500;
+const MIN_STROKE_WIDTH = 2;
+
 export const SKETCHINESS_PRESETS: Record<SketchinessPreset, number> = {
   none: 0,
   subtle: 0.8,
@@ -27,8 +33,12 @@ export function calculateStrokeWidth(
   imageHeight: number,
 ): number {
   if (preset === "custom") return customWidth;
+  const { baseWidth, maxWidth } = STROKE_PRESETS[preset];
   const diagonal = Math.sqrt(imageWidth ** 2 + imageHeight ** 2);
-  return Math.max(1, Math.round(diagonal * STROKE_PRESETS[preset]));
+  if (diagonal === 0) return baseWidth;
+  const scale = Math.sqrt(diagonal / REFERENCE_DIAGONAL);
+  const strokeWidth = Math.round(baseWidth * scale);
+  return Math.max(MIN_STROKE_WIDTH, Math.min(strokeWidth, maxWidth));
 }
 
 export function calculateSketchiness(

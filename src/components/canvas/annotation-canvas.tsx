@@ -6,7 +6,7 @@ import { useAnnotationStore } from "@/stores/annotation-store";
 import { useBackgroundStore, GRADIENT_PRESETS } from "@/stores/background-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useInlineTextEditing } from "@/hooks/use-inline-text-editing";
-import { parseGradient } from "@/lib/gradient-parser";
+import { createDitheredGradientUrl } from "@/lib/dithered-gradient";
 import { renderAnnotation } from "./renderers";
 import { ArrowHandles, CornerRadiusHandle } from "./selection-handles";
 import { useKeyboardShortcuts } from "./hooks/use-keyboard-shortcuts";
@@ -44,6 +44,7 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
     const transformerRef = useRef<Konva.Transformer>(null);
     const bgImageRef = useRef<Konva.Image>(null);
     const [bgImageElement, setBgImageElement] = useState<HTMLImageElement | null>(null);
+    const [gradientImageElement, setGradientImageElement] = useState<HTMLImageElement | null>(null);
 
     const {
       width: containerWidth,
@@ -133,9 +134,32 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
       panOffset,
     });
 
-    const gradientConfig = useMemo(() => {
-      if (backgroundType !== "gradient" || !backgroundValue) return null;
-      return parseGradient(backgroundValue, layout.bgWidth, layout.bgHeight);
+    useEffect(() => {
+      if (backgroundType !== "gradient" || !backgroundValue) {
+        setGradientImageElement(null);
+        return;
+      }
+
+      const gradientUrl = createDitheredGradientUrl(
+        backgroundValue,
+        layout.bgWidth,
+        layout.bgHeight,
+      );
+      if (!gradientUrl) {
+        setGradientImageElement(null);
+        return;
+      }
+
+      let isActive = true;
+      const gradientImage = new window.Image();
+      gradientImage.onload = () => {
+        if (isActive) setGradientImageElement(gradientImage);
+      };
+      gradientImage.src = gradientUrl;
+
+      return () => {
+        isActive = false;
+      };
     }, [backgroundType, backgroundValue, layout.bgWidth, layout.bgHeight]);
 
     const getImageCoords = (stageX: number, stageY: number) => {
@@ -385,13 +409,11 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, AnnotationCan
                 scaleX={layout.scale}
                 scaleY={layout.scale}
               >
-                {backgroundType === "gradient" && gradientConfig && (
-                  <Rect
+                {backgroundType === "gradient" && gradientImageElement && (
+                  <Image
+                    image={gradientImageElement}
                     width={layout.bgWidth}
                     height={layout.bgHeight}
-                    fillLinearGradientStartPoint={gradientConfig.startPoint}
-                    fillLinearGradientEndPoint={gradientConfig.endPoint}
-                    fillLinearGradientColorStops={gradientConfig.colorStops}
                   />
                 )}
                 {backgroundType === "image" && bgImageElement && (
